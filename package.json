@@ -4,12 +4,14 @@
 	"private": true,
 	"dependencies": {
 		"bootstrap": "^5.3.3",
+		"bootstrap-icons": "^1.11.3",
 		"cra-template-typescript": "1.2.0",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
+		"react-router-dom": "^7.1.1",
 		"react-scripts": "5.0.1"
 	},
-	"homepage": "https://randyharrogates.github.io/my-protfolio",
+	"homepage": "https://randyharrogates.github.io/my-portfolio",
 	"scripts": {
 		"start": "react-scripts start",
 		"build": "react-scripts build",
