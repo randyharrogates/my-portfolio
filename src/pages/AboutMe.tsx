@@ -27,7 +27,13 @@ const AboutMe: React.FC = () => {
 							<h2 className="card-title mb-3">About Me</h2>
 							<img src={profileData.github?.avatar_url} alt="GitHub Avatar" className="img-fluid rounded-circle mb-3" style={{ width: "150px", height: "150px" }} />
 							<h4 className="card-subtitle mb-2 text-muted">{"Randy Chan"}</h4>
-							<p className="card-text">{profileData.github?.bio}</p>
+							<p className="card-text">
+								A passionate Full-Stack AI engineer with 4 years of experience in designing and deploying end-to-end software applications, specializing in natural language processing
+								and large language models (LLMs) as well as micro-services and web applications. Proficient in both Python and Java and focused on tackling industry challenges with
+								cutting-edge, state-of-the-art solutions. I excel at researching innovative approaches to solve new project challenges. I thrive in open, collaborative environments
+								that foster knowledge sharing and continuous growth. I am always eager to leverage my expertise in AI software development to drive impactful solutions in dynamic,
+								forward-thinking teams.
+							</p>
 							<p className="card-text">Take a look at some of my notable projects below.</p>
 							{/* Email Section */}
 							<div className="mb-3">

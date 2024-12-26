@@ -6,12 +6,8 @@ import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css"; // Import Bootstrap Icons
 
-import AboutMe from "./pages/AboutMe.tsx";
-import Project1 from "./pages/Project1.tsx";
-import Project2 from "./pages/Project2.tsx";
-import Project3 from "./pages/Project3.tsx";
-import Project4 from "./pages/Project4.tsx";
-import Project5 from "./pages/Project5.tsx";
+import AboutMe from "./pages/AboutMe.tsx"; // AboutMe component import
+import FineTuning from "./pages/FineTuning.tsx";
 
 const App: React.FC = () => {
 	return (
@@ -41,29 +37,29 @@ const App: React.FC = () => {
 									</Link>
 								</li>
 								<li className="nav-item">
-									<Link className="nav-link" to="/project1">
+									<a className="nav-link" href="https://github.com/3-jobless-folks/dating-plan-ai-agents" target="_blank" rel="noopener noreferrer">
 										<i className="bi-gear me-2"></i> Multi-Agent RAG
-									</Link>
+									</a>
 								</li>
 								<li className="nav-item">
-									<Link className="nav-link" to="/project2">
+									<a className="nav-link" href="https://github.com/randyharrogates/speech" target="_blank" rel="noopener noreferrer">
 										<i className="bi-mic me-2"></i> Speech-To-Text
-									</Link>
+									</a>
 								</li>
 								<li className="nav-item">
-									<Link className="nav-link" to="/project3">
+									<Link className="nav-link" to="/fine-tuning">
 										<i className="bi-wrench me-2"></i> Fine-Tuning
 									</Link>
 								</li>
 								<li className="nav-item">
-									<Link className="nav-link" to="/project4">
+									<a className="nav-link" href="https://github.com/randyharrogates/WebApp" target="_blank" rel="noopener noreferrer">
 										<i className="bi-code-slash me-2"></i> Web App
-									</Link>
+									</a>
 								</li>
 								<li className="nav-item">
-									<Link className="nav-link" to="/project5">
+									<a className="nav-link" href="https://github.com/sheppy9/vietMalaEatery" target="_blank" rel="noopener noreferrer">
 										<i className="bi bi-file-earmark-fill"></i> Web Page
-									</Link>
+									</a>
 								</li>
 							</ul>
 						</div>
@@ -72,11 +68,7 @@ const App: React.FC = () => {
 				<div className="container mt-4">
 					<Routes>
 						<Route path="/" element={<AboutMe />} />
-						<Route path="/project1" element={<Project1 />} />
-						<Route path="/project2" element={<Project2 />} />
-						<Route path="/project3" element={<Project3 />} />
-						<Route path="/project4" element={<Project4 />} />
-						<Route path="/project5" element={<Project5 />} />
+						<Route path="/fine-tuning" element={<FineTuning />} />
 					</Routes>
 				</div>
 			</div>
