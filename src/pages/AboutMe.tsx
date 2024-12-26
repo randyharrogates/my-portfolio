@@ -27,12 +27,10 @@ const AboutMe: React.FC = () => {
 							<h2 className="card-title mb-3">About Me</h2>
 							<img src={profileData.github?.avatar_url} alt="GitHub Avatar" className="img-fluid rounded-circle mb-3" style={{ width: "150px", height: "150px" }} />
 							<h4 className="card-subtitle mb-2 text-muted">{"Randy Chan"}</h4>
+							<p className="card-text">Full-Stack AI engineer | 4 YOE | NLP | LLM</p>
 							<p className="card-text">
-								A passionate Full-Stack AI engineer with 4 years of experience in designing and deploying end-to-end software applications, specializing in natural language processing
-								and large language models (LLMs) as well as micro-services and web applications. Proficient in both Python and Java and focused on tackling industry challenges with
-								cutting-edge, state-of-the-art solutions. I excel at researching innovative approaches to solve new project challenges. I thrive in open, collaborative environments
-								that foster knowledge sharing and continuous growth. I am always eager to leverage my expertise in AI software development to drive impactful solutions in dynamic,
-								forward-thinking teams.
+								Proficient in both Python, Java and Javascript. Focused on tackling industry challenges with cutting-edge, state-of-the-art solutions. I excel at researching innovative
+								approaches to solve new project challenges. I thrive in open, collaborative environments that foster knowledge sharing and continuous growth.
 							</p>
 							<p className="card-text">Take a look at some of my notable projects below.</p>
 							{/* Email Section */}
@@ -192,7 +190,7 @@ const AboutMe: React.FC = () => {
 								Dating Planner - Making use of Multi-Agent RAG to plan a date. Backend is in python with FastAPI and Frontend is in React. OpenAI's LLM is used here in conjunction with
 								Pinecone and LangGraph. Project has been initially deployed to AWS using ECS and ECR.
 							</p>
-							<Link to="/project1" className="btn btn-primary">
+							<Link to="https://github.com/3-jobless-folks/dating-plan-ai-agents" className="btn btn-primary">
 								View Project
 							</Link>
 						</div>
@@ -206,7 +204,7 @@ const AboutMe: React.FC = () => {
 							<p className="card-text">
 								Audio Transcriber - Making use of openAI whisper model to do translation to words. Backend is in python with FastAPI and Frontend is in React. Project is containerized.
 							</p>
-							<Link to="/project2" className="btn btn-primary">
+							<Link to="https://github.com/randyharrogates/speech" className="btn btn-primary">
 								View Project
 							</Link>
 						</div>
@@ -221,7 +219,7 @@ const AboutMe: React.FC = () => {
 								Named Entity Recognition - Fine-tuned a BERT based model from Huggingface to do named entity recognition on medical data. Backend is in python with FastAPI making of of
 								kedro pipeline. Project is containerized.
 							</p>
-							<Link to="/project3" className="btn btn-primary">
+							<Link to="/fine-tuning" className="btn btn-primary">
 								View Project
 							</Link>
 						</div>
@@ -236,7 +234,7 @@ const AboutMe: React.FC = () => {
 								Web Application to book holidays - Application is created using javascript for frontend and python with Flask for backend. Application can be used to book holidays and
 								manage users.
 							</p>
-							<Link to="/project3" className="btn btn-primary">
+							<Link to="https://github.com/randyharrogates/WebApp" className="btn btn-primary">
 								View Project
 							</Link>
 						</div>
@@ -248,15 +246,12 @@ const AboutMe: React.FC = () => {
 						<div className="card-body">
 							<h5 className="card-title">Ecommerce webpage</h5>
 							<p className="card-text">Web Page for shop - A simple webpage created to sell food products. Done using VueJS</p>
-							<Link to="/project3" className="btn btn-primary">
+							<Link to="https://github.com/sheppy9/vietMalaEatery" className="btn btn-primary">
 								View Project
 							</Link>
 						</div>
 					</div>
 				</div>
-
-				{/* More Project Cards */}
-				{/* Add Project 2, 3, 4, 5 as before */}
 			</div>
 		</div>
 	);
