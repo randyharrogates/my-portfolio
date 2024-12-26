@@ -1,0 +1,43 @@
+/* AboutMe.css */
+.skill-card {
+    background-color: #f7f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .skill-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .skill-card h5 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .skill-card ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .skill-card ul li {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+  
+  @media (max-width: 768px) {
+    .skill-card {
+      margin-bottom: 20px;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .skill-card {
+      margin: 15px;
+    }
+  }
+  
