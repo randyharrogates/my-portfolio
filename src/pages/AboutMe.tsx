@@ -27,7 +27,7 @@ const AboutMe: React.FC = () => {
 					<h4 className="mb-2 text-muted">{"Randy Chan"}</h4>
 					<p className="text-muted">Full-Stack AI engineer | 4 YOE | NLP | LLM</p>
 					<p>
-						Proficient in both Python, Java and Javascript. Focused on tackling industry challenges with cutting-edge, state-of-the-art solutions. I excel at researching innovative
+						Proficient in Python, Java, Javascript and Typescript. Focused on tackling industry challenges with cutting-edge, state-of-the-art solutions. I excel at researching innovative
 						approaches to solve new project challenges. I thrive in open, collaborative environments that foster knowledge sharing and continuous growth.
 					</p>
 					<p>Take a look at some of my notable projects below.</p>
@@ -74,7 +74,7 @@ const AboutMe: React.FC = () => {
 				<div className="col-12 col-md-6 col-lg-4 skill-card">
 					<h5>Backend</h5>
 					<ul>
-						<li>Springboot | Flask | FastAPI | JQuery</li>
+						<li>Springboot | Flask | FastAPI | NodeJS | ExpressJS</li>
 					</ul>
 				</div>
 				<div className="col-12 col-md-6 col-lg-4 skill-card">
@@ -177,6 +177,20 @@ const AboutMe: React.FC = () => {
 							<h5 className="card-title">Ecommerce webpage</h5>
 							<p className="card-text">Web Page for shop - A simple webpage created to sell food products. Done using VueJS.</p>
 							<Link to="https://github.com/sheppy9/vietMalaEatery" className="btn btn-primary">
+								View Project
+							</Link>
+						</div>
+					</div>
+				</div>
+				<div className="col-md-6 mb-4">
+					<div className="card shadow-sm border-0 rounded">
+						<img src={`${process.env.PUBLIC_URL}/hrm.webp`} alt="Ecommerce webpage" className="card-img-top" />
+						<div className="card-body">
+							<h5 className="card-title">HR Management System</h5>
+							<p className="card-text">
+								A simple HR Management System created using ReactJS and ExpressJS. No implementation of login and register as of now. This is not required by user.
+							</p>
+							<Link to="https://github.com/randyharrogates/hrm" className="btn btn-primary">
 								View Project
 							</Link>
 						</div>
