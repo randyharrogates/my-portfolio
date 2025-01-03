@@ -61,6 +61,11 @@ const App: React.FC = () => {
 										<i className="bi bi-file-earmark-fill"></i> Web Page
 									</a>
 								</li>
+								<li className="nav-item">
+									<a className="nav-link" href="https://github.com/randyharrogates/hrm" target="_blank" rel="noopener noreferrer">
+										<i className="bi bi-person-arms-up"></i> HRMS
+									</a>
+								</li>
 							</ul>
 						</div>
 					</div>
