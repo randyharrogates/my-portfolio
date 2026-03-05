@@ -1,11 +1,96 @@
-/* Centering content */
-.container {
-    max-width: 800px;
+/* ── Fine-Tuning Project Tab ── */
+
+.ft-wrap {
+  max-width: 100%;
 }
 
-.img-fluid {
-    max-width: 100%;
-    height: auto;
+/* Title row */
+.ft-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-/* Add any other custom styles here */
+.ft-num {
+  font-size: 12px;
+  color: #4a4540;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.ft-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #d4cbc2;
+  line-height: 1.35;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* Two-column layout */
+.ft-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+.ft-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ft-right {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero image */
+.ft-hero-img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #2e2b28;
+  display: block;
+}
+
+/* Body text */
+.ft-body {
+  font-size: 13.5px;
+  color: #8a8178;
+  line-height: 1.75;
+  margin-bottom: 18px;
+}
+
+/* Subheading */
+.ft-subheading {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c8bfb5;
+  margin: 4px 0 10px;
+  letter-spacing: 0.02em;
+}
+
+/* Actions */
+.ft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+  .ft-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 500px) {
+  .ft-title {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,138 @@
+/* ── Contact Tab ── */
+
+.contact-wrap {
+  max-width: 100%;
+}
+
+/* Two-column layout */
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.contact-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Contact list */
+.contact-output {
+  background: #131110;
+  border: 1px solid #2a2724;
+  border-radius: 8px;
+  padding: 6px 0;
+  overflow: hidden;
+}
+
+.contact-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  transition: background 0.12s;
+}
+
+.contact-line:hover {
+  background: rgba(232, 99, 42, 0.05);
+}
+
+.contact-num {
+  font-size: 10px;
+  color: #3a3532;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.contact-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.contact-sep {
+  font-size: 12px;
+  color: #3a3532;
+  flex-shrink: 0;
+}
+
+.contact-value-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.contact-link {
+  font-size: 13px;
+  color: #8a8178;
+  text-decoration: none;
+  transition: color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.contact-link:hover {
+  color: #e8632a;
+  text-decoration: none;
+}
+
+.contact-divider {
+  border-top: 1px solid #1e1c1a;
+  margin: 0 20px;
+}
+
+/* Copy button */
+.copy-btn {
+  font-family: inherit;
+  font-size: 11px;
+  color: #4a4540;
+  background: #252220;
+  border: 1px solid #2e2b28;
+  border-radius: 4px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  background: #2e2b28;
+  color: #c8bfb5;
+  border-color: #4a4540;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .contact-line {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 14px;
+  }
+  .contact-label {
+    width: auto;
+  }
+  .contact-sep {
+    display: none;
+  }
+  .contact-value-row {
+    flex-wrap: wrap;
+  }
+}
