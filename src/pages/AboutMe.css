@@ -1,7 +1,27 @@
 /* ── Intro / About Me Tab ── */
 
 .intro-wrap {
-  max-width: 860px;
+  max-width: 100%;
+}
+
+/* Two-column layout */
+.intro-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.intro-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.intro-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 4px;
 }
 
 /* Identity row */
@@ -75,7 +95,51 @@
   margin-top: 24px;
 }
 
+/* System info panel */
+.intro-sysinfo {
+  background: #131110;
+  border: 1px solid #2a2724;
+  border-radius: 8px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sysinfo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.sysinfo-cmd {
+  font-size: 11px;
+  color: #3a3532;
+  letter-spacing: 0.04em;
+}
+
+.sysinfo-val {
+  font-size: 13px;
+  color: #8a8178;
+  padding-left: 4px;
+}
+
+.sysinfo-sep {
+  color: #3a3532;
+}
+
+.sysinfo-divider {
+  border-top: 1px solid #1e1c1a;
+}
+
 /* Responsive */
+@media (max-width: 800px) {
+  .intro-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
 @media (max-width: 500px) {
   .intro-identity {
     flex-direction: column;
