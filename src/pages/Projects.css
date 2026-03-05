@@ -1,0 +1,123 @@
+/* ── Projects Tab ── */
+
+.projects-wrap {
+  max-width: 800px;
+}
+
+.projects-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Project Card */
+.project-card {
+  background: #252220;
+  border: 1px solid #2e2b28;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.project-card:hover {
+  border-color: #4a4540;
+  background: #272421;
+}
+
+.project-card-expanded {
+  border-color: #e8632a !important;
+}
+
+/* Card header — always visible */
+.project-card-header {
+  padding: 14px 18px;
+}
+
+.project-card-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-num {
+  font-size: 11px;
+  color: #4a4540;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  width: 22px;
+}
+
+.project-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #c8bfb5;
+  flex: 1;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.project-badge {
+  font-size: 10px;
+  color: #e8632a;
+  border: 1px solid #e8632a;
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.project-toggle {
+  font-size: 9px;
+  color: #4a4540;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.project-card-expanded .project-toggle {
+  color: #e8632a;
+}
+
+/* Expanded body */
+.project-card-body {
+  padding: 0 18px 20px;
+  border-top: 1px solid #2e2b28;
+  animation: expandIn 0.18s ease;
+}
+
+@keyframes expandIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.project-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin: 16px 0 14px;
+  border: 1px solid #2e2b28;
+}
+
+.project-desc {
+  font-size: 13px;
+  color: #8a8178;
+  line-height: 1.7;
+  margin-bottom: 4px;
+}
+
+.project-link {
+  margin-top: 4px;
+  display: inline-flex;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .project-card-header {
+    padding: 12px 14px;
+  }
+  .project-title {
+    font-size: 12.5px;
+  }
+}
