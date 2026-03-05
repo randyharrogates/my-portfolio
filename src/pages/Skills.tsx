@@ -21,13 +21,13 @@ const SKILL_GROUPS: SkillGroup[] = [
     key: "ai_ml",
     label: "ai & ml",
     color: "green",
-    items: ["OpenAI", "LangGraph", "Kedro", "PyTorch", "HuggingFace", "LangChain", "NLTK"],
+    items: ["OpenAI", "Anthropic", "LangGraph", "LangChain", "Kedro", "PyTorch", "HuggingFace", "LangFuse", "SpaCy", "Pydantic", "NLTK"],
   },
   {
     key: "frontend",
     label: "frontend",
     color: "blue",
-    items: ["ReactJS", "VueJS"],
+    items: ["ReactJS", "Svelte", "VueJS", "NextJS", "Tailwind"],
   },
   {
     key: "backend",
@@ -39,13 +39,13 @@ const SKILL_GROUPS: SkillGroup[] = [
     key: "cloud",
     label: "cloud & infra",
     color: "orange",
-    items: ["Docker", "Kubernetes", "AWS"],
+    items: ["Docker", "Kubernetes", "AWS", "Azure", "GCP", "Terraform", "Azure Service Bus"],
   },
   {
     key: "databases",
     label: "databases",
     color: "green",
-    items: ["SQL Server", "MySQL", "PostgreSQL", "MongoDB", "ChromaDB", "Pinecone"],
+    items: ["SQL Server", "MySQL", "PostgreSQL", "MongoDB", "Redis", "ChromaDB", "Pinecone", "Weaviate"],
   },
   {
     key: "cicd",
@@ -63,20 +63,23 @@ const SKILL_GROUPS: SkillGroup[] = [
     key: "experiments",
     label: "experiments",
     color: "orange",
-    items: ["Coder", "RunAI"],
+    items: ["Coder", "RunAI", "MLOps", "A/B Testing"],
   },
 ];
 
 const PROFICIENCY: { label: string; pct: number; color: string }[] = [
   { label: "Python",      pct: 90, color: "orange" },
+  { label: "FastAPI",     pct: 85, color: "purple" },
+  { label: "LangGraph",   pct: 80, color: "green"  },
+  { label: "LangChain",   pct: 80, color: "green"  },
   { label: "TypeScript",  pct: 75, color: "blue"   },
   { label: "React",       pct: 75, color: "blue"   },
-  { label: "FastAPI",     pct: 85, color: "purple"  },
-  { label: "LangGraph",   pct: 80, color: "green"  },
-  { label: "PyTorch",     pct: 70, color: "green"  },
+  { label: "MongoDB",     pct: 75, color: "green"  },
   { label: "Docker",      pct: 75, color: "orange" },
-  { label: "AWS",         pct: 65, color: "orange" },
+  { label: "Azure",       pct: 70, color: "blue"   },
+  { label: "AWS",         pct: 70, color: "orange" },
   { label: "PostgreSQL",  pct: 70, color: "green"  },
+  { label: "PyTorch",     pct: 70, color: "green"  },
 ];
 
 const BAR_COLORS: Record<string, string> = {
@@ -157,7 +160,7 @@ const Skills: React.FC = () => {
           <div className="proficiency-block">
             <div className="callout-label">Proficiency</div>
             <div className="proficiency-cmd">
-              <span className="cmt">$ benchmark --skills --top=9</span>
+              <span className="cmt">$ benchmark --skills --top=12</span>
             </div>
             <div className="proficiency-list">
               {PROFICIENCY.map((s) => (
