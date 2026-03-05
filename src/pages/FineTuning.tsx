@@ -1,64 +1,102 @@
 /** @format */
 
 import React from "react";
-import { Link } from "react-router-dom";
-import "bootstrap-icons/font/bootstrap-icons.css"; // Ensure Bootstrap Icons are imported
-import "./FineTuning.css"; // Create a CSS file for any styling you want to add
+import { useNavigate } from "react-router-dom";
+import "./FineTuning.css";
 
 const FineTuning: React.FC = () => {
-	return (
-		<div className="container mt-5">
-			<div className="row">
-				<div className="col-md-12 text-center">
-					{/* Project Image */}
-					<img
-						src={`${process.env.PUBLIC_URL}/fine-tuning.png`} // Add the correct path for the image
-						alt="Fine-Tuning Project"
-						className="img-fluid rounded mb-4"
-						style={{ maxWidth: "600px" }}
-					/>
-					{/* Project Title */}
-					<h2>
-						<i className="bi bi-magic me-2"></i> Fine-Tuning of a BERT-based Model for NER on Medical Data
-					</h2>
-					{/* Project Description */}
-					<p className="lead">
-						<i className="bi bi-file-earmark-text me-2"></i>
-						This project involved fine-tuning a BERT-based model, specifically designed for medical data, to perform Named Entity Recognition (NER). The task focused on identifying medical
-						entities such as diseases, treatments, and medications within clinical notes. The fine-tuning process was carried out using FastAPI as the backend and was deployed within a
-						Kedro pipeline.
-					</p>
-					{/* More Project Details */}
-					<h4>
-						<i className="bi bi-cogs me-2"></i> Enhanced with Retrieval-Augmented Generation (RAG)
-					</h4>
-					<p>
-						<i className="bi bi-lightbulb me-2"></i>
-						In addition to fine-tuning the BERT-based model, we employed Retrieval-Augmented Generation (RAG) to improve the model’s performance in identifying and understanding more
-						complex medical terms. RAG, when combined with LLMs, allows the system to leverage external knowledge sources (such as clinical literature) during the inference process. This
-						combination has significantly enhanced the accuracy and efficiency of Named Entity Recognition (NER) within medical texts.
-					</p>
-					{/* Project Details */}
-					<h4>
-						<i className="bi bi-info-circle me-2"></i> About the Project
-					</h4>
-					<p>
-						<i className="bi bi-shield-lock me-2"></i>
-						Unfortunately, due to privacy and data confidentiality concerns, this project cannot be publicly demonstrated. However, a detailed explanation of the project can be shared upon
-						request, including the methodology used, the challenges encountered, and the results obtained. Feel free to contact me for more information or if you would like a deeper dive
-						into the project bearing what can be shared!
-					</p>
-					{/* Contact/Request More Info */}
-					<Link
-						to="mailto:randychan_92@outlook.com" // Correct mailto link format
-						className="btn btn-primary"
-					>
-						<i className="bi bi-envelope me-2"></i> Request More Information
-					</Link>
-				</div>
-			</div>
-		</div>
-	);
+  const navigate = useNavigate();
+
+  return (
+    <div className="ft-wrap">
+      <div className="prompt-line">
+        <span className="prompt-path">~/portfolio/projects</span>
+        <span className="prompt-sep"> $ </span>
+        <span className="prompt-cmd">cat fine-tuning.md</span>
+      </div>
+
+      {/* Title row */}
+      <div className="ft-title-row">
+        <span className="ft-num">03</span>
+        <h2 className="ft-title">
+          Fine-Tuning of a <span className="hl-orange">BERT-based Model</span> for NER on Medical Data
+        </h2>
+      </div>
+
+      <hr className="terminal-divider" />
+
+      {/* Hero image */}
+      <img
+        src={`${process.env.PUBLIC_URL}/fine-tuning.png`}
+        alt="Fine-Tuning Project"
+        className="ft-hero-img"
+      />
+
+      {/* Overview */}
+      <p className="ft-body">
+        This project involved fine-tuning a BERT-based model, specifically designed for medical data,
+        to perform <span className="hl-green">Named Entity Recognition (NER)</span>. The task focused on
+        identifying medical entities such as{" "}
+        <span className="hl-orange">diseases</span>,{" "}
+        <span className="hl-orange">treatments</span>, and{" "}
+        <span className="hl-orange">medications</span> within clinical notes. The fine-tuning process
+        was carried out using <span className="hl-blue">FastAPI</span> as the backend and deployed
+        within a <span className="hl-purple">Kedro pipeline</span>.
+      </p>
+
+      {/* Tech stack */}
+      <div className="code-block">
+        <span className="cmt"># tech stack</span>
+        <br />
+        <span className="key">model</span>
+        <span style={{ color: "#5a5450" }}>: </span>
+        <span className="str">"BERT (HuggingFace)"</span>
+        <br />
+        <span className="key">backend</span>
+        <span style={{ color: "#5a5450" }}>: </span>
+        <span className="str">"FastAPI + Kedro Pipeline"</span>
+        <br />
+        <span className="key">task</span>
+        <span style={{ color: "#5a5450" }}>: </span>
+        <span className="str">"Named Entity Recognition (NER)"</span>
+        <br />
+        <span className="key">infra</span>
+        <span style={{ color: "#5a5450" }}>: </span>
+        <span className="str">"Docker (containerized)"</span>
+      </div>
+
+      {/* RAG section */}
+      <h4 className="ft-subheading">Enhanced with Retrieval-Augmented Generation (RAG)</h4>
+      <p className="ft-body">
+        In addition to fine-tuning the BERT-based model, we employed{" "}
+        <span className="hl-orange">Retrieval-Augmented Generation (RAG)</span> to improve the model's
+        performance in identifying and understanding more complex medical terms. RAG, when combined with
+        LLMs, allows the system to leverage external knowledge sources (such as clinical literature)
+        during the inference process. This combination has significantly enhanced the accuracy and
+        efficiency of NER within medical texts.
+      </p>
+
+      {/* Privacy callout */}
+      <div className="callout-box">
+        <div className="callout-label">Confidentiality Notice</div>
+        <p>
+          Due to privacy and data confidentiality concerns, this project cannot be publicly demonstrated.
+          However, a detailed explanation including methodology, challenges encountered, and results
+          obtained can be shared upon request.
+        </p>
+      </div>
+
+      {/* CTA */}
+      <div className="ft-actions">
+        <a href="mailto:randychan_92@outlook.com" className="terminal-btn primary">
+          <span className="btn-prefix">$</span> request more information
+        </a>
+        <button className="terminal-btn" onClick={() => navigate("/projects")}>
+          <span className="btn-prefix">←</span> back to projects
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export default FineTuning;

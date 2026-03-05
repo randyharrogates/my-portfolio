@@ -1,43 +1,88 @@
-/* AboutMe.css */
-.skill-card {
-    background-color: #f7f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 10px;
-    text-align: center;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* ── Intro / About Me Tab ── */
+
+.intro-wrap {
+  max-width: 680px;
+}
+
+/* Identity row */
+.intro-identity {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.intro-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid #3a3532;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.intro-identity-text {
+  flex: 1;
+}
+
+.intro-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: #d4cbc2;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.intro-name-typed {
+  color: #e8632a;
+}
+
+.intro-cursor {
+  color: #e8632a;
+  font-weight: 300;
+  transition: opacity 0.1s;
+}
+
+.intro-cursor-hidden {
+  opacity: 0;
+}
+
+.intro-role {
+  font-size: 13px;
+  color: #6b6560;
+  letter-spacing: 0.04em;
+}
+
+/* Bio */
+.intro-bio p {
+  font-size: 13.5px;
+  color: #8a8178;
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+
+.intro-bio-cta {
+  color: #6b6560 !important;
+  font-style: italic;
+}
+
+/* Links row */
+.intro-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .intro-identity {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
   }
-  
-  .skill-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
+  .intro-name {
+    font-size: 22px;
   }
-  
-  .skill-card h5 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
-  }
-  
-  .skill-card ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .skill-card ul li {
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-  
-  @media (max-width: 768px) {
-    .skill-card {
-      margin-bottom: 20px;
-    }
-  }
-  
-  @media (min-width: 768px) {
-    .skill-card {
-      margin: 15px;
-    }
-  }
-  
+}
