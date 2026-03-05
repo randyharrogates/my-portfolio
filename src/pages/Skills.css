@@ -1,7 +1,26 @@
 /* ── Skills Tab ── */
 
 .skills-wrap {
-  max-width: 860px;
+  max-width: 100%;
+}
+
+/* Two-column layout */
+.skills-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.skills-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.skills-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* JSON-style output */
@@ -75,7 +94,68 @@
 
 .skills-close {}
 
+/* Proficiency block */
+.proficiency-block {
+  background: #131110;
+  border: 1px solid #2a2724;
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+
+.proficiency-cmd {
+  margin: 8px 0 14px;
+}
+
+.proficiency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proficiency-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proficiency-name {
+  font-size: 12px;
+  color: #8a8178;
+  width: 88px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.proficiency-bar-track {
+  flex: 1;
+  height: 5px;
+  background: #252220;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.proficiency-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  opacity: 0.85;
+}
+
+.proficiency-pct {
+  font-size: 11px;
+  color: #4a4540;
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+
 /* Responsive */
+@media (max-width: 800px) {
+  .skills-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 500px) {
   .skills-output {
     font-size: 12px;

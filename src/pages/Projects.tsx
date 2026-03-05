@@ -107,46 +107,50 @@ const Projects: React.FC = () => {
               </div>
             </div>
 
-            {/* Card image + body (shown when expanded) */}
+            {/* Card body — shown when expanded */}
             {expanded === p.id && (
               <div className="project-card-body">
-                <img
-                  src={`${process.env.PUBLIC_URL}/${p.image}`}
-                  alt={p.title}
-                  className="project-img"
-                />
-                <p className="project-desc">{p.description}</p>
-
-                {/* Tech stack */}
-                <div className="code-block">
-                  <span className="cmt"># tech stack</span>
-                  <br />
-                  <span className="str">[</span>
-                  {p.stack.map((s, i) => (
-                    <span key={s}>
-                      <span className="str">"{s}"</span>
-                      {i < p.stack.length - 1 && <span className="cmd">, </span>}
-                    </span>
-                  ))}
-                  <span className="str">]</span>
+                <div className="project-body-media">
+                  <img
+                    src={`${process.env.PUBLIC_URL}/${p.image}`}
+                    alt={p.title}
+                    className="project-img"
+                  />
                 </div>
+                <div className="project-body-text">
+                  <p className="project-desc">{p.description}</p>
 
-                {/* Link */}
-                {p.internal ? (
-                  <Link to={p.link} className="terminal-btn primary project-link" onClick={(e) => e.stopPropagation()}>
-                    <span className="btn-prefix">$</span> view details
-                  </Link>
-                ) : (
-                  <a
-                    href={p.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="terminal-btn primary project-link"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="btn-prefix">$</span> view on github
-                  </a>
-                )}
+                  {/* Tech stack */}
+                  <div className="code-block">
+                    <span className="cmt"># tech stack</span>
+                    <br />
+                    <span className="str">[</span>
+                    {p.stack.map((s, i) => (
+                      <span key={s}>
+                        <span className="str">"{s}"</span>
+                        {i < p.stack.length - 1 && <span className="cmd">, </span>}
+                      </span>
+                    ))}
+                    <span className="str">]</span>
+                  </div>
+
+                  {/* Link */}
+                  {p.internal ? (
+                    <Link to={p.link} className="terminal-btn primary project-link" onClick={(e) => e.stopPropagation()}>
+                      <span className="btn-prefix">$</span> view details
+                    </Link>
+                  ) : (
+                    <a
+                      href={p.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="terminal-btn primary project-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="btn-prefix">$</span> view on github
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>

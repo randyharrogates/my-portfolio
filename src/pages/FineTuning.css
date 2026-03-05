@@ -1,7 +1,7 @@
 /* ── Fine-Tuning Project Tab ── */
 
 .ft-wrap {
-  max-width: 860px;
+  max-width: 100%;
 }
 
 /* Title row */
@@ -30,13 +30,30 @@
   letter-spacing: 0.01em;
 }
 
+/* Two-column layout */
+.ft-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+.ft-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ft-right {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Hero image */
 .ft-hero-img {
   width: 100%;
-  max-width: 500px;
   border-radius: 8px;
   border: 1px solid #2e2b28;
-  margin-bottom: 22px;
   display: block;
 }
 
@@ -53,7 +70,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #c8bfb5;
-  margin: 24px 0 10px;
+  margin: 4px 0 10px;
   letter-spacing: 0.02em;
 }
 
@@ -62,10 +79,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 24px;
 }
 
 /* Responsive */
+@media (max-width: 800px) {
+  .ft-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
 @media (max-width: 500px) {
   .ft-title {
     font-size: 16px;

@@ -1,7 +1,26 @@
 /* ── Contact Tab ── */
 
 .contact-wrap {
-  max-width: 860px;
+  max-width: 100%;
+}
+
+/* Two-column layout */
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.contact-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* Contact list */
@@ -10,7 +29,6 @@
   border: 1px solid #2a2724;
   border-radius: 8px;
   padding: 6px 0;
-  margin-bottom: 4px;
   overflow: hidden;
 }
 
@@ -96,6 +114,12 @@
 }
 
 /* Responsive */
+@media (max-width: 800px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 500px) {
   .contact-line {
     flex-wrap: wrap;
