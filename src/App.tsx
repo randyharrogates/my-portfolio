@@ -96,19 +96,17 @@ const TerminalApp: React.FC = () => {
             available for work
           </div>
           <div className="status-right">
-            full-stack ai engineer · 4 yoe
+            <footer className="terminal-footer">
+              <a href="mailto:randychan_92@outlook.com">randychan_92@outlook.com</a>
+              {" · "}
+              <a href="https://github.com/randyharrogates" target="_blank" rel="noopener noreferrer">github</a>
+              {" · "}
+              <a href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener noreferrer">linkedin</a>
+            </footer>
+            <span>full-stack ai engineer · 4 yoe</span>
           </div>
         </div>
       </div>
-
-      {/* Footer outside terminal */}
-      <footer className="terminal-footer">
-        <a href="mailto:randychan_92@outlook.com">randychan_92@outlook.com</a>
-        {" · "}
-        <a href="https://github.com/randyharrogates" target="_blank" rel="noopener noreferrer">github</a>
-        {" · "}
-        <a href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener noreferrer">linkedin</a>
-      </footer>
     </div>
   );
 };
