@@ -5,7 +5,7 @@
 
 /* --- Page Background --- */
 .page-bg {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #0c0b0a;
   background-image:
     radial-gradient(ellipse at 50% 0%, rgba(232, 99, 42, 0.09) 0%, transparent 55%),
@@ -13,13 +13,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 20px 48px;
+  justify-content: center;
+  padding: 20px 30px;
 }
 
 /* --- Terminal Window --- */
 .terminal-window {
   width: 100%;
-  max-width: 940px;
+  max-width: min(1400px, calc(100vw - 60px));
+  height: calc(100vh - 80px);
   background-color: #1d1b19;
   border-radius: 12px;
   border: 1px solid #3a3532;
@@ -148,10 +150,9 @@
 /* --- Content Area --- */
 .terminal-content {
   flex: 1;
-  padding: 36px 44px;
+  padding: 36px 52px;
   overflow-y: auto;
-  min-height: 460px;
-  max-height: calc(100vh - 260px);
+  min-height: 0;
 }
 
 /* Fade-in on tab change */
@@ -200,17 +201,18 @@
 }
 
 .status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   font-size: 11px;
   color: #3a3532;
   letter-spacing: 0.03em;
 }
 
-/* --- Footer (outside terminal) --- */
+/* --- Footer (inside status bar, right side) --- */
 .terminal-footer {
-  margin-top: 18px;
   font-size: 11px;
   color: #3a3532;
-  text-align: center;
   letter-spacing: 0.04em;
 }
 
@@ -389,11 +391,14 @@
 @media (max-width: 640px) {
   .page-bg {
     padding: 0;
+    height: 100dvh;
   }
   .terminal-window {
     border-radius: 0;
     border-left: none;
     border-right: none;
+    height: 100dvh;
+    max-width: 100%;
   }
   .terminal-content {
     padding: 24px 20px;
