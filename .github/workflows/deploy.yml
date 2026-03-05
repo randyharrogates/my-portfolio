@@ -4,12 +4,19 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: true
 
     steps:
       - name: Checkout
