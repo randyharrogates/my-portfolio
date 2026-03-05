@@ -18,6 +18,28 @@ interface Project {
 const PROJECTS: Project[] = [
   {
     id: 1,
+    title: "Multi Agent Credit Memo Research Suite",
+    description:
+      "Event-driven multi-agent RAG system for credit memo analysis. Built with LangGraph, Azure Service Bus, and MongoDB. Features 11 specialized components across 8 analysis domains, 2 foundation pipelines, and an agentic chatbot — processing financial data through two-phase workflows with 27 reusable modules.",
+    stack: ["Python", "LangGraph", "Azure Service Bus", "MongoDB", "Pydantic V2", "Hydra", "FastAPI", "Docker"],
+    image: "credit-memo.webp",
+    link: "/credit-memo",
+    internal: true,
+    badge: "AI · Multi-Agent RAG",
+  },
+  {
+    id: 2,
+    title: "KYB Brand Risk Management Suite",
+    description:
+      "Agentic KYB (Know Your Business) pipeline for merchant brand risk assessment. Orchestrates 14+ concurrent nodes for URL discovery, product scraping, content extraction, MCC classification, AUP compliance, and report synthesis — with browser-use agents for checkout verification and multi-source search integration.",
+    stack: ["Python", "AsyncIO", "FAISS", "Oxylabs", "Perplexity", "Browser Use", "OpenAI", "Docker"],
+    image: "kyb-pipeline.webp",
+    link: "/kyb-pipeline",
+    internal: true,
+    badge: "AI · AI Agents",
+  },
+  {
+    id: 3,
     title: "Multi-Agent RAG Application",
     description:
       "Dating Planner — Making use of Multi-Agent RAG to plan a date. Backend is in Python with FastAPI and Frontend is in React. OpenAI's LLM is used in conjunction with Pinecone and LangGraph. Project has been initially deployed to AWS using ECS and ECR.",
@@ -27,7 +49,7 @@ const PROJECTS: Project[] = [
     badge: "AI · RAG",
   },
   {
-    id: 2,
+    id: 4,
     title: "Speech-to-Text Application",
     description:
       "Audio Transcriber — Making use of OpenAI Whisper model to do translation to words. Backend is in Python with FastAPI and Frontend is in React. Project is containerized.",
@@ -37,7 +59,7 @@ const PROJECTS: Project[] = [
     badge: "AI · NLP",
   },
   {
-    id: 3,
+    id: 5,
     title: "Fine-tuning of a Language Model",
     description:
       "Named Entity Recognition — Fine-tuned a BERT-based model from Huggingface to perform NER on medical data. Backend is in Python with FastAPI using a Kedro pipeline. Project is containerized.",
@@ -48,7 +70,7 @@ const PROJECTS: Project[] = [
     badge: "AI · NER",
   },
   {
-    id: 4,
+    id: 6,
     title: "Holiday Booking Application",
     description:
       "Web Application to book holidays — Created using JavaScript for frontend and Python with Flask for backend. Application can be used to book holidays and manage users.",
@@ -58,7 +80,7 @@ const PROJECTS: Project[] = [
     badge: "Full-Stack",
   },
   {
-    id: 5,
+    id: 7,
     title: "Ecommerce Webpage",
     description:
       "Web Page for shop — A simple webpage created to sell food products. Done using VueJS.",
@@ -68,7 +90,7 @@ const PROJECTS: Project[] = [
     badge: "Frontend",
   },
   {
-    id: 6,
+    id: 8,
     title: "HR Management System",
     description:
       "A simple HR Management System created using ReactJS and ExpressJS. Handles employee records and HR workflows.",

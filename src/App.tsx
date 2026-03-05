@@ -7,15 +7,19 @@ import "./App.css";
 import AboutMe from "./pages/AboutMe.tsx";
 import Projects from "./pages/Projects.tsx";
 import Skills from "./pages/Skills.tsx";
+import CreditMemo from "./pages/CreditMemo.tsx";
+import KybPipeline from "./pages/KybPipeline.tsx";
 import FineTuning from "./pages/FineTuning.tsx";
 import Contact from "./pages/Contact.tsx";
 
 const TABS = [
-  { path: "/",            label: "intro",       exact: true  },
-  { path: "/projects",    label: "projects",    num: 1       },
-  { path: "/skills",      label: "skills",      num: 2       },
-  { path: "/fine-tuning", label: "fine-tuning", num: 3       },
-  { path: "/contact",     label: "contact",     num: 4       },
+  { path: "/",              label: "intro",       exact: true  },
+  { path: "/projects",      label: "projects",    num: 1       },
+  { path: "/skills",        label: "skills",      num: 2       },
+  { path: "/credit-memo",   label: "credit-memo", num: 3       },
+  { path: "/kyb-pipeline",  label: "kyb-pipeline", num: 4      },
+  { path: "/fine-tuning",   label: "fine-tuning", num: 5       },
+  { path: "/contact",       label: "contact",     num: 6       },
 ];
 
 const TerminalApp: React.FC = () => {
@@ -81,11 +85,13 @@ const TerminalApp: React.FC = () => {
         {/* Page Content */}
         <main className="terminal-content">
           <Routes>
-            <Route path="/"            element={<AboutMe />}    />
-            <Route path="/projects"    element={<Projects />}   />
-            <Route path="/skills"      element={<Skills />}     />
-            <Route path="/fine-tuning" element={<FineTuning />} />
-            <Route path="/contact"     element={<Contact />}    />
+            <Route path="/"              element={<AboutMe />}      />
+            <Route path="/projects"      element={<Projects />}    />
+            <Route path="/skills"        element={<Skills />}      />
+            <Route path="/credit-memo"   element={<CreditMemo />}  />
+            <Route path="/kyb-pipeline"  element={<KybPipeline />} />
+            <Route path="/fine-tuning"   element={<FineTuning />}  />
+            <Route path="/contact"       element={<Contact />}     />
           </Routes>
         </main>
 
@@ -103,7 +109,7 @@ const TerminalApp: React.FC = () => {
               {" · "}
               <a href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener noreferrer">linkedin</a>
             </footer>
-            <span>full-stack ai engineer · 4 yoe</span>
+            <span>senior ai software engineer · 6 yoe</span>
           </div>
         </div>
       </div>
