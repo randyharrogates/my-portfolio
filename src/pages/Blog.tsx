@@ -9,6 +9,8 @@ interface Post {
   title: string;
   tags: string[];
   summary: string;
+  sourceUrl: string;
+  sourceLabel: string;
   body: React.ReactNode;
 }
 
@@ -20,6 +22,8 @@ const posts: Post[] = [
     tags: ["AI", "M&A", "Entertainment"],
     summary:
       "Netflix acquired InterPositive, the AI filmmaking startup founded by Ben Affleck, signaling a strategic bet on AI-assisted post-production tooling rather than generative content creation.",
+    sourceUrl: "https://x.com/fridayjam_/status/2029798211259687030",
+    sourceLabel: "View original thread on X",
     body: (
       <>
         <p className="blog-body">
@@ -78,6 +82,8 @@ const posts: Post[] = [
     tags: ["AdTech", "AI", "Finance"],
     summary:
       "AppLovin (MAX) commands ~60% of the ad mediation market. With Axon 2.0 pushing conversion rates from 1.3% to 5% and e-commerce potential at 5-10x gaming, the structural advantages are compounding.",
+    sourceUrl: "https://x.com/fridayjam_/status/2029407083129651317",
+    sourceLabel: "View original thread on X",
     body: (
       <>
         <p className="blog-body">
@@ -181,6 +187,8 @@ const Blog: React.FC = () => {
       <p className="blog-intro">
         Thoughts on <span className="hl-orange">AI</span>,{" "}
         <span className="hl-blue">Finance</span>, and everything in between.
+        <br />
+        <span className="blog-intro-sub">Long-form analysis written for curious minds — no jargon required.</span>
       </p>
 
       <div className="blog-grid">
@@ -210,6 +218,16 @@ const Blog: React.FC = () => {
                 <div className="blog-card-body" onClick={(e) => e.stopPropagation()}>
                   <hr className="terminal-divider" />
                   {post.body}
+                  <div className="blog-source">
+                    <a
+                      href={post.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blog-source-link"
+                    >
+                      <i className="bi bi-twitter-x"></i> {post.sourceLabel}
+                    </a>
+                  </div>
                 </div>
               )}
 
