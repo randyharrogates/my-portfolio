@@ -10,6 +10,7 @@ import Skills from "./pages/Skills.tsx";
 import CreditMemo from "./pages/CreditMemo.tsx";
 import KybPipeline from "./pages/KybPipeline.tsx";
 import FineTuning from "./pages/FineTuning.tsx";
+import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
 
 const TABS = [
@@ -19,7 +20,8 @@ const TABS = [
   { path: "/credit-memo",   label: "credit-memo", num: 3       },
   { path: "/kyb-pipeline",  label: "kyb-pipeline", num: 4      },
   { path: "/fine-tuning",   label: "fine-tuning", num: 5       },
-  { path: "/contact",       label: "contact",     num: 6       },
+  { path: "/blog",          label: "blog",        num: 6       },
+  { path: "/contact",       label: "contact",     num: 7       },
 ];
 
 const TerminalApp: React.FC = () => {
@@ -91,6 +93,7 @@ const TerminalApp: React.FC = () => {
             <Route path="/credit-memo"   element={<CreditMemo />}  />
             <Route path="/kyb-pipeline"  element={<KybPipeline />} />
             <Route path="/fine-tuning"   element={<FineTuning />}  />
+            <Route path="/blog"          element={<Blog />}        />
             <Route path="/contact"       element={<Contact />}     />
           </Routes>
         </main>
