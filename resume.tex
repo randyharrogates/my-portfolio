@@ -1,0 +1,162 @@
+\documentclass[letterpaper,10pt]{article}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{fontawesome5}
+\usepackage{multicol}
+\usepackage{bookmark}
+\usepackage{lastpage}
+\usepackage{CormorantGaramond}
+\usepackage{charter}
+\usepackage{xcolor}
+
+\definecolor{accentTitle}{HTML}{0e6e55}
+\definecolor{accentText}{HTML}{0e6e55}
+\definecolor{accentLine}{HTML}{a16f0b}
+
+\pagestyle{fancy}
+\fancyhf{}
+\addtolength{\oddsidemargin}{-0.7in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.19in}
+\addtolength{\topmargin}{-0.7in}
+\addtolength{\textheight}{1.4in}
+\setlength{\footskip}{4.0pt} % Fixed: Resolved the footskip warning from your screenshot
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+\newcommand{\documentTitle}[2]{
+  \begin{center}
+    {\Huge\color{accentTitle} #1} \vspace{10pt}
+    {\color{accentLine} \hrule} \vspace{2pt}
+    \footnotesize{#2} \vspace{2pt}
+    {\color{accentLine} \hrule}
+  \end{center}
+}
+
+% Fixed: Changed \titrule to \titlerule
+\titleformat{\section}{\vspace{-5pt}\color{accentText}\raggedright\large\bfseries}{}{0em}{}[\color{accentLine}\titlerule]
+
+\newcommand{\tinysection}[1]{\phantomsection\addcontentsline{toc}{section}{#1}{\large{\bfseries\color{accentText}#1} {\color{accentLine} |}}}
+\newcommand{\headingBf}[2]{\par\noindent\hspace*{10pt}\textbf{#1}\hfill\textbf{#2}}
+\newcommand{\headingIt}[2]{\par\noindent\hspace*{10pt}\textit{#1}\hfill\textit{#2}}
+\newenvironment{resume_list}{\vspace{-7pt}\begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=30pt]}{\end{itemize}}
+\newcommand{\itemTitle}[1]{\item[] \underline{#1}\vspace{4pt}}
+\renewcommand\labelitemi{--}
+
+\begin{document}
+
+  \documentTitle{Randy Chan Yi Zhong}{
+    \href{tel:+6596993596}{\faPhone\ +65 9699 3596} ~ | ~ 
+    \href{mailto:randychan_92@outlook.com}{\faEnvelope\ randychan\_92@outlook.com} ~ | ~ 
+    \href{https://linkedin.com/in/randychan112/}{\faLinkedin\ linkedin.com/in/randychan112/} ~ | ~ 
+    \href{https://randyharrogates.github.io/my-portfolio}{\faGithub\ randyharrogates.github.io/portfolio}
+  }
+
+  \tinysection{Executive Summary}
+  AI Solution Engineer with 6+ years of experience designing, building, and deploying LLM-powered solutions across financial services and healthcare. Expert in Multi-Agent orchestration (LangGraph), Enterprise RAG, and scalable microservices architecture. Proven ability to partner with client stakeholders to translate complex business challenges into production-grade AI systems, while mentoring engineering teams and championing responsible AI practices. IIBA-certified (ECBA) professional skilled in bridging technical depth (Python, SQL, Azure, Kubernetes) with client-facing communication to deliver trusted, high-impact solutions.
+
+  \section{Skills}
+  \begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=120pt]
+      \item[\textbf{AI \& LLMs}] LangGraph, LangChain, OpenAI API, Anthropic, HuggingFace, PyTorch, Multi-Agent Orchestration, RAG, Model Fine-Tuning, LangFuse (Tracing/Evals), NLU, Intent Classification.
+      \item[\textbf{Backend}] Python (FastAPI, Flask, Hydra), Java (Spring Boot), NodeJS, REST API Design, OpenAPI/Swagger.
+      \item[\textbf{Data \& State}] MongoDB Atlas, PostgreSQL (Relational), ClickHouse (Analytical), Vector DBs (Pinecone, Weaviate), ScyllaDB, Redis.
+      \item[\textbf{Infrastructure}] Azure (Container Apps, Service Bus, Blob Storage), Docker, Kubernetes, Terraform (IaC), CI/CD (GitHub Actions).
+      \item[\textbf{Methods}] Solution Design, Client Requirements Analysis, Technical Documentation (BPMN), Agile/Scrum, LLM Evaluation, Responsible AI.
+  \end{itemize}
+
+  \section{Experience}
+
+  \headingBf{TrustPlus AI (Fintech)}{June 2025 -- Present}
+  \headingIt{Senior AI Software Engineer}{}
+  \begin{resume_list}
+    \itemTitle{Project: Autonomous Credit Risk \& Multi-Agent Research Suite}
+    \item Architected a production-grade Multi-Agent orchestration system using LangGraph and Python, partnering with client stakeholders to automate end-to-end credit risk assessment and brand risk management for KYB processes.
+    \item Reduced total inference latency by 60 percent by architecting a concurrent orchestration state layer that manages parallel tool-calling and asynchronous agentic flows.
+    \item Overhauled legacy CI/CD pipelines on GitHub Actions, reducing deployment time by 40 percent and ensuring consistent, automated delivery to Azure Container Apps.
+    \item Eliminated significant technical debt by refactoring a monolithic, unoptimized codebase into a modular, maintainable repository structure, enabling the team to iterate faster on client-requested features and improving overall code quality.
+    \item Engineered robust rate-limiting and throttling handlers using exponential backoff and token-bucket strategies to manage high-volume API requests across multiple LLM providers.
+    \item Enhanced system reliability and model performance monitoring by recommending and deploying LangFuse for end-to-end tracing and LLM observability, presenting the business case for observability tooling to technical and non-technical stakeholders.
+    \item Established an automated regression testing framework and evaluation pipelines using LLM-as-a-judge patterns to validate tool-selection precision and factual faithfulness.
+    \item Optimized RAG pipelines utilizing pre-caching and optimized vector search to minimize the time-to-first-token for generated credit memos and financial analysis reports.
+    \item Managed the full infrastructure lifecycle using Terraform to provision Azure Service Bus, MongoDB Atlas, and cloud-native container environments.
+  \end{resume_list}
+
+  \headingBf{BGC Group}{Feb 2025 -- May 2025}
+  \headingIt{Senior Software Engineer (AI Application Specialist)}{}
+  \begin{resume_list}
+    \item Architected the full-stack application layer for an enterprise Task Assistant, collaborating with business users to productionize Retrieval-Augmented Generation (RAG) workflows using FastAPI and modern frontend frameworks for internal knowledge management.
+    \item Engineered the backend middleware required to orchestrate communication between the application layer and AI model endpoints, ensuring high-concurrency handling and low-latency response times for real-time users.
+    \item Developed stateful session management and multi-turn conversational logic to handle complex user intents, maintaining context across interactions and implementing logic for seamless escalation to human agents.
+    \item Led the strategic migration of the application frontend from ReactJS to Svelte, presenting the technical rationale to stakeholders, to optimize the handling of streaming LLM responses and improve the overall performance of the conversational interface.
+    \item Integrated and managed specialized database systems including Weaviate and MongoDB to support the application’s retrieval and state storage requirements, focusing on data consistency and query performance.
+    \item Built and maintained robust CI/CD pipelines and containerized deployment workflows using Docker to ensure reliable delivery across development, staging, and production environments.
+    \item Optimized retrieval precision by implementing advanced semantic-aware chunking strategies and utilizing t-SNE embedding analysis to visualize and refine document vector distributions.
+  \end{resume_list}
+
+  \headingBf{AI Singapore}{Jan 2024 -- Oct 2024}
+  \headingIt{AI Engineer}{}
+  \begin{resume_list}
+    \item Designed and implemented a multi-agent RAG system for intelligent activity scheduling, leveraging LangGraph to orchestrate complex decision-making logic and autonomous tool-calling for web-scraped data retrieval.
+    \item Architected an end-to-end AI pipeline for a healthcare environment in collaboration with clinical domain experts, integrating five specialized models for Named Entity Recognition (NER) and event prediction with a focus on high-fidelity clinical data interpretation and patient data privacy.
+    \item Conducted extensive literature reviews and experimental trials on state-of-the-art frameworks, performing hyper-parameter tuning that resulted in a 50 percent increase in model performance for predictive tasks.
+    \item Developed automated data cleaning and feature engineering pipelines using Kedro to standardize the preprocessing of structured and unstructured datasets, significantly increasing data ingestion efficiency.
+    \item Implemented advanced RAG architectures utilizing vector databases like Pinecone and sophisticated prompting techniques, including few-shot prompts, to maximize the accuracy and reliability of generated outputs.
+    \item Orchestrated the containerized deployment of full-stack AI applications using FastAPI and Docker, managing cloud infrastructure on AWS (ECR and ECS) to ensure scalable production-grade model training.
+    \item Championed AI explainability by implementing Explainable Boosting Machines (EBM) and interpretability frameworks to ensure AI-driven predictions met ethical standards and the transparency requirements of medical practitioners and hospital stakeholders.
+    \item Mentored 12 apprentices across two cohorts in NLP and Large Language Model techniques, developing structured curricula and hands-on exercises to accelerate skill development in deployment best practices and modern AI engineering workflows.
+  \end{resume_list}
+
+  \headingBf{NCS Pte. Ltd.}{Oct 2022 -- Dec 2023}
+  \headingIt{Business Systems Analyst (Backend Automation \& Integration)}{}
+  \begin{resume_list}
+    \item Engineered a custom Python-based automation suite to track and validate complex JSON configuration changes across distributed environments for a nation-wide healthcare web application.
+    \item Improved operational productivity by 50 percent by replacing manual audit processes with automated scripts that utilized analytical review patterns to ensure project requirement compliance.
+    \item Orchestrated end-to-end data migration pipelines between SQL databases and virtualized environments, ensuring 99.9 percent data integrity for high-traffic training and production systems.
+    \item Designed and maintained comprehensive technical documentation and system workflow diagrams (BPMN), communicating complex backend architectures to both technical and non-technical stakeholders across cross-functional engineering teams.
+    \item Automated the generation of training environments and data sets, reducing the time required for system go-live preparations and ensuring reliable conditions for large-scale user acceptance testing (UAT).
+    \item Collaborated with senior developers to troubleshoot RESTful API integration issues and database performance bottlenecks within a national-scale healthcare infrastructure.
+    \item Authored technical specifications for system configuration files, ensuring high standards of data security and regulatory compliance (PDPA) within a sensitive healthcare data environment, advising project leads on compliance requirements.
+  \end{resume_list}
+
+  \headingBf{Bitopia Technology Pte. Ltd.}{Jan 2022 -- Oct 2022}
+  \headingIt{Full-Stack Software Engineer}{}
+  \begin{resume_list}
+    \item Designed and delivered scalable RESTful microservices for logistics and real-estate client platforms, collaborating with stakeholders to translate domain-specific workflows into modular service architectures with performant API endpoint design.
+    \item Led client-facing requirements workshops for multi-tenant applications, eliciting complex business rules from non-technical stakeholders and translating them into actionable technical specifications and development roadmaps.
+    \item Authored comprehensive API contracts using Swagger/OpenAPI standards, enabling seamless handoffs between frontend and backend teams and reducing integration defects across cross-functional delivery cycles.
+    \item Optimized PostgreSQL schemas and complex SQL queries powering real-time logistics tracking, improving response times for end-user dashboards and enabling clients to meet SLA requirements for shipment visibility.
+    \item Engineered secure integration layers for third-party logistics APIs and payment gateways, implementing error-handling and data validation protocols to ensure transactional reliability and regulatory compliance for client payment workflows.
+    \item Partnered with product managers, designers, and QA engineers across the full solution delivery lifecycle, from prototyping and client feedback sessions through to production deployment and post-launch support.
+    \item Established automated unit and integration testing frameworks for backend services, reducing production defects and building client confidence in platform reliability through measurable quality improvements.
+  \end{resume_list}
+
+  \headingBf{Independent Contractor / F\&B Sector}{Jan 2019 -- Dec 2021}
+  \headingIt{Full-Stack Software Engineer}{}
+  \begin{resume_list}
+    \item Consulted with an F\&B enterprise client to design and deliver a responsive web application, managing the full solution lifecycle from initial UI design and requirements gathering to backend deployment and database management.
+    \item Optimized frontend performance by implementing asset minification, lazy loading of high-resolution media, and efficient browser caching strategies, resulting in a 40 percent improvement in mobile page load speeds.
+    \item Developed a custom inventory management system with automated backend triggers that synchronized stock levels via RESTful API integrations.
+    \item Enhanced user experience and accessibility by engineering a mobile-first responsive design, ensuring cross-browser compatibility and seamless navigation across various device types.
+    \item Implemented SEO best practices including semantic HTML structure, structured data markup, and optimized meta-tag management to drive a 25 percent increase in organic search traffic.
+    \item Designed and integrated automated marketing workflows that connected customer sign-up forms with third-party email automation services, reducing manual data entry for the operations team.
+    \item Managed the secure hosting and continuous deployment of the web platform, utilizing version control and cloud-based environments to ensure 99.9 percent uptime during peak business hours.
+  \end{resume_list}
+
+  \section{Education \& Certifications}
+  \headingBf{Singapore University of Social Sciences}{}
+  \headingIt{B.Sc. in Information and Communication Technology (GPA 4.2/5) | Minor: Data Science}{}
+  \begin{resume_list}
+    \item \textbf{Certified Associate AI Engineer (CAIE)} - AI Professionals (AIP), Singapore.
+    \item \textbf{Entry Certificate in Business Analysis (ECBA)} - IIBA.
+  \end{resume_list}
+
+  \section{Selected Projects}
+  \headingBf{Emotion Detector (Computer Vision)}{}
+  \begin{resume_list}
+    \item Fine-tuned ResNet50 (PyTorch) via transfer learning for baby monitoring, achieving 90\%+ accuracy in intervention classification.
+  \end{resume_list}
+
+\end{document}
