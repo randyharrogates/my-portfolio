@@ -1,20 +1,11 @@
 /** @format */
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import "./FineTuning.css";
 
 const FineTuning: React.FC = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="ft-wrap">
-      <div className="prompt-line">
-        <span className="prompt-path">~/portfolio/projects</span>
-        <span className="prompt-sep"> $ </span>
-        <span className="prompt-cmd">cat fine-tuning.md</span>
-      </div>
-
       {/* Title row — full width */}
       <div className="ft-title-row">
         <span className="ft-num">05</span>
@@ -39,9 +30,6 @@ const FineTuning: React.FC = () => {
             <a href="mailto:randychan_92@outlook.com" className="terminal-btn primary">
               <span className="btn-prefix">$</span> request more information
             </a>
-            <button className="terminal-btn" onClick={() => navigate("/projects")}>
-              <span className="btn-prefix">←</span> back to projects
-            </button>
           </div>
         </div>
 
