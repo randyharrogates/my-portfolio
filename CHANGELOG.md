@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-08
+
+### Added
+
+- **(pages)** Resume page with embedded PDF viewer and download button
+- **(pages)** Ecommerce project detail page for VietMala Eatery (VueJS)
+- **(pages)** Holiday Booking project detail page (Flask, JavaScript, SQL)
+- **(pages)** HRM System project detail page (React, Express, MongoDB, Docker)
+- **(pages)** Multi-Agent RAG project detail page for Dating Plan AI Agents (LangGraph, FastAPI, Pinecone)
+- **(pages)** Speech-to-Text project detail page (OpenAI Whisper, FastAPI, Docker)
+- **(assets)** Resume PDF added to public directory for web access
+- **(deps)** Added @testing-library/jest-dom and @testing-library/react dev dependencies
+
+### Changed
+
+- **(pages)** Refactored Projects page from expandable card grid to sub-tab navigation with nested routes
+- **(pages)** Simplified main navigation — removed individual project tabs, consolidated all projects under single projects tab
+- **(pages)** Removed redundant prompt-line headers and back buttons from CreditMemo, KybPipeline, and FineTuning pages
+- **(routing)** Added wildcard route for projects and new resume tab in main navigation
+- **(deps)** Downgraded react-router-dom from v7 to v6 for CRA compatibility
+- **(docs)** Rewrote README.md with proper project documentation
+- **(resume)** Updated resume content with Napshot Pte. Ltd. experience details
+- **(test)** Updated App test to verify terminal app renders correctly
+
 ## [0.1.1] - 2026-03-08
 
 ### Added

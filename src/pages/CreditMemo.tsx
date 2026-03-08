@@ -1,20 +1,11 @@
 /** @format */
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import "./CreditMemo.css";
 
 const CreditMemo: React.FC = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="cm-wrap">
-      <div className="prompt-line">
-        <span className="prompt-path">~/portfolio/projects</span>
-        <span className="prompt-sep"> $ </span>
-        <span className="prompt-cmd">cat credit-memo.md</span>
-      </div>
-
       {/* Title row — full width */}
       <div className="cm-title-row">
         <span className="cm-num">01</span>
@@ -39,9 +30,6 @@ const CreditMemo: React.FC = () => {
             <a href="mailto:randychan_92@outlook.com" className="terminal-btn primary">
               <span className="btn-prefix">$</span> request more information
             </a>
-            <button className="terminal-btn" onClick={() => navigate("/projects")}>
-              <span className="btn-prefix">←</span> back to projects
-            </button>
           </div>
         </div>
 

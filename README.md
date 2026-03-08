@@ -1,42 +1,49 @@
 # My Portfolio
 
-## Description
+A terminal-themed personal portfolio built with React 19 and TypeScript, styled as a macOS terminal emulator.
 
-This project is created to showcase my professional and personal projects done. Appreciate the time spent viewing the project. It is just a simple page.
+**Live site:** [randyharrogates.github.io/my-portfolio](https://randyharrogates.github.io/my-portfolio)
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- macOS terminal window aesthetic with traffic lights, title bar, and status bar
+- Tab navigation with arrow-key keyboard support
+- Dark warm theme with JetBrains Mono monospace font
+- Responsive 2-column layouts that stack on mobile
+- GitHub profile integration via REST API
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Pages
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+| Tab | Description |
+|-----|-------------|
+| intro | Bio, core tech stack, and terminal sysinfo panel |
+| projects | Expandable project cards with tech stack details |
+| skills | Interactive JSON viewer and proficiency bar chart |
+| credit-memo | Multi-Agent Credit Memo Research Suite detail page |
+| kyb-pipeline | KYB Brand Risk Management Suite detail page |
+| fine-tuning | LLM fine-tuning project detail page |
+| blog | Expandable blog posts on AI and Finance |
+| contact | Contact info with copy-to-clipboard email |
 
-### `npm test`
+## Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Framework:** React 19, TypeScript, React Router 6 (HashRouter)
+- **Styling:** Bootstrap 5, Bootstrap Icons, JetBrains Mono
+- **Build:** Create React App
+- **Deployment:** GitHub Actions → GitHub Pages
 
-### `npm run build`
+## Getting Started
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm install
+npm start          # Dev server at http://localhost:3000
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Scripts
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-
+```bash
+npm start          # Start dev server
+npm test           # Run tests (watch mode)
+npm run build      # Production build
+npm run deploy     # Build and deploy to GitHub Pages
+```

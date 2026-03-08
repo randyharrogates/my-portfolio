@@ -7,21 +7,17 @@ import "./App.css";
 import AboutMe from "./pages/AboutMe.tsx";
 import Projects from "./pages/Projects.tsx";
 import Skills from "./pages/Skills.tsx";
-import CreditMemo from "./pages/CreditMemo.tsx";
-import KybPipeline from "./pages/KybPipeline.tsx";
-import FineTuning from "./pages/FineTuning.tsx";
 import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
+import Resume from "./pages/Resume.tsx";
 
 const TABS = [
   { path: "/",              label: "intro",       exact: true  },
   { path: "/projects",      label: "projects",    num: 1       },
   { path: "/skills",        label: "skills",      num: 2       },
-  { path: "/credit-memo",   label: "credit-memo", num: 3       },
-  { path: "/kyb-pipeline",  label: "kyb-pipeline", num: 4      },
-  { path: "/fine-tuning",   label: "fine-tuning", num: 5       },
-  { path: "/blog",          label: "blog",        num: 6       },
-  { path: "/contact",       label: "contact",     num: 7       },
+  { path: "/blog",          label: "blog",        num: 3       },
+  { path: "/resume",        label: "resume",      num: 4       },
+  { path: "/contact",       label: "contact",     num: 5       },
 ];
 
 const TerminalApp: React.FC = () => {
@@ -32,7 +28,9 @@ const TerminalApp: React.FC = () => {
   React.useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const idx = TABS.findIndex((t) =>
-        t.exact ? location.pathname === t.path : location.pathname === t.path
+        t.exact
+          ? location.pathname === t.path
+          : location.pathname === t.path || location.pathname.startsWith(t.path + "/")
       );
       if (e.key === "ArrowRight" && idx < TABS.length - 1) {
         navigate(TABS[idx + 1].path);
@@ -45,7 +43,9 @@ const TerminalApp: React.FC = () => {
   }, [location.pathname, navigate]);
 
   const isTabActive = (tab: typeof TABS[0]) =>
-    tab.exact ? location.pathname === tab.path : location.pathname === tab.path;
+    tab.exact
+      ? location.pathname === tab.path
+      : location.pathname === tab.path || location.pathname.startsWith(tab.path + "/");
 
   return (
     <div className="page-bg">
@@ -88,12 +88,10 @@ const TerminalApp: React.FC = () => {
         <main className="terminal-content">
           <Routes>
             <Route path="/"              element={<AboutMe />}      />
-            <Route path="/projects"      element={<Projects />}    />
+            <Route path="/projects/*"    element={<Projects />}    />
             <Route path="/skills"        element={<Skills />}      />
-            <Route path="/credit-memo"   element={<CreditMemo />}  />
-            <Route path="/kyb-pipeline"  element={<KybPipeline />} />
-            <Route path="/fine-tuning"   element={<FineTuning />}  />
             <Route path="/blog"          element={<Blog />}        />
+            <Route path="/resume"        element={<Resume />}      />
             <Route path="/contact"       element={<Contact />}     />
           </Routes>
         </main>
