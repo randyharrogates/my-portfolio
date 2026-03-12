@@ -7,7 +7,7 @@ const SpeechToText: React.FC = () => {
   return (
     <div className="stt-wrap">
       <div className="stt-title-row">
-        <span className="stt-num">04</span>
+        <span className="stt-num">05</span>
         <h2 className="stt-title">
           <span className="hl-orange">Speech-to-Text</span> Application
         </h2>
@@ -76,8 +76,9 @@ const SpeechToText: React.FC = () => {
           <h4 className="stt-subheading">Containerized Deployment</h4>
           <p className="stt-body">
             The entire application is containerized with <span className="hl-green">Docker</span>,
-            making it easy to deploy and run in any environment with consistent behavior across
-            development and production.
+            demonstrating end-to-end model serving patterns: API gateway, inference pipeline, result
+            persistence, and containerized deployment with consistent behavior across development
+            and production.
           </p>
         </div>
       </div>

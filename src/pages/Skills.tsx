@@ -60,10 +60,10 @@ const SKILL_GROUPS: SkillGroup[] = [
     items: ["GitHub Actions", "GitLab CI", "Jenkins"],
   },
   {
-    key: "experiments",
-    label: "experiments",
+    key: "mlops",
+    label: "mlops & evaluation",
     color: "green",
-    items: ["Coder", "RunAI", "A/B Testing"],
+    items: ["LLM Evaluation", "Model Monitoring", "RunAI", "A/B Testing"],
   },
 ];
 

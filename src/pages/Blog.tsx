@@ -307,16 +307,18 @@ const Blog: React.FC = () => {
                 <div className="blog-card-body" onClick={(e) => e.stopPropagation()}>
                   <hr className="terminal-divider" />
                   {post.body}
-                  <div className="blog-source">
-                    <a
-                      href={post.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="blog-source-link"
-                    >
-                      <i className="bi bi-twitter-x"></i> {post.sourceLabel}
-                    </a>
-                  </div>
+                  {post.sourceUrl && (
+                    <div className="blog-source">
+                      <a
+                        href={post.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="blog-source-link"
+                      >
+                        <i className="bi bi-twitter-x"></i> {post.sourceLabel}
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -67,8 +67,9 @@ const MultiAgentRag: React.FC = () => {
           <p className="mar-body">
             The backend is built with <span className="hl-blue">FastAPI</span> and uses{" "}
             <span className="hl-orange">Pinecone</span> as the vector store for retrieval-augmented
-            generation. Multiple specialized agents handle different aspects of date planning — venue
-            discovery, activity suggestions, and itinerary optimization. The frontend is a{" "}
+            generation. Multiple specialized agents handle different aspects of the planning workflow — venue
+            discovery, activity recommendation, and itinerary optimization — demonstrating patterns
+            transferable to enterprise scheduling and resource allocation use cases. The frontend is a{" "}
             <span className="hl-purple">React</span> application providing an interactive chat interface.
           </p>
 
