@@ -16,6 +16,95 @@ interface Post {
 
 const posts: Post[] = [
   {
+    id: "multi-agent-orchestration",
+    date: "2026-03-12",
+    title: "Multi-Agent Orchestration Patterns in Production",
+    tags: ["GenAI", "Architecture", "Multi-Agent"],
+    summary:
+      "Single-agent architectures break down at scale. Here's a practitioner's breakdown of supervisor, hierarchical, and fan-out/fan-in patterns — plus the governance and observability layers that make them production-ready.",
+    sourceUrl: "",
+    sourceLabel: "",
+    body: (
+      <>
+        <p className="blog-body">
+          If you've built a GenAI prototype with a single LLM call and a system prompt, you've probably hit
+          the wall: as task complexity grows, a <span className="hl-orange">single-agent architecture</span> becomes
+          brittle. Prompts balloon, tool-calling accuracy drops, and latency spirals. The answer isn't a
+          bigger model — it's orchestration.
+        </p>
+
+        <h4 className="blog-subheading">Why Single-Agent Breaks Down</h4>
+        <p className="blog-body">
+          A single agent handling research, analysis, writing, and validation simultaneously suffers from
+          context window dilution. Each additional responsibility degrades performance on all the others.
+          In production credit risk systems I've built, splitting a monolithic agent into{" "}
+          <span className="hl-green">11 specialized components</span> reduced error rates by 40% and cut
+          latency by 60%.
+        </p>
+
+        <h4 className="blog-subheading">Key Orchestration Patterns</h4>
+        <div className="callout-box">
+          <div className="callout-label">Supervisor Pattern</div>
+          <p>
+            A <span className="hl-orange">supervisor agent</span> routes tasks to specialized worker agents
+            based on intent classification. The supervisor maintains global state and decides when to
+            delegate, aggregate, or escalate. Best for workflows with clear task boundaries — like routing
+            a KYB assessment across URL discovery, content extraction, and risk scoring agents.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Hierarchical Pattern</div>
+          <p>
+            Extends the supervisor pattern with <span className="hl-blue">multiple layers of delegation</span>.
+            A top-level orchestrator delegates to mid-level supervisors, each managing their own worker pools.
+            This is how complex financial research suites scale — a credit memo orchestrator delegates to
+            domain-specific supervisors (financial analysis, ESG, competitive intelligence), each running
+            their own sub-agents.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Parallel Fan-Out / Fan-In</div>
+          <p>
+            When tasks are independent, <span className="hl-purple">fan them out concurrently</span> and
+            merge results. This is critical for latency-sensitive applications. In brand risk assessment,
+            running product scraping, checkout verification, and regulatory analysis in parallel (with
+            semaphore-controlled concurrency) cuts wall-clock time from minutes to seconds.
+          </p>
+        </div>
+
+        <h4 className="blog-subheading">Governance: The Missing Layer</h4>
+        <p className="blog-body">
+          Orchestration without governance is a liability. Production multi-agent systems need{" "}
+          <span className="hl-orange">Human-in-the-Loop (HITL) gates</span> for high-stakes decisions,
+          configurable approval workflows, and output validation layers. In financial services, this means
+          a credit analyst reviews AI-generated risk assessments before they reach downstream systems.
+          Without these guardrails, you're deploying autonomous decision-making with no accountability.
+        </p>
+
+        <h4 className="blog-subheading">Observability: Tracing the Invisible</h4>
+        <p className="blog-body">
+          Multi-agent systems are notoriously hard to debug. End-to-end tracing (via tools like{" "}
+          <span className="hl-green">LangFuse</span>) is non-negotiable. You need visibility into
+          token usage per agent, tool-selection accuracy, latency breakdowns per orchestration step,
+          and <span className="hl-blue">output drift detection</span> across model versions. Without
+          observability, you're flying blind — and your customers will notice before you do.
+        </p>
+
+        <div className="callout-box">
+          <div className="callout-label">Bottom Line</div>
+          <p>
+            Multi-agent orchestration isn't about complexity for complexity's sake. It's about decomposing
+            hard problems into solvable units, governing their interactions responsibly, and observing
+            everything. The frameworks exist (LangGraph makes this remarkably tractable) — the challenge
+            is designing the right architecture for your customer's specific problem.
+          </p>
+        </div>
+      </>
+    ),
+  },
+  {
     id: "netflix-interpositive",
     date: "2026-03-07",
     title: "Netflix Acquires InterPositive: AI Meets Hollywood",
@@ -186,7 +275,7 @@ const Blog: React.FC = () => {
 
       <p className="blog-intro">
         Thoughts on <span className="hl-orange">AI</span>,{" "}
-        <span className="hl-blue">Finance</span>, and everything in between.
+        <span className="hl-blue">GenAI solutions</span>, and everything in between.
         <br />
         <span className="blog-intro-sub">Long-form analysis written for curious minds — no jargon required.</span>
       </p>

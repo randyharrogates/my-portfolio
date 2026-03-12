@@ -63,7 +63,8 @@ const CreditMemo: React.FC = () => {
           {/* Overview */}
           <p className="cm-body">
             A sophisticated <span className="hl-green">event-driven RAG system</span> built for
-            automated credit memo analysis. The system orchestrates{" "}
+            automated credit memo analysis, designed in close partnership with credit risk analysts
+            to define assessment workflows and validation criteria. The system orchestrates{" "}
             <span className="hl-orange">11 specialized LangGraph components</span> across 8
             analysis domains — including business, financial, news, management, industry, ESG,
             competition, and customer/supplier assessment — alongside 2 foundation pipelines and
@@ -87,7 +88,9 @@ const CreditMemo: React.FC = () => {
             advanced reranking with reciprocal rank fusion,{" "}
             <span className="hl-blue">intelligent vector caching</span> across NFS and Azure Blob Storage,
             and comprehensive <span className="hl-purple">LangFuse observability</span> with hierarchical
-            tracing. Supports multi-language processing across 8 languages with neural model compatibility.
+            tracing. Incorporates <span className="hl-orange">agentic governance controls</span> including
+            Human-in-the-Loop review gates for high-risk credit decisions and configurable approval
+            workflows. Supports multi-language processing across 8 languages with neural model compatibility.
           </p>
 
           {/* Privacy callout */}

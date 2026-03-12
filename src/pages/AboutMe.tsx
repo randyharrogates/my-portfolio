@@ -64,7 +64,7 @@ const AboutMe: React.FC = () => {
                 <span className="intro-name-typed">{typed}</span>
                 <span className={`intro-cursor${showCursor ? "" : " intro-cursor-hidden"}`}>_</span>
               </h1>
-              <p className="intro-role">Senior AI Software Engineer · 6 YOE · NLP · LLM · RAG · AI Agents · Agentic Workflows</p>
+              <p className="intro-role">GenAI Solutions Engineer · 6 YOE · Multi-Agent Orchestration · Enterprise RAG · Agentic Governance</p>
             </div>
           </div>
 
@@ -73,15 +73,17 @@ const AboutMe: React.FC = () => {
           {/* Bio */}
           <div className="intro-bio">
             <p>
-              Senior AI Software Engineer with 6+ years of experience in backend architecture and
-              productionizing <span className="hl-orange">Multi-Agent AI systems</span>. Expert in{" "}
-              <span className="hl-orange">Agentic Orchestration</span> (LangGraph),{" "}
-              <span className="hl-orange">Enterprise RAG</span>, and scaling{" "}
-              <span className="hl-orange">Asynchronous Microservices</span>. Proven track record
-              in developing autonomous financial research suites and high-stakes healthcare AI.
-              Specialized in bridging LLM capabilities with robust engineering patterns
-              (<span className="hl-orange">Azure</span>, <span className="hl-orange">K8s</span>,{" "}
-              <span className="hl-orange">Terraform</span>) to deliver state-of-the-art automation.
+              GenAI Solutions Engineer with 6+ years of experience designing, deploying, and
+              operating production AI systems across financial services and healthcare. Expert in{" "}
+              <span className="hl-orange">Multi-Agent Orchestration</span> (LangGraph),{" "}
+              <span className="hl-orange">Enterprise RAG</span>,{" "}
+              <span className="hl-orange">Agentic Governance</span>, and{" "}
+              <span className="hl-orange">Model Serving Optimization</span>. Proven ability to
+              partner with customer stakeholders to convert AI ambition into scalable, production-ready
+              systems — bridging deep technical depth
+              (<span className="hl-orange">AWS</span>, <span className="hl-orange">Azure</span>,{" "}
+              <span className="hl-orange">K8s</span>, <span className="hl-orange">Terraform</span>)
+              with customer-facing communication.
             </p>
             <p className="intro-bio-cta">Take a look at some of my notable projects below.</p>
           </div>
@@ -112,26 +114,26 @@ const AboutMe: React.FC = () => {
           <div className="callout-box">
             <div className="callout-label">Core Stack</div>
             <p>
-              <span className="hl-green">Python</span> ·{" "}
-              <span className="hl-blue">TypeScript</span> ·{" "}
-              <span className="hl-orange">Java</span> ·{" "}
-              <span className="hl-purple">JavaScript</span> ·{" "}
-              <span className="hl-green">React</span> ·{" "}
-              <span className="hl-blue">NextJS</span> ·{" "}
-              <span className="hl-orange">FastAPI</span> ·{" "}
               <span className="hl-purple">LangGraph</span> ·{" "}
               <span className="hl-green">LangChain</span> ·{" "}
-              <span className="hl-blue">PyTorch</span> ·{" "}
-              <span className="hl-orange">Pydantic</span> ·{" "}
-              <span className="hl-purple">AWS</span> ·{" "}
-              <span className="hl-green">Azure</span> ·{" "}
-              <span className="hl-blue">GCP</span> ·{" "}
-              <span className="hl-orange">Docker</span> ·{" "}
-              <span className="hl-purple">Kubernetes</span> ·{" "}
+              <span className="hl-orange">OpenAI API</span> ·{" "}
+              <span className="hl-blue">Anthropic API</span> ·{" "}
+              <span className="hl-purple">PyTorch</span> ·{" "}
+              <span className="hl-green">Python</span> ·{" "}
+              <span className="hl-orange">FastAPI</span> ·{" "}
+              <span className="hl-blue">AWS</span> ·{" "}
+              <span className="hl-purple">Azure</span> ·{" "}
+              <span className="hl-green">Docker</span> ·{" "}
+              <span className="hl-orange">Kubernetes</span> ·{" "}
+              <span className="hl-blue">Terraform</span> ·{" "}
+              <span className="hl-purple">MongoDB</span> ·{" "}
               <span className="hl-green">PostgreSQL</span> ·{" "}
-              <span className="hl-blue">MongoDB</span> ·{" "}
-              <span className="hl-orange">Redis</span> ·{" "}
-              <span className="hl-purple">Azure Service Bus</span>
+              <span className="hl-orange">Pinecone</span> ·{" "}
+              <span className="hl-blue">Weaviate</span> ·{" "}
+              <span className="hl-purple">Redis</span> ·{" "}
+              <span className="hl-green">Azure Service Bus</span> ·{" "}
+              <span className="hl-orange">TypeScript</span> ·{" "}
+              <span className="hl-blue">React</span>
             </p>
           </div>
 
@@ -139,7 +141,7 @@ const AboutMe: React.FC = () => {
           <div className="intro-sysinfo">
             <div className="sysinfo-row">
               <span className="sysinfo-cmd">$ uptime</span>
-              <span className="sysinfo-val"><span className="hl-orange">6 yrs</span> · full-stack AI engineering</span>
+              <span className="sysinfo-val"><span className="hl-orange">6 yrs</span> · AI solution architecture & engineering</span>
             </div>
             <div className="sysinfo-divider" />
             <div className="sysinfo-row">
@@ -155,17 +157,26 @@ const AboutMe: React.FC = () => {
             <div className="sysinfo-row">
               <span className="sysinfo-cmd">$ cat interests.txt</span>
               <span className="sysinfo-val">
-                <span className="hl-purple">Multi-Agent systems</span>
+                <span className="hl-purple">Multi-Agent orchestration</span>
                 <span className="sysinfo-sep"> · </span>
-                <span className="hl-orange">RAG</span>
+                <span className="hl-orange">Agentic governance</span>
                 <span className="sysinfo-sep"> · </span>
-                <span className="hl-blue">agentic workflows</span>
+                <span className="hl-blue">Enterprise RAG</span>
               </span>
             </div>
             <div className="sysinfo-divider" />
             <div className="sysinfo-row">
               <span className="sysinfo-cmd">$ ls education/</span>
               <span className="sysinfo-val"><span className="hl-green">B.Sc Information and Communication Technology</span></span>
+            </div>
+            <div className="sysinfo-divider" />
+            <div className="sysinfo-row">
+              <span className="sysinfo-cmd">$ cat certs/</span>
+              <span className="sysinfo-val">
+                <span className="hl-orange">CAIE (AIP)</span>
+                <span className="sysinfo-sep"> · </span>
+                <span className="hl-blue">ECBA (IIBA)</span>
+              </span>
             </div>
           </div>
         </div>
