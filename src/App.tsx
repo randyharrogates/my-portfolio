@@ -60,7 +60,7 @@ const TerminalApp: React.FC = () => {
             <span className="light green" />
           </div>
           <span className="terminal-title">
-            terminal — <span className="title-name">Randy Chan</span> · Portfolio
+            terminal — <span className="title-name">Randy Chan</span> · GenAI Solutions Portfolio
           </span>
           <div className="titlebar-spacer" />
         </div>

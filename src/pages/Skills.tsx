@@ -60,12 +60,6 @@ const SKILL_GROUPS: SkillGroup[] = [
     items: ["GitHub Actions", "GitLab CI", "Jenkins"],
   },
   {
-    key: "os",
-    label: "os",
-    color: "orange",
-    items: ["Ubuntu", "Linux", "MacOS", "Windows"],
-  },
-  {
     key: "experiments",
     label: "experiments",
     color: "green",
