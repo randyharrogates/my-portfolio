@@ -85,7 +85,7 @@ const AboutMe: React.FC = () => {
               <span className="hl-orange">K8s</span>, <span className="hl-orange">Terraform</span>)
               with customer-facing communication.
             </p>
-            <p className="intro-bio-cta">Take a look at some of my notable projects below.</p>
+            <p className="intro-bio-cta">Explore my solution architectures and case studies below.</p>
           </div>
 
           {/* Links */}
