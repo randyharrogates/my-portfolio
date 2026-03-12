@@ -60,7 +60,7 @@ const TerminalApp: React.FC = () => {
             <span className="light green" />
           </div>
           <span className="terminal-title">
-            terminal — <span className="title-name">Randy Chan</span> · Portfolio
+            terminal — <span className="title-name">Randy Chan</span> · GenAI Solutions Portfolio
           </span>
           <div className="titlebar-spacer" />
         </div>
@@ -110,7 +110,7 @@ const TerminalApp: React.FC = () => {
               {" · "}
               <a href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener noreferrer">linkedin</a>
             </footer>
-            <span>senior ai software engineer · 6 yoe</span>
+            <span>genai solutions engineer · 6 yoe</span>
           </div>
         </div>
       </div>
