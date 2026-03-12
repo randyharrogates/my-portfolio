@@ -8,7 +8,7 @@ const FineTuning: React.FC = () => {
     <div className="ft-wrap">
       {/* Title row — full width */}
       <div className="ft-title-row">
-        <span className="ft-num">05</span>
+        <span className="ft-num">04</span>
         <h2 className="ft-title">
           Fine-Tuning of a <span className="hl-orange">BERT-based Model</span> for NER on Medical Data
         </h2>
@@ -58,14 +58,14 @@ const FineTuning: React.FC = () => {
 
           {/* Overview */}
           <p className="ft-body">
-            This project involved fine-tuning a BERT-based model, specifically designed for medical data,
-            to perform <span className="hl-green">Named Entity Recognition (NER)</span>. The task focused on
-            identifying medical entities such as{" "}
+            Designed and deployed a domain-specific <span className="hl-green">NER pipeline</span> for
+            healthcare, fine-tuning a BERT-based model on clinical data to extract medical entities —{" "}
             <span className="hl-orange">diseases</span>,{" "}
             <span className="hl-orange">treatments</span>, and{" "}
-            <span className="hl-orange">medications</span> within clinical notes. The fine-tuning process
-            was carried out using <span className="hl-blue">FastAPI</span> as the backend and deployed
-            within a <span className="hl-purple">Kedro pipeline</span>.
+            <span className="hl-orange">medications</span> — from unstructured clinical notes. The
+            inference pipeline is served via <span className="hl-blue">FastAPI</span> and orchestrated
+            through a <span className="hl-purple">Kedro pipeline</span> for reproducible model training
+            and evaluation workflows.
           </p>
 
           {/* RAG section */}
@@ -78,6 +78,16 @@ const FineTuning: React.FC = () => {
             during the inference process. This combination has significantly enhanced the accuracy and
             efficiency of NER within medical texts.
           </p>
+
+          {/* Solution Impact */}
+          <div className="callout-box">
+            <div className="callout-label">Solution Impact</div>
+            <p>
+              Delivered production-grade medical NER accuracy by combining fine-tuned BERT with RAG-enhanced
+              entity disambiguation, enabling clinical decision support workflows. The Kedro pipeline ensures
+              reproducible training runs and model versioning for regulatory audit trails.
+            </p>
+          </div>
 
           {/* Privacy callout */}
           <div className="callout-box">

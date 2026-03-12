@@ -9,7 +9,7 @@ const MultiAgentRag: React.FC = () => {
       <div className="mar-title-row">
         <span className="mar-num">03</span>
         <h2 className="mar-title">
-          <span className="hl-orange">Dating Plan</span> AI Agents
+          Multi-Agent <span className="hl-orange">RAG Orchestration</span> Platform
         </h2>
       </div>
 
@@ -19,7 +19,7 @@ const MultiAgentRag: React.FC = () => {
         <div className="mar-left">
           <img
             src={`${process.env.PUBLIC_URL}/multi-agent.webp`}
-            alt="Dating Plan AI Agents"
+            alt="Multi-Agent RAG Orchestration Platform"
             className="mar-hero-img"
           />
           <div className="mar-actions">
@@ -56,18 +56,20 @@ const MultiAgentRag: React.FC = () => {
           </div>
 
           <p className="mar-body">
-            A <span className="hl-green">Multi-Agent RAG</span> application that helps users plan dates.
-            The system leverages <span className="hl-orange">LangGraph</span> to orchestrate multiple AI
-            agents that collaborate to generate personalized date plans based on user preferences, location,
-            and interests.
+            A <span className="hl-green">Multi-Agent RAG orchestration platform</span> demonstrating
+            production-grade agent coordination patterns. Built as a reference architecture using{" "}
+            <span className="hl-orange">LangGraph</span> to orchestrate multiple specialized AI agents
+            that collaborate on complex planning tasks — venue discovery, activity recommendation, and
+            itinerary optimization — applicable to enterprise use cases requiring multi-agent coordination.
           </p>
 
           <h4 className="mar-subheading">Architecture</h4>
           <p className="mar-body">
             The backend is built with <span className="hl-blue">FastAPI</span> and uses{" "}
             <span className="hl-orange">Pinecone</span> as the vector store for retrieval-augmented
-            generation. Multiple specialized agents handle different aspects of date planning — venue
-            discovery, activity suggestions, and itinerary optimization. The frontend is a{" "}
+            generation. Multiple specialized agents handle different aspects of the planning workflow — venue
+            discovery, activity recommendation, and itinerary optimization — demonstrating patterns
+            transferable to enterprise scheduling and resource allocation use cases. The frontend is a{" "}
             <span className="hl-purple">React</span> application providing an interactive chat interface.
           </p>
 

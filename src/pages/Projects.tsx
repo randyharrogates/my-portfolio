@@ -16,9 +16,9 @@ import HrmSystem from "./HrmSystem.tsx";
 const SUB_TABS = [
   { slug: "credit-memo",     label: "credit-memo",     featured: true },
   { slug: "kyb-pipeline",    label: "kyb-pipeline",    featured: true },
-  { slug: "multi-agent-rag", label: "multi-agent-rag"  },
+  { slug: "multi-agent-rag", label: "multi-agent-rag", featured: true },
+  { slug: "fine-tuning",     label: "fine-tuning"      },
   { slug: "speech-to-text",  label: "speech-to-text"   },
-  { slug: "fine-tuning",     label: "fine-tuning",     featured: true },
   { slug: "holiday-booking", label: "holiday-booking"  },
   { slug: "ecommerce",       label: "ecommerce"        },
   { slug: "hrm-system",      label: "hrm-system"       },
@@ -59,8 +59,8 @@ const Projects: React.FC = () => {
           <Route path="credit-memo"     element={<CreditMemo />} />
           <Route path="kyb-pipeline"    element={<KybPipeline />} />
           <Route path="multi-agent-rag" element={<MultiAgentRag />} />
-          <Route path="speech-to-text"  element={<SpeechToText />} />
           <Route path="fine-tuning"     element={<FineTuning />} />
+          <Route path="speech-to-text"  element={<SpeechToText />} />
           <Route path="holiday-booking" element={<HolidayBooking />} />
           <Route path="ecommerce"       element={<Ecommerce />} />
           <Route path="hrm-system"      element={<HrmSystem />} />
