@@ -58,6 +58,27 @@
   margin-left: 2px;
 }
 
+/* Section labels & divider */
+.subnav-section-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #e8632a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 8px 6px 4px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.subnav-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #2e2b28;
+  margin: 4px 6px;
+}
+
 .projects-content {
   min-height: 200px;
 }

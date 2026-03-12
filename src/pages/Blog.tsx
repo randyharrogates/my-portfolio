@@ -105,6 +105,199 @@ const posts: Post[] = [
     ),
   },
   {
+    id: "rag-vs-fine-tuning",
+    date: "2026-03-10",
+    title: "RAG vs Fine-Tuning: A Production Decision Framework",
+    tags: ["GenAI", "RAG", "Architecture"],
+    summary:
+      "When should you reach for RAG, when does fine-tuning make sense, and when is prompt engineering enough? A practitioner's decision framework based on real production trade-offs — not hype.",
+    sourceUrl: "",
+    sourceLabel: "",
+    body: (
+      <>
+        <p className="blog-body">
+          Every GenAI project hits the same fork in the road: your base model isn't good enough out of the box.
+          The question is <span className="hl-orange">how you close the gap</span> — and the answer depends on
+          your data volatility, latency budget, cost constraints, and how specialized the task really is.
+        </p>
+
+        <h4 className="blog-subheading">The Decision Framework</h4>
+        <p className="blog-body">
+          After deploying production systems across financial services and healthcare, I've landed on a simple
+          decision hierarchy. Start with the cheapest, fastest option and escalate only when the evidence demands it.
+        </p>
+
+        <div className="callout-box">
+          <div className="callout-label">Level 1: Prompt Engineering</div>
+          <p>
+            <span className="hl-green">Time to deploy: hours to days.</span> If your task can be solved with
+            better instructions, few-shot examples, and structured output schemas — stop here. Most teams
+            underestimate how far a well-crafted system prompt with 5-10 few-shot examples can go. In production
+            KYB assessments, prompt engineering alone achieved 85% of our target accuracy before we added any
+            retrieval layer.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Level 2: RAG (Retrieval-Augmented Generation)</div>
+          <p>
+            <span className="hl-blue">Time to deploy: days to weeks.</span> Choose RAG when your knowledge base
+            is volatile (changes weekly or faster), when you need source attribution and citations, or when the
+            domain knowledge is too large to fit in a prompt. RAG shines in enterprise settings — internal
+            knowledge bases, regulatory documents, customer support — where the data changes frequently and
+            traceability matters. The cost is infrastructure: vector databases, chunking pipelines, embedding
+            models, and retrieval evaluation.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Level 3: Fine-Tuning</div>
+          <p>
+            <span className="hl-purple">Time to deploy: weeks to months.</span> Fine-tune only when you need the
+            model to internalize stable, specialized behavior that can't be achieved through instructions or
+            retrieval. Common signals: domain-specific output formats, consistent tone/style across thousands of
+            outputs, or specialized reasoning patterns (like medical NER or financial entity extraction). The
+            trade-offs are real — training data curation, evaluation pipelines, model versioning, and inference
+            costs that can be 3-6x higher than base model API calls.
+          </p>
+        </div>
+
+        <h4 className="blog-subheading">The Hybrid Reality</h4>
+        <p className="blog-body">
+          In practice, production systems rarely use just one approach. The credit memo system I built uses{" "}
+          <span className="hl-orange">all three</span>: prompt engineering for structured output formatting,
+          RAG for real-time financial data and news retrieval, and fine-tuned models for domain-specific entity
+          extraction. The key is knowing which layer solves which problem — and not reaching for fine-tuning
+          when a better prompt would suffice.
+        </p>
+
+        <h4 className="blog-subheading">Cost Reality Check</h4>
+        <p className="blog-body">
+          A common mistake is ignoring the total cost of ownership. RAG adds infrastructure cost (vector DB
+          hosting, embedding compute, chunking pipelines) but keeps your model costs low. Fine-tuning has high
+          upfront cost (data curation, training compute, evaluation) and ongoing inference premium. For most
+          enterprise use cases, <span className="hl-green">RAG delivers 80% of the value at 20% of the cost</span>{" "}
+          compared to fine-tuning. Reserve fine-tuning for the cases where that last 20% actually matters — like
+          regulated industries where output consistency is non-negotiable.
+        </p>
+
+        <div className="callout-box">
+          <div className="callout-label">Bottom Line</div>
+          <p>
+            Don't start with the most complex solution. Prompt engineering first, RAG when your knowledge is
+            dynamic, fine-tuning when behavior must be internalized. The best GenAI architectures use the right
+            tool at each layer — and the engineer's job is knowing which layer to invest in for the customer's
+            specific problem.
+          </p>
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "agentic-governance",
+    date: "2026-03-09",
+    title: "Designing Governance for Agentic AI Systems",
+    tags: ["GenAI", "Governance", "Architecture"],
+    summary:
+      "Agentic AI without governance is a liability. Here's how to design Human-in-the-Loop gates, approval workflows, observability layers, and compliance controls for production multi-agent systems.",
+    sourceUrl: "",
+    sourceLabel: "",
+    body: (
+      <>
+        <p className="blog-body">
+          The industry is racing to deploy <span className="hl-orange">agentic AI</span> — systems where LLMs
+          autonomously call tools, make decisions, and chain actions together. But autonomy without accountability
+          is a liability, especially in regulated industries like financial services and healthcare. The missing
+          piece isn't better models — it's governance architecture.
+        </p>
+
+        <h4 className="blog-subheading">Why Governance Can't Be an Afterthought</h4>
+        <p className="blog-body">
+          When an agent autonomously generates a credit risk assessment, executes a KYB compliance check, or
+          produces a medical NER extraction — the output directly influences business decisions. If the agent
+          hallucinates a risk score, misclassifies a merchant, or extracts the wrong medication dosage,{" "}
+          <span className="hl-orange">the downstream consequences are real</span>. Governance isn't about slowing
+          down AI — it's about making AI trustworthy enough to deploy at scale.
+        </p>
+
+        <h4 className="blog-subheading">Core Governance Patterns</h4>
+        <div className="callout-box">
+          <div className="callout-label">Human-in-the-Loop (HITL) Gates</div>
+          <p>
+            Not every agent action needs human review — but <span className="hl-green">high-stakes decisions must</span>.
+            Design HITL gates at critical decision points: before a credit risk assessment is finalized, before a
+            compliance report is submitted, before a patient-facing recommendation is generated. The key is making
+            the gate lightweight — present the agent's reasoning, confidence scores, and source citations so the
+            human reviewer can approve or reject in seconds, not minutes.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Configurable Approval Workflows</div>
+          <p>
+            Different risk levels need different approval paths. In production credit risk systems, I implement{" "}
+            <span className="hl-blue">tiered approval workflows</span>: low-risk assessments auto-approve with
+            audit logging, medium-risk assessments require single-reviewer approval, and high-risk decisions
+            require multi-reviewer consensus with mandatory justification. The workflow configuration should be
+            externalized (not hardcoded) so compliance teams can adjust thresholds without engineering changes.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Output Validation Layers</div>
+          <p>
+            Before any agent output reaches downstream systems, run it through{" "}
+            <span className="hl-purple">automated validation</span>: schema validation (does the output match
+            the expected structure?), factual grounding checks (are claims supported by retrieved sources?),
+            consistency checks (does this assessment contradict previous assessments for the same entity?), and
+            safety filters (does the output contain PII, toxic content, or unauthorized disclosures?).
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">Observability & Audit Trails</div>
+          <p>
+            Every agent action must be traceable. Deploy end-to-end tracing (I use{" "}
+            <span className="hl-green">LangFuse</span>) that captures: which agent made which decision, what
+            tools were called with what parameters, what data was retrieved and from which sources, token usage
+            and latency per step, and the final output with confidence scores. This isn't optional for regulated
+            industries — it's how you answer "why did the system make this decision?" during an audit.
+          </p>
+        </div>
+
+        <h4 className="blog-subheading">Drift Detection: The Silent Killer</h4>
+        <p className="blog-body">
+          Model providers update their models without notice. A prompt that worked perfectly with GPT-4-0613
+          might behave differently with GPT-4-0125. In multi-agent systems, this drift compounds — a subtle
+          change in one agent's output format can cascade through the entire orchestration graph.{" "}
+          <span className="hl-orange">Automated regression testing</span> with LLM-as-a-judge patterns is
+          essential. Run your evaluation suite on every model version change, every prompt update, and every
+          retrieval pipeline modification.
+        </p>
+
+        <h4 className="blog-subheading">Compliance in Practice</h4>
+        <p className="blog-body">
+          In Singapore's regulatory landscape, AI governance intersects with{" "}
+          <span className="hl-blue">PDPA (Personal Data Protection Act)</span> requirements, MAS guidelines
+          on AI in financial services, and emerging responsible AI frameworks. The governance architecture must
+          ensure data minimization (agents only access data they need), purpose limitation (agent actions are
+          scoped to authorized tasks), and accountability (every decision has a clear audit trail linking AI
+          output to human oversight).
+        </p>
+
+        <div className="callout-box">
+          <div className="callout-label">Bottom Line</div>
+          <p>
+            Agentic AI governance isn't a checkbox — it's an architecture decision. Design HITL gates at high-stakes
+            decision points, implement tiered approval workflows, validate outputs before they reach downstream
+            systems, and trace everything. The organizations that get governance right will be the ones that
+            deploy agentic AI at scale. The ones that skip it will learn the hard way.
+          </p>
+        </div>
+      </>
+    ),
+  },
+  {
     id: "netflix-interpositive",
     date: "2026-03-07",
     title: "Netflix Acquires InterPositive: AI Meets Hollywood",

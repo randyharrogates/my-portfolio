@@ -13,16 +13,20 @@ import HolidayBooking from "./HolidayBooking.tsx";
 import Ecommerce from "./Ecommerce.tsx";
 import HrmSystem from "./HrmSystem.tsx";
 
-const SUB_TABS = [
+const AI_TABS = [
   { slug: "credit-memo",     label: "credit-memo",     featured: true },
   { slug: "kyb-pipeline",    label: "kyb-pipeline",    featured: true },
   { slug: "multi-agent-rag", label: "multi-agent-rag", featured: true },
   { slug: "fine-tuning",     label: "fine-tuning"      },
   { slug: "speech-to-text",  label: "speech-to-text"   },
+];
+
+const EARLIER_TABS = [
   { slug: "holiday-booking", label: "holiday-booking"  },
   { slug: "ecommerce",       label: "ecommerce"        },
   { slug: "hrm-system",      label: "hrm-system"       },
 ];
+
 
 const Projects: React.FC = () => {
   const location = useLocation();
@@ -37,7 +41,8 @@ const Projects: React.FC = () => {
 
       {/* Sub-tab navigation */}
       <nav className="projects-subnav" aria-label="Project list">
-        {SUB_TABS.map((tab, i) => (
+        <span className="subnav-section-label">GenAI & AI</span>
+        {AI_TABS.map((tab, i) => (
           <NavLink
             key={tab.slug}
             to={tab.slug}
@@ -48,6 +53,20 @@ const Projects: React.FC = () => {
             <span className="subnav-num">{String(i + 1).padStart(2, "0")}</span>
             {tab.label}
             {tab.featured && <span className="subnav-badge">★</span>}
+          </NavLink>
+        ))}
+        <span className="subnav-divider" />
+        <span className="subnav-section-label">Earlier Projects</span>
+        {EARLIER_TABS.map((tab, i) => (
+          <NavLink
+            key={tab.slug}
+            to={tab.slug}
+            className={({ isActive }) =>
+              `subnav-item${isActive || location.pathname.endsWith("/" + tab.slug) ? " subnav-active" : ""}`
+            }
+          >
+            <span className="subnav-num">{String(AI_TABS.length + i + 1).padStart(2, "0")}</span>
+            {tab.label}
           </NavLink>
         ))}
       </nav>

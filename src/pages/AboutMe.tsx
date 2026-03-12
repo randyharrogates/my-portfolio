@@ -64,7 +64,7 @@ const AboutMe: React.FC = () => {
                 <span className="intro-name-typed">{typed}</span>
                 <span className={`intro-cursor${showCursor ? "" : " intro-cursor-hidden"}`}>_</span>
               </h1>
-              <p className="intro-role">GenAI Solutions Engineer · 6 YOE · Multi-Agent Orchestration · Enterprise RAG · Agentic Governance</p>
+              <p className="intro-role">GenAI Solutions Engineer · 7 YOE · Multi-Agent Orchestration · Enterprise RAG · Agentic Governance</p>
             </div>
           </div>
 
@@ -73,7 +73,7 @@ const AboutMe: React.FC = () => {
           {/* Bio */}
           <div className="intro-bio">
             <p>
-              GenAI Solutions Engineer with 6+ years of experience designing, deploying, and
+              GenAI Solutions Engineer with 7+ years of experience designing, deploying, and
               operating production AI systems across financial services and healthcare. Expert in{" "}
               <span className="hl-orange">Multi-Agent Orchestration</span> (LangGraph),{" "}
               <span className="hl-orange">Enterprise RAG</span>,{" "}
@@ -141,7 +141,7 @@ const AboutMe: React.FC = () => {
           <div className="intro-sysinfo">
             <div className="sysinfo-row">
               <span className="sysinfo-cmd">$ uptime</span>
-              <span className="sysinfo-val"><span className="hl-orange">6 yrs</span> · AI solution architecture & engineering</span>
+              <span className="sysinfo-val"><span className="hl-orange">7 yrs</span> · AI solution architecture & engineering</span>
             </div>
             <div className="sysinfo-divider" />
             <div className="sysinfo-row">
