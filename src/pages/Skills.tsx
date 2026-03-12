@@ -12,74 +12,80 @@ interface SkillGroup {
 
 const SKILL_GROUPS: SkillGroup[] = [
   {
+    key: "genai",
+    label: "genai & llms",
+    color: "green",
+    items: ["LangGraph", "LangChain", "OpenAI", "Anthropic", "LangFuse", "PyTorch", "HuggingFace", "Pydantic", "SpaCy", "Kedro"],
+  },
+  {
+    key: "solution_design",
+    label: "solution design",
+    color: "purple",
+    items: ["Solution Architecture", "Customer Requirements Analysis", "AgentOps", "MLOps", "Technical Documentation", "Responsible AI"],
+  },
+  {
     key: "languages",
     label: "languages",
     color: "orange",
-    items: ["Python", "Java", "HTML", "CSS", "JavaScript", "TypeScript", "Bash"],
-  },
-  {
-    key: "ai_ml",
-    label: "ai & ml",
-    color: "green",
-    items: ["OpenAI", "Anthropic", "LangGraph", "LangChain", "Kedro", "PyTorch", "HuggingFace", "LangFuse", "SpaCy", "Pydantic", "NLTK"],
-  },
-  {
-    key: "frontend",
-    label: "frontend",
-    color: "blue",
-    items: ["ReactJS", "Svelte", "VueJS", "NextJS", "Tailwind"],
+    items: ["Python", "Java", "TypeScript", "JavaScript", "Bash", "HTML", "CSS"],
   },
   {
     key: "backend",
     label: "backend",
-    color: "purple",
-    items: ["Spring Boot", "Flask", "FastAPI", "NodeJS", "ExpressJS"],
+    color: "blue",
+    items: ["FastAPI", "Flask", "Spring Boot", "NodeJS", "ExpressJS"],
   },
   {
     key: "cloud",
     label: "cloud & infra",
     color: "orange",
-    items: ["Docker", "Kubernetes", "AWS", "Azure", "GCP", "Terraform", "Azure Service Bus"],
+    items: ["AWS", "Azure", "Docker", "Kubernetes", "Terraform", "GCP", "Azure Service Bus"],
   },
   {
     key: "databases",
     label: "databases",
     color: "green",
-    items: ["SQL Server", "MySQL", "PostgreSQL", "MongoDB", "Redis", "ChromaDB", "Pinecone", "Weaviate"],
+    items: ["MongoDB", "PostgreSQL", "Pinecone", "Weaviate", "ChromaDB", "Redis", "SQL Server", "MySQL"],
+  },
+  {
+    key: "frontend",
+    label: "frontend",
+    color: "blue",
+    items: ["ReactJS", "NextJS", "VueJS", "Svelte", "Tailwind"],
   },
   {
     key: "cicd",
     label: "ci / cd",
-    color: "blue",
+    color: "purple",
     items: ["GitHub Actions", "GitLab CI", "Jenkins"],
   },
   {
     key: "os",
     label: "os",
-    color: "purple",
-    items: ["Windows", "Ubuntu", "Linux", "MacOS"],
+    color: "orange",
+    items: ["Ubuntu", "Linux", "MacOS", "Windows"],
   },
   {
     key: "experiments",
     label: "experiments",
-    color: "orange",
-    items: ["Coder", "RunAI", "MLOps", "A/B Testing"],
+    color: "green",
+    items: ["Coder", "RunAI", "A/B Testing"],
   },
 ];
 
 const PROFICIENCY: { label: string; pct: number; color: string }[] = [
   { label: "Python",      pct: 90, color: "orange" },
+  { label: "LangGraph",   pct: 85, color: "green"  },
   { label: "FastAPI",     pct: 85, color: "purple" },
-  { label: "LangGraph",   pct: 80, color: "green"  },
   { label: "LangChain",   pct: 80, color: "green"  },
-  { label: "TypeScript",  pct: 75, color: "blue"   },
-  { label: "React",       pct: 75, color: "blue"   },
+  { label: "Docker",      pct: 80, color: "orange" },
+  { label: "AWS",         pct: 75, color: "orange" },
+  { label: "Azure",       pct: 75, color: "blue"   },
   { label: "MongoDB",     pct: 75, color: "green"  },
-  { label: "Docker",      pct: 75, color: "orange" },
-  { label: "Azure",       pct: 70, color: "blue"   },
-  { label: "AWS",         pct: 70, color: "orange" },
-  { label: "PostgreSQL",  pct: 70, color: "green"  },
   { label: "PyTorch",     pct: 70, color: "green"  },
+  { label: "Terraform",   pct: 70, color: "purple" },
+  { label: "TypeScript",  pct: 70, color: "blue"   },
+  { label: "PostgreSQL",  pct: 70, color: "green"  },
 ];
 
 const BAR_COLORS: Record<string, string> = {
@@ -183,7 +189,7 @@ const Skills: React.FC = () => {
 
           <div className="callout-box">
             <div className="callout-label">Note</div>
-            <p>Click any category to expand. Currently focused on building LLM-powered systems and agentic AI architectures.</p>
+            <p>Click any category to expand. Currently focused on designing and deploying production GenAI solutions — multi-agent orchestration, enterprise RAG, and agentic governance.</p>
           </div>
         </div>
       </div>

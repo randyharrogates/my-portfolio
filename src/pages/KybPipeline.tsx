@@ -63,10 +63,12 @@ const KybPipeline: React.FC = () => {
           {/* Overview */}
           <p className="kyb-body">
             An agentic <span className="hl-green">Know Your Business (KYB)</span> pipeline designed
-            for merchant brand risk assessment. The system orchestrates{" "}
+            for merchant brand risk assessment, built to meet regulatory compliance requirements
+            with stakeholder-approved risk scoring frameworks. The system orchestrates{" "}
             <span className="hl-orange">14+ concurrent processing nodes</span> to discover merchant
             URLs, scrape product catalogs, extract and classify content, verify checkout flows, and
-            synthesize comprehensive risk reports — all with high concurrency and fault tolerance.
+            synthesize comprehensive risk reports as customer-deliverable artifacts — all with high
+            concurrency and fault tolerance.
           </p>
 
           {/* Pipeline */}

@@ -78,9 +78,9 @@ const Contact: React.FC = () => {
           <div className="callout-box">
             <div className="callout-label">Currently</div>
             <p>
-              Open to full-time roles and interesting collaborations in <span className="hl-orange">AI / ML engineering</span>,{" "}
-              <span className="hl-blue">full-stack development</span>, and{" "}
-              <span className="hl-green">LLM-powered systems</span>. Based in Singapore.
+              Open to full-time roles in <span className="hl-orange">GenAI solutions engineering</span>,{" "}
+              <span className="hl-blue">AI solution architecture</span>, and{" "}
+              <span className="hl-green">production AI system design</span>. Based in Singapore.
             </p>
           </div>
 
