@@ -93,6 +93,17 @@ const CreditMemo: React.FC = () => {
             workflows. Supports multi-language processing across 8 languages with neural model compatibility.
           </p>
 
+          {/* Solution Impact */}
+          <div className="callout-box">
+            <div className="callout-label">Solution Impact</div>
+            <p>
+              Reduced analyst research time by automating 8 parallel analysis domains, enabling credit
+              teams to process memos in a fraction of the manual timeline. The event-driven architecture
+              ensures horizontal scalability for enterprise workloads while agentic governance controls
+              maintain compliance accountability.
+            </p>
+          </div>
+
           {/* Privacy callout */}
           <div className="callout-box">
             <div className="callout-label">Confidentiality Notice</div>

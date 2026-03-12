@@ -96,6 +96,17 @@ const KybPipeline: React.FC = () => {
             indexing and Red/Yellow/Green risk scoring.
           </p>
 
+          {/* Solution Impact */}
+          <div className="callout-box">
+            <div className="callout-label">Solution Impact</div>
+            <p>
+              Enables compliance teams to assess merchant brand risk at scale, replacing manual review
+              workflows with automated, evidence-indexed risk reports. The 4-phase architecture supports
+              concurrent processing of multiple merchant assessments with built-in fault tolerance and
+              stakeholder-approved Red/Yellow/Green risk scoring.
+            </p>
+          </div>
+
           {/* Privacy callout */}
           <div className="callout-box">
             <div className="callout-label">Confidentiality Notice</div>
