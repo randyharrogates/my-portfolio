@@ -34,6 +34,7 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 - `Projects.tsx` — Project showcase (`/projects`)
 - `Skills.tsx` — Skills overview (`/skills`)
 - `CreditMemo.tsx`, `KybPipeline.tsx`, `FineTuning.tsx` — Individual project detail pages
+- `Resume.tsx` — Resume page (`/resume`). Displays `public/Resume.pdf`. Resume content is authored in `resume.tex`. After any `.tex` edit, recompile and replace the PDF: `tectonic resume.tex && cp resume.pdf public/Resume.pdf`.
 - `Blog.tsx` — Blog posts (`/blog`)
 - `Contact.tsx` — Contact info (`/contact`)
 

@@ -110,7 +110,7 @@ const TerminalApp: React.FC = () => {
               {" · "}
               <a href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener noreferrer">linkedin</a>
             </footer>
-            <span>genai solutions engineer · 6 yoe</span>
+            <span>genai solutions engineer · 7 yoe</span>
           </div>
         </div>
       </div>

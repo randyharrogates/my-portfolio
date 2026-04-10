@@ -64,7 +64,9 @@ const AboutMe: React.FC = () => {
                 <span className="intro-name-typed">{typed}</span>
                 <span className={`intro-cursor${showCursor ? "" : " intro-cursor-hidden"}`}>_</span>
               </h1>
-              <p className="intro-role">GenAI Solutions Engineer · 6 YOE · Multi-Agent Orchestration · Enterprise RAG · Agentic Governance</p>
+              <div className="intro-badge"><span className="badge-prompt">&gt;</span> Claude Code Enthusiast</div>
+              <p className="intro-belief">I believe AI is the future of software development.</p>
+              <p className="intro-role">GenAI Solutions Engineer · 7 YOE · Multi-Agent Orchestration · Enterprise RAG · Agentic Governance</p>
             </div>
           </div>
 
@@ -73,7 +75,7 @@ const AboutMe: React.FC = () => {
           {/* Bio */}
           <div className="intro-bio">
             <p>
-              GenAI Solutions Engineer with 6+ years of experience designing, deploying, and
+              GenAI Solutions Engineer with 7+ years of experience designing, deploying, and
               operating production AI systems across financial services and healthcare. Expert in{" "}
               <span className="hl-orange">Multi-Agent Orchestration</span> (LangGraph),{" "}
               <span className="hl-orange">Enterprise RAG</span>,{" "}
@@ -83,7 +85,11 @@ const AboutMe: React.FC = () => {
               systems — bridging deep technical depth
               (<span className="hl-orange">AWS</span>, <span className="hl-orange">Azure</span>,{" "}
               <span className="hl-orange">K8s</span>, <span className="hl-orange">Terraform</span>)
-              with customer-facing communication.
+              with customer-facing communication. Passionate advocate for{" "}
+              <span className="hl-orange">AI-assisted development</span> — leveraging{" "}
+              <span className="hl-orange">Claude Code</span> and{" "}
+              <span className="hl-orange">Cursor</span> daily to architect enterprise-grade
+              AI coding workflows that accelerate delivery and code quality.
             </p>
             <p className="intro-bio-cta">Explore my solution architectures and case studies below.</p>
           </div>
@@ -106,6 +112,10 @@ const AboutMe: React.FC = () => {
             <span className="nav-hint-main">Click the tabs above to explore →</span>
             <span className="nav-hint-sub">or use ← → arrow keys</span>
           </div>
+
+          <blockquote className="intro-quote">
+            "Jack of all trades, master of none, but often times better than a master of one."
+          </blockquote>
         </div>
 
         {/* ── Right column ── */}
@@ -141,7 +151,7 @@ const AboutMe: React.FC = () => {
           <div className="intro-sysinfo">
             <div className="sysinfo-row">
               <span className="sysinfo-cmd">$ uptime</span>
-              <span className="sysinfo-val"><span className="hl-orange">6 yrs</span> · AI solution architecture & engineering</span>
+              <span className="sysinfo-val"><span className="hl-orange">7 yrs</span> · AI solution architecture & engineering</span>
             </div>
             <div className="sysinfo-divider" />
             <div className="sysinfo-row">
@@ -162,6 +172,17 @@ const AboutMe: React.FC = () => {
                 <span className="hl-orange">Agentic governance</span>
                 <span className="sysinfo-sep"> · </span>
                 <span className="hl-blue">Enterprise RAG</span>
+              </span>
+            </div>
+            <div className="sysinfo-divider" />
+            <div className="sysinfo-row">
+              <span className="sysinfo-cmd">$ cat ai-tools.txt</span>
+              <span className="sysinfo-val">
+                <span className="hl-purple">Claude Code</span>
+                <span className="sysinfo-sep"> · </span>
+                <span className="hl-orange">Cursor</span>
+                <span className="sysinfo-sep"> · </span>
+                <span className="hl-blue">AI-assisted workflows</span>
               </span>
             </div>
             <div className="sysinfo-divider" />
