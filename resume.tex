@@ -10,6 +10,7 @@
 \usepackage{lastpage}
 \usepackage{CormorantGaramond}
 \usepackage{charter}
+\newcommand{\keyword}[1]{{\bfseries\color{accentTitle}#1}}
 \usepackage{xcolor}
 
 \definecolor{accentTitle}{HTML}{0e6e55}
@@ -18,14 +19,17 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\addtolength{\oddsidemargin}{-0.7in}
-\addtolength{\evensidemargin}{-0.5in}
+\renewcommand{\headrulewidth}{0pt}
+\addtolength{\oddsidemargin}{-0.595in}
+\addtolength{\evensidemargin}{-0.595in}
 \addtolength{\textwidth}{1.19in}
 \addtolength{\topmargin}{-0.7in}
 \addtolength{\textheight}{1.4in}
 \setlength{\footskip}{4.0pt}
-\input{glyphtounicode}
-\pdfgentounicode=1
+\ifx\pdfgentounicode\undefined\else
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+\fi
 
 \newcommand{\documentTitle}[2]{
   \begin{center}
@@ -41,7 +45,7 @@
 \newcommand{\tinysection}[1]{\phantomsection\addcontentsline{toc}{section}{#1}{\large{\bfseries\color{accentText}#1} {\color{accentLine} |}}}
 \newcommand{\headingBf}[2]{\par\noindent\hspace*{10pt}\textbf{#1}\hfill\textbf{#2}}
 \newcommand{\headingIt}[2]{\par\noindent\hspace*{10pt}\textit{#1}\hfill\textit{#2}}
-\newenvironment{resume_list}{\vspace{-7pt}\begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=30pt]}{\end{itemize}}
+\newenvironment{resume_list}{\vspace{-7pt}\begin{itemize}[itemsep=-2pt, parsep=1pt, leftmargin=30pt]}{\end{itemize}}
 \newcommand{\itemTitle}[1]{\item[] \underline{#1}\vspace{4pt}}
 \renewcommand\labelitemi{--}
 
@@ -55,16 +59,16 @@
   }
 
   \tinysection{Executive Summary}
-  GenAI Solutions Engineer with 6+ years of experience designing, deploying, and operating production AI systems across financial services and healthcare. Expert in Multi-Agent orchestration (LangGraph), Enterprise RAG, model serving optimization, and agentic governance. Proven ability to partner with customer stakeholders to convert AI ambition into production-ready, scalable systems. Skilled in bridging deep technical depth (Python, AWS, Azure, Kubernetes) with customer-facing communication to deliver trusted, high-impact GenAI solutions. ECBA-certified (IIBA) professional experienced in mentoring engineering teams and championing responsible AI practices.
+  GenAI Solutions Engineer with 7+ years of experience designing, deploying, and operating production AI systems across financial services and healthcare. Expert in \keyword{Multi-Agent orchestration (LangGraph)}, \keyword{Enterprise RAG}, \keyword{model serving optimization}, and \keyword{agentic governance}. Proven ability to partner with customer stakeholders to convert AI ambition into production-ready, scalable systems. Architects systems and workflows purpose-built for AI-assisted development and operations, leveraging tools such as \keyword{Claude Code} and \keyword{Cursor} to accelerate delivery and code quality. Passionate about \keyword{LLM-augmented engineering} for both coding and everyday workflows. Skilled in bridging deep technical depth (\keyword{Python, AWS, Azure, Kubernetes}) with customer-facing communication to deliver trusted, high-impact GenAI solutions. \keyword{ECBA-certified (IIBA)} professional experienced in mentoring engineering teams and championing responsible AI practices.
 
   \section{Skills}
-  \begin{itemize}[itemsep=-2px, parsep=1pt, leftmargin=120pt]
+  \begin{itemize}[itemsep=-2pt, parsep=1pt, leftmargin=90pt, labelwidth=80pt, labelsep=10pt, align=left]
       \item[\textbf{GenAI \& LLMs}] Multi-Agent Orchestration, LangGraph, LangChain, RAG Architectures, Model Fine-Tuning, LLM Evaluation (LangFuse), Prompt Engineering, NLU, Intent Classification, Human-in-the-Loop Governance.
-      \item[\textbf{Model Serving}] OpenAI API, Anthropic API, HuggingFace Transformers, PyTorch, Token Optimization, Latency/Throughput Tuning.
+      \item[\textbf{Model Serving}] OpenAI API, Anthropic API, HuggingFace, PyTorch, Token Optimization, Latency \& Throughput Tuning.
       \item[\textbf{Backend}] Python (FastAPI, Flask), Java (Spring Boot), NodeJS, REST API Design, OpenAPI/Swagger.
       \item[\textbf{Data \& State}] Vector DBs (Pinecone, Weaviate), MongoDB Atlas, PostgreSQL, Redis.
       \item[\textbf{Cloud \& Infra}] AWS (ECR, ECS, S3), Azure (Container Apps, Service Bus, Blob Storage), Docker, Kubernetes, Terraform (IaC), CI/CD (GitHub Actions).
-      \item[\textbf{Solution Design}] Solution Architecture, Customer Requirements Analysis, AgentOps, MLOps, Technical Documentation (BPMN), Agile/Scrum, Responsible AI.
+      \item[\textbf{Solutions}] Solution Architecture, Customer Requirements Analysis, AgentOps, MLOps, Technical Documentation (BPMN), Agile/Scrum, Responsible AI.
   \end{itemize}
 
   \section{Experience}
@@ -74,6 +78,7 @@
   \begin{resume_list}
     \itemTitle{Project: Autonomous Credit Risk \& Multi-Agent Research Suite}
     \item Architected a production-grade Multi-Agent orchestration system using LangGraph and Python, partnering with customer stakeholders to automate end-to-end credit risk assessment and brand risk management for KYB processes.
+    \item Trained and evaluated NLP and image-based models for named entity recognition and object detection, achieving above 95 percent accuracy on both tasks through iterative experimentation and hyperparameter optimization.
     \item Reduced total inference latency by 60 percent by designing a concurrent orchestration state layer that manages parallel tool-calling and asynchronous agentic flows, balancing model quality against throughput and token cost constraints.
     \item Implemented agentic governance controls including Human-in-the-Loop review gates for high-risk credit decisions and configurable approval workflows to ensure responsible and compliant AI operations.
     \item Established automated regression testing and evaluation pipelines using LLM-as-a-judge patterns to validate tool-selection precision, factual faithfulness, and detect output drift across model versions.
@@ -81,6 +86,7 @@
     \item Optimized RAG pipelines with pre-caching, semantic-aware chunking, and optimized vector search to minimize time-to-first-token for generated credit memos and financial analysis reports.
     \item Engineered rate-limiting and throttling handlers using exponential backoff and token-bucket strategies to manage high-volume API requests across multiple LLM providers.
     \item Managed the full infrastructure lifecycle using Terraform to provision Azure Service Bus, MongoDB Atlas, and cloud-native container environments, with CI/CD on GitHub Actions reducing deployment time by 40 percent.
+    \item Championed AI-assisted development across the engineering team, driving adoption of Claude Code and Cursor as core development tools and establishing AI-augmented coding workflows that accelerated feature delivery and elevated code quality standards.
   \end{resume_list}
 
   \headingBf{BGC Group}{Feb 2025 -- May 2025}

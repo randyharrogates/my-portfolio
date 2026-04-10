@@ -68,10 +68,48 @@
   opacity: 0;
 }
 
+.intro-badge {
+  display: inline-block;
+  margin: 6px 0 4px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ff9800;
+  border: 1px solid #ff980066;
+  border-radius: 4px;
+  background: #ff980012;
+  text-shadow: 0 0 8px #ff980040;
+}
+
+.badge-prompt {
+  color: #4caf50;
+  margin-right: 4px;
+}
+
+.intro-belief {
+  font-size: 12px;
+  font-style: italic;
+  color: #8a8480;
+  margin: 2px 0 4px;
+  letter-spacing: 0.03em;
+}
+
 .intro-role {
   font-size: 13px;
   color: #6b6560;
   letter-spacing: 0.04em;
+}
+
+.intro-quote {
+  margin-top: 24px;
+  padding: 12px 16px;
+  border-left: 3px solid #ff980066;
+  font-size: 13px;
+  font-style: italic;
+  color: #6b6560;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
 }
 
 /* Bio */
