@@ -91,7 +91,7 @@ const AboutMe: React.FC = () => {
               <span className="hl-orange">Cursor</span> daily to architect enterprise-grade
               AI coding workflows that accelerate delivery and code quality.
             </p>
-            <p className="intro-bio-cta">Explore my solution architectures and case studies below.</p>
+            <p className="intro-bio-cta">Explore my <a href="#/projects" className="hl-green">solution architectures and case studies</a>.</p>
           </div>
 
           {/* Links */}
