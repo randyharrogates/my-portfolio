@@ -23,7 +23,6 @@ Before and during implementation:
 - Imports grouped: React/libraries, local modules, CSS
 - Functional components with hooks only
 - TypeScript interfaces at top of file, no `any`
-- Always run a sub-agent to check your code after implementation
 
 ### 2. Coding Best Practices
 
@@ -59,7 +58,27 @@ npm test -- --watchAll=false
 - All tests MUST pass
 - Fix any failing tests before proceeding
 
-### 4. Implementation Checklist
+### 4. Mandatory Subagent Reviews (MANDATORY)
+
+After all quality gates pass and before reporting completion, dispatch **both** `code-quality-reviewer` and `plan-verifier` **in parallel** — a single assistant message containing two `Task` tool calls, one with `subagent_type="code-quality-reviewer"` and one with `subagent_type="plan-verifier"`. Do not run them sequentially: they review independent concerns (implementation quality vs plan adherence), so concurrent dispatch is faster and avoids one anchoring on the other's findings.
+
+**`code-quality-reviewer`** will:
+
+- Skim the diff against project invariants, coding rules, and the best-practices checklists.
+- Surface readability, complexity, security, and architectural concerns.
+- Auto-loop a fix-up implementer pass up to 2 times if substantive issues are found.
+
+**`plan-verifier`** will:
+
+- Locate the plan (most recent `/Users/randychan/.claude/plans/*.md` matching the branch/task, plus the active TodoWrite list).
+- Run the four-check rubric (task completeness, scope discipline, test coverage, plan verification section).
+- Auto-loop a fix-up implementer pass up to 2 times if gaps are found.
+
+If either agent triggers an auto-loop fix-up pass, re-dispatch **both** in parallel after each fix-up round so the gates stay synchronised.
+
+**qcode is not complete until BOTH subagents return ✅ (or each has exhausted its 2 auto-loop rounds with documented residual gaps).**
+
+### 5. Implementation Checklist
 
 Before marking implementation complete, verify:
 
@@ -74,6 +93,9 @@ Before marking implementation complete, verify:
 - [ ] Imports grouped properly
 - [ ] Accessibility attributes present
 - [ ] HashRouter compatibility maintained
+- [ ] code-quality-reviewer and plan-verifier dispatched in a single parallel turn
+- [ ] code-quality-reviewer returned ✅ (or exhausted 2 auto-loop rounds with documented residual gaps)
+- [ ] plan-verifier returned ✅ (or exhausted 2 auto-loop rounds with documented residual gaps)
 
 ## Expected Output
 
@@ -84,4 +106,4 @@ After running this skill, you should:
 - Have production-ready code with no TODOs
 - Confirm all files follow project conventions
 - Report any issues encountered during implementation
-- Have had a sub-agent validate your code
+- Have dispatched `code-quality-reviewer` and `plan-verifier` in parallel and either received ✅ from both or exhausted each agent's 2 auto-loop rounds with documented residual gaps

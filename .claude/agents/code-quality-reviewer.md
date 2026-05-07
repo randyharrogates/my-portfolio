@@ -1,7 +1,7 @@
 ---
 name: code-quality-reviewer
 description: Use this agent when code changes have been made and need comprehensive quality review for a React/TypeScript portfolio site. Examples - reviewing new page components, validating routing changes, checking terminal aesthetic consistency.
-model: sonnet
+model: haiku
 color: pink
 ---
 

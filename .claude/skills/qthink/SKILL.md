@@ -1,6 +1,6 @@
 ---
 name: qthink
-description: Ultra-deep evaluation and planning workflow. Use when user types 'qthink' OR when complex tasks need comprehensive analysis before implementation. Performs comprehensive analysis, evaluates alternatives, identifies ambiguities, and follows strict implementation principles (KISS/YAGNI/DRY) before making any edits.
+description: Ultra-deep evaluation and planning workflow. Use when user types 'qthink' OR when complex tasks need comprehensive analysis before implementation. Also activates on "grill me" / "stress-test this plan"; clarification runs as a one-question-at-a-time interview that walks the decision tree. Performs comprehensive analysis, evaluates alternatives, identifies ambiguities, and follows strict implementation principles (KISS/YAGNI/DRY) before making any edits.
 ---
 
 # QTHINK - Ultra-Deep Evaluation Workflow
@@ -24,6 +24,12 @@ When this skill is invoked, you MUST follow these principles:
    - Do NOT proceed with unclear requirements
    - Ask specific questions about implementation choices
    - Confirm assumptions before coding
+   - **Interview Mode (replaces bulk Q&A):**
+     - **One question at a time.** Wait for the answer before asking the next.
+     - **Walk the decision tree.** Each answered question may reveal a child question; resolve dependencies before moving to the next sibling branch.
+     - **Recommend per question.** Every question carries your recommended answer with one-line rationale, so the user can confirm with a single word.
+     - **Explore the codebase first.** If the answer is discoverable via Read/Grep/Glob (e.g. an existing route in `src/App.tsx`, a `TABS` entry, a HashRouter constraint), answer it yourself and state the finding. Do not ask the user what the code already knows.
+     - **Keep going until shared understanding.** "Looks fine" is not resolution; if ambiguity remains on any branch, the next question fires.
 
 3. **Do not do edits or create new documents** unless specifically instructed or allowed by user
    - This is an ANALYSIS phase, not implementation
@@ -101,27 +107,20 @@ For each alternative, assess:
 - Does it follow KISS/YAGNI/DRY principles?
 - Is it consistent with existing codebase patterns?
 
-### 4. Ambiguity Identification
+### 4. Ambiguity Identification (Interview, not bulk dump)
 
-**Questions to Ask User**:
-- What are the unclear requirements?
-- What are the implementation choices that need user input?
-- What are the edge cases that need handling?
+Run clarifications as an interview per the Interview Mode rules above:
+**ask one question at a time, recommend an answer, and explore the codebase
+first when the answer is discoverable via Read/Grep/Glob.** Do not produce a
+numbered bulk-question list and ask the user to answer them all at once.
 
-**Clarification Format**:
+**Per-question format** (one of these per turn, not a batch):
 
 ```
-I need clarification on the following before proceeding:
-
-1. [Specific question about requirement]
-   - Option A: [description]
-   - Option B: [description]
-   - Recommendation: [your recommendation with rationale]
-
-2. [Specific question about implementation]
-   - Current approach: [description]
-   - Alternative: [description]
-   - Trade-offs: [comparison]
+Q: [Specific question about requirement or implementation]
+  - Option A: [description]
+  - Option B: [description]
+  - Recommendation: [your pick with one-line rationale]
 ```
 
 ### 5. Design Principles Validation
@@ -177,8 +176,8 @@ Provide your ultra-think analysis in this format:
 
 **Recommendation**: [Which option and why]
 
-### 4. Clarification Needed
-[List of questions for user, or "None - requirements are clear"]
+### 4. Interview
+[Running, one-question-at-a-time interview per the Interview Mode rules. Do not advance to "Recommendation" or "Next Steps" until every branch of the decision tree is resolved. State "None - requirements are clear" only when no branch remains.]
 
 ### 5. Design Principles Check
 - KISS: ✓/✗ [explanation]
