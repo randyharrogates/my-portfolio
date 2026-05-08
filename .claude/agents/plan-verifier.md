@@ -44,11 +44,17 @@ Identify any implementation that goes **beyond** what the plan called for ("noth
 
 ### C. Test Coverage
 If the plan called for tests:
-1. Confirm tests exist for each planned behaviour (cite test `file:line`).
-2. Read the project's `qcode/SKILL.md` quality-gates section to discover the project's test command.
-3. Run that command and capture the result. Report PASS/FAIL with the failing test names if any.
+1. Confirm tests exist for each planned behaviour (cite test `file:line`). Always run.
+2. **Round 0**: skip the test-command run. qcode's quality-gates step
+   has just run the project's test command green; re-running here would
+   be redundant. State explicitly in the report:
+   "C(2) skipped — qcode gates green at dispatch (Round 0)".
+   **Rounds 1–2**: read the project's `qcode/SKILL.md` quality-gates
+   section to discover the test command, run it, and capture the result.
+   Report PASS/FAIL with failing test names.
 
-If the plan did not call for tests, state that explicitly and skip the run.
+If the plan did not call for tests, state that explicitly and skip both
+sub-steps.
 
 ### D. Plan Verification Section
 If the plan has a `## Verification` (or equivalent) section, **execute every step** — run the commands, hit the endpoints, count the files, etc. Capture exit codes / output. Report each step PASS/FAIL with the observed evidence.
