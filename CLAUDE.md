@@ -58,6 +58,34 @@ A subtle slow-drifting agent graph sits behind every page (`AmbientCanvas` mount
 - `frameloop="never"` when the tab is hidden (Visibility API) or `prefers-reduced-motion: reduce` is set
 - No post-processing, no shadows, no bloom — cheap geometry only
 
-## Architecture Diagrams
+## Architecture Diagrams (gated)
 
-The project detail pages with non-trivial systems — `KybPipeline.tsx` and `CreditMemo.tsx` — embed inline SVG architecture diagrams via the `<ArchitectureDiagram>` wrapper at `src/components/ArchitectureDiagram.tsx`. The wrapper provides a bordered figure with horizontal-scroll on mobile and `aria-label` for screen readers. Diagrams are hand-authored SVG (no Mermaid runtime) using the terminal palette: `#1d1b19` node fill, `#3a3532` baseline border, `#e8632a` accent for the primary flow, `#5a5450` for arrows. Other project pages don't have one because their architectures are too sparse to justify one.
+`KybPipeline.tsx` and `CreditMemo.tsx` reference architecture diagrams that are **gated behind a password**. The encrypted SVG markup ships in `src/data/encrypted-diagrams.json`; the plaintext SVG lives only in `secrets/` (gitignored, never committed). Without the password, visitors see a `<LockedDiagram>` panel with an unlock prompt and a "request access" mailto button. Unlocking is per-session (no localStorage persistence). One password unlocks both diagrams; entering it once on either page unlocks the other for the session.
+
+### How it works
+
+- Crypto: PBKDF2-SHA256 (600k iterations) → AES-256-GCM. Random salt + IV per diagram.
+- Browser-side: `src/components/diagram-unlock.ts` derives the key via `crypto.subtle` and decrypts in-memory. GCM tag verification means a wrong password just throws.
+- Component: `src/components/LockedDiagram.tsx` shows a locked panel by default; on successful unlock it renders the decrypted SVG inside the `<ArchitectureDiagram>` wrapper.
+
+### Setting / rotating the password
+
+```bash
+# Locally — replace 'your-strong-key' with the real password (never commit it).
+PORTFOLIO_DIAGRAM_PASSWORD='your-strong-key' npm run encrypt-diagrams
+git add src/data/encrypted-diagrams.json
+git commit -m "rotate gated-diagram password"
+git push  # triggers redeploy
+```
+
+The script reads the plaintext SVG files from `/secrets/`, encrypts each with the supplied password, and writes a new `src/data/encrypted-diagrams.json`. The repo only ever contains opaque ciphertext + per-entry salt + per-entry IV. Choose a password with reasonable entropy (12+ random characters) — this is GitHub Pages, so the bundle is publicly readable but the SVG content is not recoverable without the password.
+
+### Adding a new gated diagram
+
+1. Drop the plaintext SVG into `secrets/your-id-svg.html`.
+2. Add `{ id: "your-id", source: "secrets/your-id-svg.html" }` to the `ENTRIES` array in `scripts/encrypt-diagrams.mjs`.
+3. Extend the `DiagramId` union in `src/components/diagram-unlock.ts`.
+4. Re-run `npm run encrypt-diagrams` and commit the regenerated JSON.
+5. Render `<LockedDiagram diagramId="your-id" ariaLabel="…" requestEmail="…" />` from the page that needs it.
+
+Other project detail pages don't have diagrams because their architectures are too sparse to justify one.
