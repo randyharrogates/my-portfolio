@@ -2,6 +2,7 @@
 
 import React from "react";
 import "./CreditMemo.css";
+import ArchitectureDiagram from "../components/ArchitectureDiagram.tsx";
 
 const CreditMemo: React.FC = () => {
   return (
@@ -80,6 +81,186 @@ const CreditMemo: React.FC = () => {
             for LLM operations, multi-source search, vector retrieval, content processing, and quality assessment
             — achieving 85% latency reduction and 80%+ memory savings over the previous architecture.
           </p>
+
+          <ArchitectureDiagram
+            ariaLabel="Credit memo architecture: 11 LangGraph components emit to Azure Service Bus, which 14 workers consume to feed 8 retrieving domains"
+            caption="11 LangGraph components · Azure Service Bus · 14 worker consumers · 8 analysis domains"
+          >
+            <svg viewBox="0 0 940 420" role="img" aria-hidden="false">
+              <title>Credit Memo Architecture</title>
+              <desc>
+                A central Azure Service Bus orchestrates 11 LangGraph components. Each component runs
+                a Processing then Retrieving phase. 14 worker consumers pull from the bus. Eight
+                analysis domains (business, financial, news, management, industry, ESG, competition,
+                customer/supplier) are produced. A multi-LLM layer (OpenAI, Anthropic, Google) feeds
+                processing; a shared vector cache (NFS + Azure Blob) supports retrieval; human-in-the-loop
+                gates provide governance.
+              </desc>
+
+              <defs>
+                <marker id="cm-arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                        markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#5a5450" />
+                </marker>
+                <marker id="cm-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5"
+                        markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#e8632a" />
+                </marker>
+              </defs>
+
+              {/* Top peripherals */}
+              <g>
+                <rect className="ad-node" x="20" y="14" width="300" height="32" rx="16" />
+                <text className="ad-label" x="170" y="34" textAnchor="middle">
+                  Multi-LLM · OpenAI · Anthropic · Google
+                </text>
+              </g>
+              <g>
+                <rect className="ad-node-active" x="620" y="14" width="300" height="32" rx="16" />
+                <text className="ad-label" x="770" y="34" textAnchor="middle">
+                  HITL · Human-in-the-Loop review gates
+                </text>
+              </g>
+
+              {/* Phase 1: 11 LangGraph components (two rows: 6 + 5) */}
+              <text className="ad-phase" x="20" y="74">PHASE 1 — PROCESSING (11 LANGGRAPH COMPONENTS)</text>
+              {/* Row 1: 6 pills */}
+              <g>
+                <rect className="ad-node" x="20" y="84" width="140" height="34" rx="4" />
+                <text className="ad-label" x="90" y="106" textAnchor="middle">business</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="170" y="84" width="140" height="34" rx="4" />
+                <text className="ad-label" x="240" y="106" textAnchor="middle">financial</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="320" y="84" width="140" height="34" rx="4" />
+                <text className="ad-label" x="390" y="106" textAnchor="middle">news</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="470" y="84" width="140" height="34" rx="4" />
+                <text className="ad-label" x="540" y="106" textAnchor="middle">management</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="620" y="84" width="140" height="34" rx="4" />
+                <text className="ad-label" x="690" y="106" textAnchor="middle">industry</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="770" y="84" width="150" height="34" rx="4" />
+                <text className="ad-label" x="845" y="106" textAnchor="middle">esg</text>
+              </g>
+              {/* Row 2: 5 pills (centered) */}
+              <g>
+                <rect className="ad-node" x="95" y="126" width="140" height="34" rx="4" />
+                <text className="ad-label" x="165" y="148" textAnchor="middle">competition</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="245" y="126" width="180" height="34" rx="4" />
+                <text className="ad-label" x="335" y="148" textAnchor="middle">customer/supplier</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="435" y="126" width="160" height="34" rx="4" />
+                <text className="ad-label" x="515" y="148" textAnchor="middle">foundation pipeline ×2</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="605" y="126" width="160" height="34" rx="4" />
+                <text className="ad-label" x="685" y="148" textAnchor="middle">agentic chatbot</text>
+              </g>
+              <g>
+                <rect className="ad-node" x="775" y="126" width="145" height="34" rx="4" />
+                <text className="ad-label-mute" x="847" y="148" textAnchor="middle">+ 27 modules</text>
+              </g>
+
+              {/* Service Bus spine */}
+              <g>
+                <rect className="ad-node-spine" x="20" y="190" width="900" height="44" rx="22" />
+                <text className="ad-label" x="470" y="217" textAnchor="middle">
+                  Azure Service Bus · event-driven orchestration
+                </text>
+              </g>
+
+              {/* 14 worker ticks */}
+              <g>
+                <text className="ad-label-mute" x="20" y="258">14 worker consumers ↓</text>
+                {Array.from({ length: 14 }).map((_, i) => {
+                  const x = 200 + i * 36;
+                  return (
+                    <line
+                      key={i}
+                      x1={x}
+                      y1={246}
+                      x2={x}
+                      y2={262}
+                      stroke="#e8632a"
+                      strokeWidth="2"
+                    />
+                  );
+                })}
+              </g>
+
+              {/* Phase 2: 8 analysis domains, color-coded */}
+              <text className="ad-phase" x="20" y="288">PHASE 2 — RETRIEVING (8 ANALYSIS DOMAINS)</text>
+              {[
+                { x: 20, name: "business", color: "#e8632a" },
+                { x: 130, name: "financial", color: "#4ade80" },
+                { x: 240, name: "news", color: "#60a5fa" },
+                { x: 350, name: "management", color: "#c084fc" },
+                { x: 460, name: "industry", color: "#e8632a" },
+                { x: 570, name: "esg", color: "#4ade80" },
+                { x: 680, name: "competition", color: "#60a5fa" },
+                { x: 790, name: "customer/supplier", color: "#c084fc" },
+              ].map((d, i) => (
+                <g key={i}>
+                  <rect
+                    x={d.x}
+                    y={300}
+                    width="105"
+                    height="34"
+                    rx="4"
+                    fill="#1d1b19"
+                    stroke={d.color}
+                    strokeOpacity="0.55"
+                    strokeWidth="1.25"
+                  />
+                  <text className="ad-label" x={d.x + 52} y={322} textAnchor="middle">
+                    {d.name}
+                  </text>
+                </g>
+              ))}
+
+              {/* Vector cache lozenge (bottom-left) */}
+              <g>
+                <rect className="ad-node" x="20" y="370" width="320" height="34" rx="16" />
+                <text className="ad-label" x="180" y="391" textAnchor="middle">
+                  Vector cache · NFS + Azure Blob
+                </text>
+              </g>
+              {/* Output lozenge (bottom-right) */}
+              <g>
+                <rect className="ad-node-active" x="600" y="370" width="320" height="34" rx="16" />
+                <text className="ad-label" x="760" y="391" textAnchor="middle">
+                  Synthesized credit memo · evidence-indexed
+                </text>
+              </g>
+
+              {/* Edges */}
+              {/* Multi-LLM → Processing (down) */}
+              <path className="ad-edge" d="M 170 46 L 170 84" markerEnd="url(#cm-arrow)" />
+              {/* Processing rows → Service Bus */}
+              <path className="ad-edge-accent" d="M 470 160 L 470 190" markerEnd="url(#cm-arrow-accent)" />
+              <path className="ad-edge" d="M 90 118 L 90 190" markerEnd="url(#cm-arrow)" />
+              <path className="ad-edge" d="M 845 118 L 845 190" markerEnd="url(#cm-arrow)" />
+              {/* Service Bus → Retrieving (via worker ticks already shown) */}
+              <path className="ad-edge-accent" d="M 470 234 L 470 300" markerEnd="url(#cm-arrow-accent)" />
+              {/* Retrieving → Output */}
+              <path className="ad-edge-accent" d="M 760 334 L 760 370" markerEnd="url(#cm-arrow-accent)" />
+              {/* Vector cache ↔ Service Bus */}
+              <path className="ad-edge" d="M 180 370 L 180 234" markerEnd="url(#cm-arrow)" />
+              <path className="ad-edge" d="M 200 234 L 200 370" markerEnd="url(#cm-arrow)" />
+              {/* HITL → Output */}
+              <path className="ad-edge" d="M 770 46 C 770 70, 920 200, 920 370" markerEnd="url(#cm-arrow)" fill="none" />
+            </svg>
+          </ArchitectureDiagram>
 
           {/* Capabilities */}
           <h4 className="cm-subheading">Key Capabilities</h4>
