@@ -3,7 +3,7 @@
 import React, { Suspense, lazy } from "react";
 import "./Resume.css";
 
-const ResumeMobileViewer = lazy(() => import("./ResumeMobileViewer"));
+const ResumeMobileViewer = lazy(() => import("./ResumeMobileViewer.tsx"));
 
 const Resume: React.FC = () => {
   const pdfUrl = process.env.PUBLIC_URL + "/Resume.pdf";
