@@ -52,31 +52,12 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 
 ## Ambient 3D Background
 
-A subtle full-viewport 3D canvas sits behind every page in `App.tsx`, lazy-loaded so it doesn't block first paint. Three scene options + an off switch are exposed via a small inline radio toggle in the bottom status bar (`AmbientToggle`).
+A subtle slow-drifting agent graph sits behind every page (`AmbientCanvas` mounted in `App.tsx`). Lazy-loaded via `React.lazy` so the R3F core ships as a separate chunk and doesn't block first paint. The graph is `pointer-events: none` and decorative only — it doesn't intercept clicks and isn't interactive. On mobile the terminal window covers most of the viewport, so the canvas is largely hidden behind it; that is accepted.
 
-| ID | Scene |
-|---|---|
-| `graph` (default) | Slow-drifting agent graph — ~38 abstract nodes, ~12% accented orange, edges ~32% opacity. Self-referential to multi-agent orchestration. |
-| `phosphor` | CRT phosphor texture — sparse glowing dots on a fullscreen plane, slow shimmer. Most on-brand for terminal aesthetic. |
-| `grid` | Vanishing wireframe grid — receding tile floor with distance fade, pans toward camera. |
-| `off` | No canvas mounted. Static gradient background only. |
-
-### Resolution order
-
-1. URL query — `http://localhost:3000/#/?ambient=phosphor` (HashRouter — parsed from the hash)
-2. `localStorage.getItem('ambient3d.scene')` — clicking the toggle persists here
-3. Default: `graph`
-
-### Performance
-
-- `AmbientCanvas` is lazy-loaded: main bundle stays at ~82KB; the R3F core (`~224KB`) ships as a separate chunk that loads after first paint
 - DPR clamped to `[1, 1.25]` (and `[1, 1]` on low-power devices: `navigator.hardwareConcurrency < 4` or `max-width: 800px`)
 - `frameloop="never"` when the tab is hidden (Visibility API) or `prefers-reduced-motion: reduce` is set
-- All scenes use simple geometries (lines, cheap planes, low-segment spheres). No post-processing, no shadows, no bloom
-- `pointer-events: none` on the canvas so it doesn't intercept clicks
+- No post-processing, no shadows, no bloom — cheap geometry only
 
-### Adding a new ambient scene
+## Architecture Diagrams
 
-1. Create `src/components/ambient-3d/scenes/MyScene.tsx` with the signature `(props: { lowPerf: boolean; reducedMotion: boolean }) => JSX`. Keep it light — this scene paints behind every page, on every visit.
-2. Extend `AmbientSceneId` and `AMBIENT_SCENES` in `src/components/ambient-3d/types.ts`.
-3. Add a `lazy()` import + render branch in `AmbientCanvas.tsx`.
+The project detail pages with non-trivial systems — `KybPipeline.tsx` and `CreditMemo.tsx` — embed inline SVG architecture diagrams via the `<ArchitectureDiagram>` wrapper at `src/components/ArchitectureDiagram.tsx`. The wrapper provides a bordered figure with horizontal-scroll on mobile and `aria-label` for screen readers. Diagrams are hand-authored SVG (no Mermaid runtime) using the terminal palette: `#1d1b19` node fill, `#3a3532` baseline border, `#e8632a` accent for the primary flow, `#5a5450` for arrows. Other project pages don't have one because their architectures are too sparse to justify one.
