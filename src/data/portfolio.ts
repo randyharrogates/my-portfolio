@@ -1,6 +1,6 @@
 /** @format */
 
-import type { PortfolioData, TechItem } from "./types.ts";
+import type { PortfolioData, TechItem } from "./portfolio-types.ts";
 
 export const portfolioData: PortfolioData = {
   identity: {

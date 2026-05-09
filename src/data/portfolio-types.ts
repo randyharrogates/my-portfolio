@@ -1,11 +1,5 @@
 /** @format */
 
-export type LandingThemeId =
-  | "terminal-workstation"
-  | "mission-control"
-  | "constellation"
-  | "topographic";
-
 export type ChipColor = "orange" | "blue" | "green" | "purple";
 
 export type TechCategory = "ai-ml" | "cloud" | "data" | "lang" | "infra";
@@ -69,19 +63,4 @@ export interface PortfolioData {
   interests: string[];
   aiTools: string[];
   socials: { email: string; github: string; linkedin: string };
-}
-
-export interface ThemeComponentProps {
-  data: PortfolioData;
-  typedName: string;
-  showCursor: boolean;
-  reducedMotion: boolean;
-  lowPerf: boolean;
-}
-
-export interface ThemeMeta {
-  id: LandingThemeId;
-  label: string;
-  description: string;
-  defaultCameraPos: [number, number, number];
 }
