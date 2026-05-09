@@ -46,54 +46,37 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 
 **Base href:** `public/index.html` sets `<base href="/my-portfolio/">` for correct asset resolution on GitHub Pages.
 
-## 3D Landing Page
+## Portfolio Data Source
 
-`AboutMe.tsx` includes an interactive 3D hero band powered by **React Three Fiber**. The same `portfolioData` (in `src/components/landing-3d/data.ts`) drives both the DOM (tech chips, system-info rows, certs) and the 3D scene — so updating content there propagates to every theme + the 2D layout in lockstep.
+`src/data/portfolio.ts` is the single source of truth for personal content (identity, tech stack, roles, certifications, education, interests, social links). `AboutMe.tsx` consumes it directly; the ambient 3D layer also reads from it. Editing `portfolioData` here propagates everywhere — never duplicate content into a component.
 
-### Themes
+## Ambient 3D Background
 
-Four themes are shipped, each lazy-loaded as a separate chunk:
+A subtle full-viewport 3D canvas sits behind every page in `App.tsx`, lazy-loaded so it doesn't block first paint. Three scene options + an off switch are exposed via a small inline radio toggle in the bottom status bar (`AmbientToggle`).
 
-| ID | What it shows |
+| ID | Scene |
 |---|---|
-| `terminal-workstation` (default) | Virtual desk + CRT monitor (typed name on screen); books per cert; mug; status LED. |
-| `mission-control` | Orbital rings of tech-stack satellites; live telemetry HUD overlay (uptime, location, status, interests). |
-| `constellation` | 3D graph of tech-stack nodes; edges thickened by project co-occurrence; transitive-fade on hover. |
-| `topographic` | Career terrain: pin-towers per role, X-axis is time, height encodes tenure × scope. |
+| `graph` (default) | Slow-drifting agent graph — ~38 abstract nodes, ~12% accented orange, edges ~32% opacity. Self-referential to multi-agent orchestration. |
+| `phosphor` | CRT phosphor texture — sparse glowing dots on a fullscreen plane, slow shimmer. Most on-brand for terminal aesthetic. |
+| `grid` | Vanishing wireframe grid — receding tile floor with distance fade, pans toward camera. |
+| `off` | No canvas mounted. Static gradient background only. |
 
-**When to use which:** `terminal-workstation` is the personal/quirky default. Use `mission-control` for a high-signal recruiter view. Use `constellation` for tech-heavy audiences who want to see how skills connect. Use `topographic` to emphasize the career arc.
+### Resolution order
 
-### Feature flag
+1. URL query — `http://localhost:3000/#/?ambient=phosphor` (HashRouter — parsed from the hash)
+2. `localStorage.getItem('ambient3d.scene')` — clicking the toggle persists here
+3. Default: `graph`
 
-The active theme is resolved in this order (first non-empty wins):
-1. URL query — `http://localhost:3000/#/?theme=mission-control` (parsed from the hash, since this app uses `HashRouter`)
-2. `localStorage.getItem('landing3d.theme')` — clicking the in-page switcher persists here
-3. `process.env.REACT_APP_LANDING_3D_THEME` (set in `.env.local` for build-time default)
-4. Fallback: `terminal-workstation`
+### Performance
 
-The visible theme switcher in the top-right corner of the 3D hero writes to localStorage on click.
+- `AmbientCanvas` is lazy-loaded: main bundle stays at ~82KB; the R3F core (`~224KB`) ships as a separate chunk that loads after first paint
+- DPR clamped to `[1, 1.25]` (and `[1, 1]` on low-power devices: `navigator.hardwareConcurrency < 4` or `max-width: 800px`)
+- `frameloop="never"` when the tab is hidden (Visibility API) or `prefers-reduced-motion: reduce` is set
+- All scenes use simple geometries (lines, cheap planes, low-segment spheres). No post-processing, no shadows, no bloom
+- `pointer-events: none` on the canvas so it doesn't intercept clicks
 
-**Demo URLs:**
-- `http://localhost:3000/#/` — default
-- `http://localhost:3000/#/?theme=mission-control`
-- `http://localhost:3000/#/?theme=constellation`
-- `http://localhost:3000/#/?theme=topographic`
+### Adding a new ambient scene
 
-### Mobile / accessibility
-
-Same 3D on every device — no 2D fallback. `Landing3D` detects low-power devices (`navigator.hardwareConcurrency < 4` or `max-width: 800px`) and disables bloom, drops DPR, and downsamples nodes (e.g. constellation falls back to top-15 by proficiency). `prefers-reduced-motion: reduce` halts all auto-rotation. The canvas pauses (`frameloop="never"`) when the tab is hidden or scrolled off-screen.
-
-### Adding a new theme
-
-Three steps:
-1. Extend the `LandingThemeId` union in `src/components/landing-3d/types.ts`.
-2. Create `src/components/landing-3d/themes/MyTheme.tsx` — a component with the signature `(props: ThemeComponentProps) => JSX`. Read everything from `props.data` — never hardcode content.
-3. Register it in `src/components/landing-3d/themes/registry.ts` with a label, description, and `defaultCameraPos`. Use `lazy(() => import("./MyTheme.tsx"))` so it ships as its own chunk.
-
-### Verifying data/design separation
-
-Edit `portfolioData.techStack` in `data.ts` (e.g., add a new tech). Without touching any theme file, you should see:
-- A new chip in the DOM "Core Stack" callout
-- A new satellite in `mission-control`
-- A new node + auto-wired edges in `constellation`
-- (Terminal-workstation and topographic don't render the tech list — by design.)
+1. Create `src/components/ambient-3d/scenes/MyScene.tsx` with the signature `(props: { lowPerf: boolean; reducedMotion: boolean }) => JSX`. Keep it light — this scene paints behind every page, on every visit.
+2. Extend `AmbientSceneId` and `AMBIENT_SCENES` in `src/components/ambient-3d/types.ts`.
+3. Add a `lazy()` import + render branch in `AmbientCanvas.tsx`.

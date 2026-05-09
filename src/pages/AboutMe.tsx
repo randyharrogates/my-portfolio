@@ -1,12 +1,9 @@
 /** @format */
 
-import React, { Suspense, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./AboutMe.css";
-import { portfolioData } from "../components/landing-3d/data.ts";
-import { useTypingName } from "../components/landing-3d/useTypingName.ts";
-import type { ChipColor, TechItem } from "../components/landing-3d/types.ts";
-
-const Landing3D = React.lazy(() => import("../components/landing-3d/Landing3D.tsx"));
+import { portfolioData } from "../data/portfolio.ts";
+import type { ChipColor, TechItem } from "../data/portfolio-types.ts";
 
 const CHIP_CLASS: Record<ChipColor, string> = {
   orange: "hl-orange",
@@ -37,10 +34,12 @@ const TechChip: React.FC<{ tech: TechItem; isLast: boolean }> = ({ tech, isLast 
 
 const AboutMe: React.FC = () => {
   const data = portfolioData;
-  const { typed, showCursor } = useTypingName(data.identity.name);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [githubUrl, setGithubUrl] = useState<string>(data.socials.github);
+  const [typed, setTyped] = useState<string>("");
+  const [showCursor, setShowCursor] = useState(true);
 
+  // Fetch GitHub profile
   useEffect(() => {
     const username = data.socials.github.split("/").pop();
     if (!username) return;
@@ -53,6 +52,27 @@ const AboutMe: React.FC = () => {
       .catch(() => {});
   }, [data.socials.github]);
 
+  // Typing animation for name
+  useEffect(() => {
+    let i = 0;
+    const fullName = data.identity.name;
+    setTyped("");
+    const delay = setTimeout(() => {
+      const interval = setInterval(() => {
+        i++;
+        setTyped(fullName.slice(0, i));
+        if (i >= fullName.length) clearInterval(interval);
+      }, 75);
+    }, 400);
+    return () => clearTimeout(delay);
+  }, [data.identity.name]);
+
+  // Blinking cursor
+  useEffect(() => {
+    const id = setInterval(() => setShowCursor((v) => !v), 530);
+    return () => clearInterval(id);
+  }, []);
+
   const status = data.identity.status;
 
   return (
@@ -62,13 +82,6 @@ const AboutMe: React.FC = () => {
         <span className="prompt-path">~/portfolio</span>
         <span className="prompt-sep"> $ </span>
         <span className="prompt-cmd">whoami</span>
-      </div>
-
-      {/* 3D centerpiece */}
-      <div className="landing-3d-hero">
-        <Suspense fallback={<div className="landing-3d-skeleton" aria-hidden="true" />}>
-          <Landing3D typedName={typed} showCursor={showCursor} />
-        </Suspense>
       </div>
 
       <div className="intro-layout">
@@ -103,7 +116,7 @@ const AboutMe: React.FC = () => {
 
           {/* Bio */}
           <div className="intro-bio">
-            <p data-role-id="role-genai-se">
+            <p>
               {data.identity.role} with {data.identity.yoe}+ years of experience designing,
               deploying, and operating production AI systems across financial services and
               healthcare. Expert in{" "}

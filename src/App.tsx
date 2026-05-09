@@ -1,6 +1,6 @@
 /** @format */
 
-import React from "react";
+import React, { Suspense } from "react";
 import { HashRouter as Router, Route, Routes, NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
@@ -10,6 +10,11 @@ import Skills from "./pages/Skills.tsx";
 import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
 import Resume from "./pages/Resume.tsx";
+import AmbientToggle from "./components/ambient-3d/AmbientToggle.tsx";
+
+// Lazy-load the canvas so R3F doesn't bloat the main bundle. Suspense fallback is null —
+// the 3D background simply fades in once the chunk arrives (no layout shift, no flash).
+const AmbientCanvas = React.lazy(() => import("./components/ambient-3d/AmbientCanvas.tsx"));
 
 const TABS = [
   { path: "/",              label: "intro",       exact: true  },
@@ -49,6 +54,11 @@ const TerminalApp: React.FC = () => {
 
   return (
     <div className="page-bg">
+      {/* Ambient 3D background — lazy-loaded; sits behind the terminal window */}
+      <Suspense fallback={null}>
+        <AmbientCanvas />
+      </Suspense>
+
       {/* ── Terminal Window ── */}
       <div className="terminal-window">
 
@@ -101,6 +111,9 @@ const TerminalApp: React.FC = () => {
           <div className="status-left">
             <span className="status-dot" />
             available for work
+          </div>
+          <div className="status-center">
+            <AmbientToggle />
           </div>
           <div className="status-right">
             <footer className="terminal-footer">
