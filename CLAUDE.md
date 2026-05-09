@@ -45,3 +45,55 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 **Static assets** (images, screenshots) live in `public/` and are referenced with relative paths.
 
 **Base href:** `public/index.html` sets `<base href="/my-portfolio/">` for correct asset resolution on GitHub Pages.
+
+## 3D Landing Page
+
+`AboutMe.tsx` includes an interactive 3D hero band powered by **React Three Fiber**. The same `portfolioData` (in `src/components/landing-3d/data.ts`) drives both the DOM (tech chips, system-info rows, certs) and the 3D scene — so updating content there propagates to every theme + the 2D layout in lockstep.
+
+### Themes
+
+Four themes are shipped, each lazy-loaded as a separate chunk:
+
+| ID | What it shows |
+|---|---|
+| `terminal-workstation` (default) | Virtual desk + CRT monitor (typed name on screen); books per cert; mug; status LED. |
+| `mission-control` | Orbital rings of tech-stack satellites; live telemetry HUD overlay (uptime, location, status, interests). |
+| `constellation` | 3D graph of tech-stack nodes; edges thickened by project co-occurrence; transitive-fade on hover. |
+| `topographic` | Career terrain: pin-towers per role, X-axis is time, height encodes tenure × scope. |
+
+**When to use which:** `terminal-workstation` is the personal/quirky default. Use `mission-control` for a high-signal recruiter view. Use `constellation` for tech-heavy audiences who want to see how skills connect. Use `topographic` to emphasize the career arc.
+
+### Feature flag
+
+The active theme is resolved in this order (first non-empty wins):
+1. URL query — `http://localhost:3000/#/?theme=mission-control` (parsed from the hash, since this app uses `HashRouter`)
+2. `localStorage.getItem('landing3d.theme')` — clicking the in-page switcher persists here
+3. `process.env.REACT_APP_LANDING_3D_THEME` (set in `.env.local` for build-time default)
+4. Fallback: `terminal-workstation`
+
+The visible theme switcher in the top-right corner of the 3D hero writes to localStorage on click.
+
+**Demo URLs:**
+- `http://localhost:3000/#/` — default
+- `http://localhost:3000/#/?theme=mission-control`
+- `http://localhost:3000/#/?theme=constellation`
+- `http://localhost:3000/#/?theme=topographic`
+
+### Mobile / accessibility
+
+Same 3D on every device — no 2D fallback. `Landing3D` detects low-power devices (`navigator.hardwareConcurrency < 4` or `max-width: 800px`) and disables bloom, drops DPR, and downsamples nodes (e.g. constellation falls back to top-15 by proficiency). `prefers-reduced-motion: reduce` halts all auto-rotation. The canvas pauses (`frameloop="never"`) when the tab is hidden or scrolled off-screen.
+
+### Adding a new theme
+
+Three steps:
+1. Extend the `LandingThemeId` union in `src/components/landing-3d/types.ts`.
+2. Create `src/components/landing-3d/themes/MyTheme.tsx` — a component with the signature `(props: ThemeComponentProps) => JSX`. Read everything from `props.data` — never hardcode content.
+3. Register it in `src/components/landing-3d/themes/registry.ts` with a label, description, and `defaultCameraPos`. Use `lazy(() => import("./MyTheme.tsx"))` so it ships as its own chunk.
+
+### Verifying data/design separation
+
+Edit `portfolioData.techStack` in `data.ts` (e.g., add a new tech). Without touching any theme file, you should see:
+- A new chip in the DOM "Core Stack" callout
+- A new satellite in `mission-control`
+- A new node + auto-wired edges in `constellation`
+- (Terminal-workstation and topographic don't render the tech list — by design.)
