@@ -1,6 +1,6 @@
 /** @format */
 
-import type { ChipColor } from "./types.ts";
+import type { ChipColor } from "../data/portfolio-types.ts";
 
 export const TERMINAL_THEME = {
   paper: "#0c0b0a",

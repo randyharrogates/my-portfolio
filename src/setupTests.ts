@@ -4,23 +4,36 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Stub R3F + drei + postprocessing in jsdom — they pull in WebGL contexts that jsdom can't provide.
+// jsdom lacks matchMedia — provide a no-match stub so components using it don't crash
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+// Stub R3F + drei in jsdom — they pull in WebGL contexts that jsdom can't provide.
 jest.mock('@react-three/fiber', () => ({
-  Canvas: ({ children }: { children?: React.ReactNode }) => null,
+  Canvas: () => null,
   useFrame: () => {},
   useThree: () => ({}),
   extend: () => {},
 }));
 jest.mock('@react-three/drei', () => ({
   OrbitControls: () => null,
-  Html: ({ children }: { children?: React.ReactNode }) => null,
-  Text: ({ children }: { children?: React.ReactNode }) => null,
+  Html: () => null,
+  Text: () => null,
   AdaptiveDpr: () => null,
   PerformanceMonitor: () => null,
-  Float: ({ children }: { children?: React.ReactNode }) => null,
+  Float: () => null,
   Line: () => null,
-}));
-jest.mock('@react-three/postprocessing', () => ({
-  EffectComposer: ({ children }: { children?: React.ReactNode }) => null,
-  Bloom: () => null,
 }));
