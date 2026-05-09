@@ -15,6 +15,34 @@
   align-items: center;
   justify-content: center;
   padding: 20px 30px;
+  position: relative;
+}
+
+/* --- Ambient 3D background --- */
+.ambient-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.ambient-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+/* Subtle vignette overlay so the terminal window edge stays defined against the canvas */
+.ambient-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(12,11,10,0.55) 100%);
+}
+
+/* Lift the terminal window above the canvas */
+.page-bg .terminal-window {
+  position: relative;
+  z-index: 1;
 }
 
 /* --- Terminal Window --- */
@@ -183,6 +211,59 @@
   font-size: 11px;
   color: #5a5450;
   letter-spacing: 0.03em;
+}
+
+.status-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+}
+
+.ambient-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: #5a5450;
+  letter-spacing: 0.03em;
+}
+.ambient-toggle-label {
+  color: #3a3532;
+  margin-right: 2px;
+  text-transform: lowercase;
+}
+.ambient-toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #6b6560;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.ambient-toggle-btn:hover {
+  color: #c8bfb5;
+  border-color: #3a3532;
+}
+.ambient-toggle-btn.is-active {
+  color: #e8632a;
+  border-color: #e8632a66;
+  background: #e8632a14;
+}
+
+@media (max-width: 800px) {
+  .status-center {
+    width: 100%;
+    order: 3;
+    margin-top: 4px;
+  }
+  .terminal-statusbar {
+    flex-wrap: wrap;
+  }
 }
 
 .status-dot {
