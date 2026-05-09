@@ -1,0 +1,119 @@
+.locked-diagram {
+  margin: 24px 0;
+  padding: 28px 24px;
+  border: 1px dashed #3a3532;
+  border-radius: 8px;
+  background: #0c0b0a;
+  text-align: center;
+}
+
+.locked-diagram-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.locked-diagram-icon {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: #e8632a;
+  text-transform: uppercase;
+}
+
+.locked-diagram-title {
+  font-size: 14px;
+  color: #c8bfb5;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.locked-diagram-sub {
+  font-size: 12px;
+  color: #6b6560;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.locked-diagram-form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.locked-diagram-input {
+  flex: 1 1 220px;
+  min-width: 180px;
+  background: #131110;
+  border: 1px solid #2a2724;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #c8bfb5;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.locked-diagram-input::placeholder {
+  color: #5a5450;
+}
+.locked-diagram-input:focus {
+  border-color: #e8632a66;
+  box-shadow: 0 0 0 2px #e8632a14;
+}
+.locked-diagram-input:disabled {
+  opacity: 0.6;
+}
+
+.locked-diagram-btn {
+  background: transparent;
+  border: 1px solid #3a3532;
+  color: #c8bfb5;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 8px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.locked-diagram-btn:hover:not(:disabled) {
+  color: #e8632a;
+  border-color: #e8632a66;
+  background: #e8632a14;
+}
+.locked-diagram-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.locked-diagram-error {
+  font-size: 11px;
+  color: #ef4444;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+}
+
+.locked-diagram-cta {
+  margin-top: 8px;
+}
+
+@media (max-width: 800px) {
+  .locked-diagram {
+    padding: 20px 14px;
+  }
+  .locked-diagram-form {
+    flex-direction: column;
+  }
+  .locked-diagram-input,
+  .locked-diagram-btn {
+    width: 100%;
+  }
+}
