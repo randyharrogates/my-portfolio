@@ -25,3 +25,6 @@ yarn-error.log*
 #adhoc
 resume.aux
 resume.log
+
+# gated diagram plaintext — stays local; only the encrypted JSON is committed
+/secrets/
