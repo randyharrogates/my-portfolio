@@ -1,7 +1,9 @@
 /** @format */
 
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import "./Resume.css";
+
+const ResumeMobileViewer = lazy(() => import("./ResumeMobileViewer"));
 
 const Resume: React.FC = () => {
   const pdfUrl = process.env.PUBLIC_URL + "/Resume.pdf";
@@ -20,11 +22,19 @@ const Resume: React.FC = () => {
         </a>
       </div>
 
-      <iframe
-        className="resume-viewer"
-        src={pdfUrl}
-        title="Resume"
-      />
+      <div className="resume-desktop">
+        <iframe
+          className="resume-viewer"
+          src={pdfUrl}
+          title="Resume"
+        />
+      </div>
+
+      <div className="resume-mobile">
+        <Suspense fallback={<div className="resume-mobile-loading">$ loading resume.pdf…</div>}>
+          <ResumeMobileViewer pdfUrl={pdfUrl} />
+        </Suspense>
+      </div>
     </div>
   );
 };
