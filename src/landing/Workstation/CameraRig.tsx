@@ -3,7 +3,6 @@
 import React, { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { IDLE_CAMERA_LOOK, IDLE_CAMERA_POS } from "../sections.ts";
 
 /**
  * Mutable rig inputs. Refs are mutated externally every frame; the rig pulls
@@ -21,6 +20,10 @@ export interface CameraRigInputs {
   reducedMotion: boolean;
   dragYawRef: React.MutableRefObject<number>;
   dragPitchRef: React.MutableRefObject<number>;
+  dragRadiusRef: React.MutableRefObject<number>;
+  idlePosRef: React.MutableRefObject<THREE.Vector3>;
+  idleLookRef: React.MutableRefObject<THREE.Vector3>;
+  fovRef: React.MutableRefObject<number>;
 }
 
 interface CameraRigProps {
@@ -31,9 +34,6 @@ interface CameraRigProps {
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
-
-const idlePos = new THREE.Vector3(...IDLE_CAMERA_POS);
-const idleLook = new THREE.Vector3(...IDLE_CAMERA_LOOK);
 
 /** B-roll spline: 4 keyframe positions for cinematic idle orbit. */
 const B_ROLL_KEYS: { pos: [number, number, number]; look: [number, number, number] }[] = [
@@ -73,7 +73,7 @@ const CameraRig: React.FC<CameraRigProps> = ({ inputs }) => {
   const { camera } = useThree();
   const tmpPos = useMemo(() => new THREE.Vector3(), []);
   const tmpLook = useMemo(() => new THREE.Vector3(), []);
-  const lookAtRef = useRef(idleLook.clone());
+  const lookAtRef = useRef(inputs.idleLookRef.current.clone());
   const dollyStartRef = useRef<number | null>(null);
   const dollyStartPosRef = useRef(new THREE.Vector3());
   const dollyStartLookRef = useRef(new THREE.Vector3());
@@ -81,6 +81,17 @@ const CameraRig: React.FC<CameraRigProps> = ({ inputs }) => {
 
   useFrame((s) => {
     const t = s.clock.elapsedTime;
+    const idlePos = inputs.idlePosRef.current;
+    const idleLook = inputs.idleLookRef.current;
+
+    // Sync FOV from the input ref so portrait/landscape swaps without
+    // remounting the rig. Cheap when unchanged — projection matrix is
+    // only rebuilt on actual delta.
+    const persp = camera as THREE.PerspectiveCamera;
+    if (persp.isPerspectiveCamera && persp.fov !== inputs.fovRef.current) {
+      persp.fov = inputs.fovRef.current;
+      persp.updateProjectionMatrix();
+    }
 
     if (inputs.focusTarget && lastFocusRef.current !== inputs.focusTarget) {
       dollyStartRef.current = t;
@@ -143,12 +154,14 @@ const CameraRig: React.FC<CameraRigProps> = ({ inputs }) => {
     const parY = ndc.y * 0.12;
 
     // Drag-orbit: rotate the idle position around idleLook (turntable).
+    // Pinch-dolly: scale the orbit radius by dragRadiusRef.
     const yaw = inputs.dragYawRef.current;
     const pitch = inputs.dragPitchRef.current;
     const offset = idlePos.clone().sub(idleLook);
-    const radius = offset.length();
+    const baseRadius = offset.length();
+    const radius = baseRadius * inputs.dragRadiusRef.current;
     const baseTheta = Math.atan2(offset.x, offset.z);
-    const basePhi = Math.acos(offset.y / radius);
+    const basePhi = Math.acos(offset.y / baseRadius);
     const theta = baseTheta + yaw;
     const phi = THREE.MathUtils.clamp(
       basePhi + pitch,

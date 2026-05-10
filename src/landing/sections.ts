@@ -34,3 +34,11 @@ export const SECTIONS: SectionConfig[] = [
 
 export const IDLE_CAMERA_POS: [number, number, number] = [1.6, 1.7, 3.4];
 export const IDLE_CAMERA_LOOK: [number, number, number] = [0.4, 0.8, -0.2];
+
+/** Portrait variants — pulled back, recentered, with a wider FOV so all 6
+ *  monitors fit on a phone in portrait orientation. */
+export const IDLE_CAMERA_POS_PORTRAIT: [number, number, number] = [0.5, 2.0, 5.5];
+export const IDLE_CAMERA_LOOK_PORTRAIT: [number, number, number] = [0.4, 0.9, -0.2];
+
+export const IDLE_CAMERA_FOV_LANDSCAPE = 42;
+export const IDLE_CAMERA_FOV_PORTRAIT = 52;

@@ -110,3 +110,22 @@ export function isMobileViewport(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(max-width: 800px)").matches;
 }
+
+/** Tracks the viewport aspect ratio (width / height) and re-renders on
+ *  resize / orientationchange. Used to swap the 3D camera pose between
+ *  landscape and portrait framings. */
+export function useViewportAspect(): number {
+  const [aspect, setAspect] = useState<number>(() =>
+    typeof window === "undefined" ? 1.6 : window.innerWidth / window.innerHeight
+  );
+  useEffect(() => {
+    const onResize = () => setAspect(window.innerWidth / window.innerHeight);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+  return aspect;
+}
