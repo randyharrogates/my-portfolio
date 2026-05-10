@@ -1,7 +1,14 @@
 /** @format */
 
 import React, { Suspense } from "react";
-import { HashRouter as Router, Route, Routes, NavLink, useLocation, useNavigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Route,
+  Routes,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import "./App.css";
 
 import AboutMe from "./pages/AboutMe.tsx";
@@ -11,29 +18,39 @@ import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
 import Resume from "./pages/Resume.tsx";
 
-// Lazy-load the canvas so R3F doesn't bloat the main bundle.
-const AmbientCanvas = React.lazy(() => import("./components/ambient-3d/AmbientCanvas.tsx"));
+// Lazy-load the canvases so R3F doesn't bloat the main bundle.
+const AmbientCanvas = React.lazy(
+  () => import("./components/ambient-3d/AmbientCanvas.tsx")
+);
+const WorkstationLanding = React.lazy(
+  () => import("./landing/WorkstationLanding.tsx")
+);
 
 const TABS = [
-  { path: "/",              label: "intro",       exact: true  },
-  { path: "/projects",      label: "projects",    num: 1       },
-  { path: "/skills",        label: "skills",      num: 2       },
-  { path: "/blog",          label: "blog",        num: 3       },
-  { path: "/resume",        label: "resume",      num: 4       },
-  { path: "/contact",       label: "contact",     num: 5       },
+  { path: "/about",      label: "about",      exact: true  },
+  { path: "/projects",   label: "projects",   num: 1       },
+  { path: "/skills",     label: "skills",     num: 2       },
+  { path: "/blog",       label: "blog",       num: 3       },
+  { path: "/resume",     label: "resume",     num: 4       },
+  { path: "/contact",    label: "contact",    num: 5       },
 ];
 
 const TerminalApp: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Keyboard arrow-key navigation between tabs
+  // Keyboard arrow-key navigation between tabs + global ESC → home
   React.useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && location.pathname !== "/") {
+        navigate("/");
+        return;
+      }
       const idx = TABS.findIndex((t) =>
         t.exact
           ? location.pathname === t.path
-          : location.pathname === t.path || location.pathname.startsWith(t.path + "/")
+          : location.pathname === t.path ||
+            location.pathname.startsWith(t.path + "/")
       );
       if (e.key === "ArrowRight" && idx < TABS.length - 1) {
         navigate(TABS[idx + 1].path);
@@ -45,10 +62,20 @@ const TerminalApp: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [location.pathname, navigate]);
 
-  const isTabActive = (tab: typeof TABS[0]) =>
+  const isTabActive = (tab: (typeof TABS)[0]) =>
     tab.exact
       ? location.pathname === tab.path
-      : location.pathname === tab.path || location.pathname.startsWith(tab.path + "/");
+      : location.pathname === tab.path ||
+        location.pathname.startsWith(tab.path + "/");
+
+  // Landing route: render the 3D Workstation full-bleed without terminal chrome.
+  if (location.pathname === "/") {
+    return (
+      <Suspense fallback={<div style={{ background: "#0c0b0a", height: "100vh" }} />}>
+        <WorkstationLanding />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="page-bg">
@@ -95,7 +122,7 @@ const TerminalApp: React.FC = () => {
         {/* Page Content */}
         <main className="terminal-content">
           <Routes>
-            <Route path="/"              element={<AboutMe />}      />
+            <Route path="/about"         element={<AboutMe />}     />
             <Route path="/projects/*"    element={<Projects />}    />
             <Route path="/skills"        element={<Skills />}      />
             <Route path="/blog"          element={<Blog />}        />
