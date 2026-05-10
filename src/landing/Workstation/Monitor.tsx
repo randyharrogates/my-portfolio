@@ -47,15 +47,15 @@ function createCRTMaterial(map: THREE.Texture): THREE.ShaderMaterial {
         col.b = texture2D(uMap, uv - vec2(ca, 0.0)).b;
 
         float scan = sin(uv.y * 320.0 + uTime * 1.5) * 0.5 + 0.5;
-        col *= 0.88 + scan * 0.12;
+        col *= 0.92 + scan * 0.08;
 
         float vig = smoothstep(0.95, 0.45, length(c));
-        col *= 0.82 + vig * 0.32;
+        col *= 0.92 + vig * 0.18;
 
         // brighten so the screen reads as a glowing emissive surface
-        col *= 3.6;
+        col *= 4.6;
         // give the dark CRT areas a warm phosphor base glow so the screen always reads as on
-        col += vec3(0.18, 0.12, 0.08);
+        col += vec3(0.22, 0.16, 0.12);
 
         col += vec3(uFlash);
         col += vec3(0.91, 0.39, 0.16) * uHover * 0.32;

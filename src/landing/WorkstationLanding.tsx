@@ -104,6 +104,13 @@ const WorkstationLanding: React.FC = () => {
   const cursorWorldRef = useRef(new THREE.Vector3(0, 0, 0));
   const idleTimeRef = useRef(0);
   const bootElapsedRef = useRef(0);
+  const dragYawRef = useRef(0);
+  const dragPitchRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
+  const pointerDownRef = useRef(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
 
   const [booting, setBooting] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -170,6 +177,81 @@ const WorkstationLanding: React.FC = () => {
     };
   }, []);
 
+  // Drag-orbit: pointer handlers on the bleed wrapper. Skipped during boot,
+  // focus dolly, or scroll scrub so the rig only orbits in the idle branch.
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (focusedId !== null || booting || scrollScrub !== null) return;
+      pointerDownRef.current = true;
+      isDraggingRef.current = false;
+      dragStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        yaw: dragYawRef.current,
+        pitch: dragPitchRef.current,
+      };
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!pointerDownRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      if (!isDraggingRef.current && Math.abs(dx) + Math.abs(dy) > 4) {
+        isDraggingRef.current = true;
+        setGrabbing(true);
+      }
+      if (!isDraggingRef.current) return;
+      const yaw = dragStartRef.current.yaw - dx * 0.005;
+      const pitch = dragStartRef.current.pitch - dy * 0.004;
+      dragYawRef.current = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, yaw));
+      dragPitchRef.current = Math.max(-0.6, Math.min(0.4, pitch));
+    };
+
+    const endDrag = () => {
+      pointerDownRef.current = false;
+      setGrabbing(false);
+      // Defer clearing the drag flag so the synthetic R3F monitor-click event
+      // (which fires after pointerup) sees it and bails out via handleClickSection.
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 0);
+    };
+
+    el.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    return () => {
+      el.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
+  }, [focusedId, booting, scrollScrub]);
+
+  // Snap-back: when a monitor takes focus, decay the user's drag yaw/pitch to 0
+  // over the same window as the focus dolly so the framing lands on-axis.
+  useEffect(() => {
+    if (focusedId === null) return;
+    const startYaw = dragYawRef.current;
+    const startPitch = dragPitchRef.current;
+    const start = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const k = Math.min(1, (now - start) / 700);
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      const decay = 1 - e;
+      dragYawRef.current = startYaw * decay;
+      dragPitchRef.current = startPitch * decay;
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [focusedId]);
+
   useEffect(() => {
     let scrubVal = 0;
     let releaseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -210,6 +292,7 @@ const WorkstationLanding: React.FC = () => {
 
   const handleClickSection = useCallback(
     (id: string) => {
+      if (isDraggingRef.current) return;
       const cfg = SECTIONS.find((s) => s.id === id);
       if (!cfg) return;
       const euler = new THREE.Euler(...cfg.rotation);
@@ -275,6 +358,8 @@ const WorkstationLanding: React.FC = () => {
       booting,
       scrollScrub,
       reducedMotion,
+      dragYawRef,
+      dragPitchRef,
     }),
     [focusTarget, focusLook, booting, scrollScrub, reducedMotion]
   );
@@ -289,7 +374,11 @@ const WorkstationLanding: React.FC = () => {
   const ambientActive = !lowFidelity && !reducedMotion;
 
   return (
-    <div className="landing-bleed">
+    <div
+      className="landing-bleed"
+      ref={wrapperRef}
+      style={{ cursor: grabbing ? "grabbing" : "grab" }}
+    >
       <Canvas
         dpr={dpr}
         gl={{

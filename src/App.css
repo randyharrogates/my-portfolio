@@ -119,6 +119,25 @@
   width: 44px;
 }
 
+.titlebar-back {
+  justify-self: end;
+  background: transparent;
+  border: 1px solid #3a3532;
+  color: #8a8178;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.titlebar-back:hover {
+  color: #e8632a;
+  border-color: #e8632a;
+}
+
 /* --- Tab Navigation --- */
 .terminal-tabs {
   background-color: #252220;
@@ -447,5 +466,9 @@
   }
   .titlebar-spacer {
     display: none;
+  }
+  .titlebar-back {
+    padding: 3px 8px;
+    font-size: 10px;
   }
 }
