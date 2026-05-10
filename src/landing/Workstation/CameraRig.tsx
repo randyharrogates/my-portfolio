@@ -19,6 +19,8 @@ export interface CameraRigInputs {
   booting: boolean;
   scrollScrub: number | null;
   reducedMotion: boolean;
+  dragYawRef: React.MutableRefObject<number>;
+  dragPitchRef: React.MutableRefObject<number>;
 }
 
 interface CameraRigProps {
@@ -139,7 +141,29 @@ const CameraRig: React.FC<CameraRigProps> = ({ inputs }) => {
     const ndc = inputs.cursorNdcRef.current;
     const parX = ndc.x * 0.18;
     const parY = ndc.y * 0.12;
-    tmpPos.set(idlePos.x + parX, idlePos.y + parY, idlePos.z);
+
+    // Drag-orbit: rotate the idle position around idleLook (turntable).
+    const yaw = inputs.dragYawRef.current;
+    const pitch = inputs.dragPitchRef.current;
+    const offset = idlePos.clone().sub(idleLook);
+    const radius = offset.length();
+    const baseTheta = Math.atan2(offset.x, offset.z);
+    const basePhi = Math.acos(offset.y / radius);
+    const theta = baseTheta + yaw;
+    const phi = THREE.MathUtils.clamp(
+      basePhi + pitch,
+      0.25,
+      Math.PI * 0.55
+    );
+    const orbit = new THREE.Vector3(
+      Math.sin(phi) * Math.sin(theta),
+      Math.cos(phi),
+      Math.sin(phi) * Math.cos(theta)
+    )
+      .multiplyScalar(radius)
+      .add(idleLook);
+
+    tmpPos.set(orbit.x + parX, orbit.y + parY, orbit.z);
     camera.position.lerp(tmpPos, 0.06);
     lookAtRef.current.lerp(idleLook, 0.06);
     camera.lookAt(lookAtRef.current);

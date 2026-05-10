@@ -31,8 +31,8 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
   return (
     <EffectComposer multisampling={0}>
       <Bloom
-        intensity={focused ? 1.4 : 1.05}
-        luminanceThreshold={0.32}
+        intensity={focused ? 1.25 : 0.95}
+        luminanceThreshold={0.5}
         luminanceSmoothing={0.22}
         mipmapBlur
         radius={0.82}
@@ -47,7 +47,7 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
         blendFunction={BlendFunction.OVERLAY}
         premultiply
       />
-      <Vignette eskil={false} offset={0.22} darkness={0.78} />
+      <Vignette eskil={false} offset={0.32} darkness={0.42} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
