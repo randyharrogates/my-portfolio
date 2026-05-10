@@ -1,16 +1,31 @@
 /** @format */
 
 .resume-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 1.5rem 2rem;
+}
+
+.resume-wrap .prompt-line,
+.resume-actions {
+  flex-shrink: 0;
 }
 
 .resume-actions {
   margin: 1rem 0;
 }
 
+.resume-desktop {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .resume-viewer {
   width: 100%;
-  height: calc(100vh - 260px);
+  flex: 1;
+  min-height: 500px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   background: #1a1a2e;

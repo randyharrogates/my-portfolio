@@ -88,7 +88,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         distance={11}
         decay={1.4}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 1024}
+        shadow-mapSize={lowFidelity ? 256 : 2048}
         shadow-bias={-0.0006}
       />
       <pointLight
@@ -105,6 +105,28 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         color={tint.fill}
         distance={6}
         decay={2}
+      />
+      {/* Avatar fill — small, localized to the desk photo frame */}
+      <pointLight
+        position={[-0.95, 0.6, 0.45]}
+        intensity={0.8}
+        color="#c8d0e8"
+        distance={1.2}
+        decay={2}
+      />
+      {/* Ceiling wash — broad, soft top-down spot covering the whole desk. */}
+      <spotLight
+        position={[0.0, 3.2, 0.4]}
+        target-position={[0.0, 0.0, 0.0]}
+        angle={1.05}
+        penumbra={0.85}
+        intensity={2.2 * tint.intensityScale}
+        color={tint.key}
+        distance={6.5}
+        decay={1.6}
+        castShadow={!lowFidelity}
+        shadow-mapSize={lowFidelity ? 256 : 2048}
+        shadow-bias={-0.0005}
       />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}
       <ambientLight intensity={0.18} color="#3a2e22" />
