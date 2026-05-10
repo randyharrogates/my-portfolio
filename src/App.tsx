@@ -5,7 +5,6 @@ import {
   HashRouter as Router,
   Route,
   Routes,
-  NavLink,
   useLocation,
   useNavigate,
 } from "react-router-dom";
@@ -26,47 +25,21 @@ const WorkstationLanding = React.lazy(
   () => import("./landing/WorkstationLanding.tsx")
 );
 
-const TABS = [
-  { path: "/about",      label: "about",      exact: true  },
-  { path: "/projects",   label: "projects",   num: 1       },
-  { path: "/skills",     label: "skills",     num: 2       },
-  { path: "/blog",       label: "blog",       num: 3       },
-  { path: "/resume",     label: "resume",     num: 4       },
-  { path: "/contact",    label: "contact",    num: 5       },
-];
-
 const TerminalApp: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Keyboard arrow-key navigation between tabs + global ESC → home
+  // Global ESC → home. Inner pages have no internal nav; the 3D workstation
+  // is the only entry point to sections.
   React.useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && location.pathname !== "/") {
         navigate("/");
-        return;
-      }
-      const idx = TABS.findIndex((t) =>
-        t.exact
-          ? location.pathname === t.path
-          : location.pathname === t.path ||
-            location.pathname.startsWith(t.path + "/")
-      );
-      if (e.key === "ArrowRight" && idx < TABS.length - 1) {
-        navigate(TABS[idx + 1].path);
-      } else if (e.key === "ArrowLeft" && idx > 0) {
-        navigate(TABS[idx - 1].path);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [location.pathname, navigate]);
-
-  const isTabActive = (tab: (typeof TABS)[0]) =>
-    tab.exact
-      ? location.pathname === tab.path
-      : location.pathname === tab.path ||
-        location.pathname.startsWith(tab.path + "/");
 
   // Landing route: render the 3D Workstation full-bleed without terminal chrome.
   if (location.pathname === "/") {
@@ -97,27 +70,16 @@ const TerminalApp: React.FC = () => {
           <span className="terminal-title">
             terminal — <span className="title-name">Randy Chan</span> · GenAI Solutions Portfolio
           </span>
-          <div className="titlebar-spacer" />
+          <button
+            type="button"
+            className="titlebar-back"
+            onClick={() => navigate("/")}
+            aria-label="back to workstation"
+            title="back to workstation (esc)"
+          >
+            ← workstation
+          </button>
         </div>
-
-        {/* Tab Navigation */}
-        <nav className="terminal-tabs" aria-label="Portfolio sections">
-          {TABS.map((tab) => (
-            <NavLink
-              key={tab.path}
-              to={tab.path}
-              end={tab.exact}
-              className={`tab-item${isTabActive(tab) ? " tab-active" : ""}`}
-            >
-              {tab.num ? (
-                <span className="tab-num">{tab.num}</span>
-              ) : (
-                <span className="tab-indicator">→</span>
-              )}
-              {tab.label}
-            </NavLink>
-          ))}
-        </nav>
 
         {/* Page Content */}
         <main className="terminal-content">

@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import type { SectionId } from "../sections.ts";
 
-const SCREEN_BG = "#15110d"; // very dark warm panel — readable when bloom kicks in
+const SCREEN_BG = "#1a1612"; // very dark warm panel — readable when bloom kicks in
 const INK = "#f0e6dc";
 const ACCENT = "#ff7a3c";
 const BLUE = "#7cb6ff";
