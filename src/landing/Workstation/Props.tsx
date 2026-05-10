@@ -82,12 +82,56 @@ export const Trackpad: React.FC = () => (
   </mesh>
 );
 
+/** Procedural ceramic-mug label texture: white background, "RANDY'S WORKSTATION"
+ * text wrapped horizontally, designed so a single repeat covers the cylinder. */
+function makeMugLabelTexture(): THREE.CanvasTexture {
+  const w = 1024;
+  const h = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  // Off-white ceramic body
+  ctx.fillStyle = "#ece4d8";
+  ctx.fillRect(0, 0, w, h);
+  // Subtle horizontal noise so the surface doesn't look perfectly flat
+  for (let i = 0; i < 280; i++) {
+    const x = Math.random() * w;
+    const y = Math.random() * h;
+    const a = Math.random() * 0.06;
+    ctx.fillStyle = `rgba(80,70,55,${a})`;
+    ctx.fillRect(x, y, 1, 2);
+  }
+  // Accent band, top + bottom
+  ctx.fillStyle = "#e8632a";
+  ctx.fillRect(0, h * 0.1, w, 4);
+  ctx.fillRect(0, h * 0.86, w, 4);
+  // Label text — repeated twice across the wrap so it reads from any angle
+  ctx.fillStyle = "#1a1614";
+  ctx.font = "bold 60px 'JetBrains Mono', ui-monospace, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("RANDY'S WORKSTATION", w * 0.25, h * 0.5);
+  ctx.fillText("RANDY'S WORKSTATION", w * 0.75, h * 0.5);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 /** Mug with rising steam particles. */
 interface MugProps {
   reducedMotion: boolean;
 }
 export const Mug: React.FC<MugProps> = ({ reducedMotion }) => {
   const steamRef = useRef<THREE.Points>(null);
+  const labelTex = useMemo(makeMugLabelTexture, []);
   const positions = useMemo(() => {
     const arr = new Float32Array(20 * 3);
     for (let i = 0; i < 20; i++) {
@@ -120,18 +164,38 @@ export const Mug: React.FC<MugProps> = ({ reducedMotion }) => {
   return (
     <group position={[-1.18, 0.16, 0.42]}>
       <mesh castShadow>
-        <cylinderGeometry args={[0.07, 0.06, 0.18, 18]} />
-        <meshStandardMaterial color="#c8bfb5" roughness={0.6} envMapIntensity={0.8} />
+        <cylinderGeometry args={[0.07, 0.06, 0.18, 32, 1, true]} />
+        <meshPhysicalMaterial
+          map={labelTex}
+          roughness={0.45}
+          metalness={0.0}
+          envMapIntensity={1.2}
+          clearcoat={1.0}
+          clearcoatRoughness={0.06}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Mug bottom — closes the open-ended cylinder */}
+      <mesh position={[0, -0.089, 0]}>
+        <circleGeometry args={[0.06, 32]} />
+        <meshStandardMaterial color="#ece4d8" roughness={0.65} />
       </mesh>
       {/* Coffee surface */}
       <mesh position={[0, 0.09, 0]}>
-        <cylinderGeometry args={[0.062, 0.062, 0.005, 18]} />
+        <cylinderGeometry args={[0.062, 0.062, 0.005, 32]} />
         <meshStandardMaterial color="#2a1c12" roughness={0.4} />
       </mesh>
       {/* Handle */}
       <mesh position={[0.085, 0.0, 0]} rotation={[0, 0, -Math.PI / 2]} castShadow>
-        <torusGeometry args={[0.045, 0.012, 8, 24, Math.PI]} />
-        <meshStandardMaterial color="#c8bfb5" roughness={0.6} envMapIntensity={0.8} />
+        <torusGeometry args={[0.045, 0.012, 12, 28, Math.PI]} />
+        <meshPhysicalMaterial
+          color="#ece4d8"
+          roughness={0.45}
+          metalness={0.0}
+          envMapIntensity={1.2}
+          clearcoat={1.0}
+          clearcoatRoughness={0.06}
+        />
       </mesh>
       {/* Steam */}
       <points ref={steamRef} position={[0, 0.1, 0]} frustumCulled={false}>

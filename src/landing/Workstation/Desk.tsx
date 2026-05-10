@@ -3,15 +3,18 @@
 import React, { useMemo } from "react";
 import * as THREE from "three";
 
-/** Procedural wood-grain material via onBeforeCompile shader injection. */
-function createWoodMaterial(): THREE.MeshPhysicalMaterial {
+/** Procedural brushed-aluminum material via onBeforeCompile injection.
+ * Anisotropic high-frequency stripes along world-X mimic a brushed-metal
+ * desk top; low-amplitude noise modulates roughness; a worldspace edge mask
+ * darkens roughness toward the desk's perimeter for fake AO grounding. */
+function createDeskMaterial(): THREE.MeshPhysicalMaterial {
   const mat = new THREE.MeshPhysicalMaterial({
-    color: "#3a2a1d",
-    roughness: 0.78,
-    metalness: 0.04,
-    envMapIntensity: 1.1,
-    clearcoat: 0.45,
-    clearcoatRoughness: 0.32,
+    color: "#3a3531",
+    roughness: 0.42,
+    metalness: 0.78,
+    envMapIntensity: 1.25,
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.45,
   });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
@@ -42,22 +45,36 @@ function createWoodMaterial(): THREE.MeshPhysicalMaterial {
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <map_fragment>",
       `#include <map_fragment>
-       float deskGrain = deskNoise(vDeskWorld.xz * vec2(28.0, 3.0));
-       float deskBands = sin(vDeskWorld.x * 18.0 + deskGrain * 5.0) * 0.5 + 0.5;
-       float deskWood = mix(0.78, 1.05, deskBands * 0.6 + deskGrain * 0.4);
-       diffuseColor.rgb *= deskWood;
-       diffuseColor.rgb += deskGrain * 0.04;`
+       // High-frequency anisotropic brush streaks along world-X, with
+       // microvariation from a low-octave noise so the streaks aren't too
+       // mechanical. Modulates albedo lightness ±~12%.
+       float deskBrushNoise = deskNoise(vDeskWorld.xz * vec2(0.6, 18.0));
+       float deskStreak = sin(vDeskWorld.z * 480.0 + deskBrushNoise * 8.0) * 0.5 + 0.5;
+       float deskBrush = mix(0.88, 1.08, deskStreak * 0.7 + deskBrushNoise * 0.3);
+       diffuseColor.rgb *= deskBrush;
+       // Worldspace edge mask: darken & roughen near desk-top perimeter
+       // (desk surface is 3.2 × 1.6, sits at y≈0). Fades over 0.18m.
+       float deskEdgeX = smoothstep(1.6, 1.42, abs(vDeskWorld.x));
+       float deskEdgeZ = smoothstep(0.8, 0.62, abs(vDeskWorld.z));
+       float deskEdge = deskEdgeX * deskEdgeZ;
+       diffuseColor.rgb *= mix(0.72, 1.0, deskEdge);`
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <roughnessmap_fragment>",
+      `#include <roughnessmap_fragment>
+       float deskRoughVar = deskNoise(vDeskWorld.xz * vec2(60.0, 6.0));
+       roughnessFactor = clamp(roughnessFactor + (deskRoughVar - 0.5) * 0.18, 0.18, 0.88);`
     );
   };
   return mat;
 }
 
 const Desk: React.FC = () => {
-  const woodMat = useMemo(() => createWoodMaterial(), []);
+  const deskMat = useMemo(() => createDeskMaterial(), []);
   return (
     <group>
-      {/* Desk surface — slightly rounded by stacking a thin top layer */}
-      <mesh position={[0, 0, 0]} receiveShadow castShadow material={woodMat}>
+      {/* Desk surface — brushed aluminum top */}
+      <mesh position={[0, 0, 0]} receiveShadow castShadow material={deskMat}>
         <boxGeometry args={[3.2, 0.08, 1.6]} />
       </mesh>
       {/* Underside trim (darker edge band) */}

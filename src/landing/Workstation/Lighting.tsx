@@ -88,7 +88,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         distance={11}
         decay={1.4}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 2048}
+        shadow-mapSize={lowFidelity ? 256 : 4096}
         shadow-bias={-0.0006}
       />
       <pointLight
@@ -125,7 +125,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         distance={6.5}
         decay={1.6}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 2048}
+        shadow-mapSize={lowFidelity ? 256 : 4096}
         shadow-bias={-0.0005}
       />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}

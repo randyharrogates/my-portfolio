@@ -14,6 +14,7 @@ import {
   ServerRackPanel,
   Chair,
 } from "./Props.tsx";
+import Plant from "./Plant.tsx";
 import Dust, { DustBeam } from "./Particles.tsx";
 import LightShafts from "./LightShafts.tsx";
 import { SECTIONS } from "../sections.ts";
@@ -59,7 +60,7 @@ const Scene: React.FC<SceneProps> = ({
         <Environment
           files={`${process.env.PUBLIC_URL}/hdri/warm-evening-1k.hdr`}
           background={false}
-          environmentIntensity={0.55}
+          environmentIntensity={1.15}
         />
       )}
 
@@ -73,6 +74,7 @@ const Scene: React.FC<SceneProps> = ({
       <ServerTower reducedMotion={reducedMotion} konami={konami} />
       <ServerRackPanel />
       <Chair reducedMotion={reducedMotion} konami={konami} />
+      <Plant reducedMotion={reducedMotion} lowFidelity={lowFidelity} />
 
       <Nameplate />
       <FramedPhoto avatarUrl={avatarUrl} />
