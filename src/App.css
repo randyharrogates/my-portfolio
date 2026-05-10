@@ -3,6 +3,18 @@
    Theme: macOS terminal aesthetic (howborisusesclaudecode.com)
    ============================================================ */
 
+/* --- Landing (3D Workstation) full-bleed wrapper --- */
+.landing-bleed {
+  position: fixed;
+  inset: 0;
+  background: #0c0b0a;
+  overflow: hidden;
+  z-index: 0;
+}
+.landing-bleed canvas {
+  display: block;
+}
+
 /* --- Page Background --- */
 .page-bg {
   height: 100vh;
