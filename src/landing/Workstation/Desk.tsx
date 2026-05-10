@@ -4,12 +4,14 @@ import React, { useMemo } from "react";
 import * as THREE from "three";
 
 /** Procedural wood-grain material via onBeforeCompile shader injection. */
-function createWoodMaterial(): THREE.MeshStandardMaterial {
-  const mat = new THREE.MeshStandardMaterial({
+function createWoodMaterial(): THREE.MeshPhysicalMaterial {
+  const mat = new THREE.MeshPhysicalMaterial({
     color: "#3a2a1d",
     roughness: 0.78,
     metalness: 0.04,
-    envMapIntensity: 0.8,
+    envMapIntensity: 1.1,
+    clearcoat: 0.45,
+    clearcoatRoughness: 0.32,
   });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
@@ -72,7 +74,14 @@ const Desk: React.FC = () => {
       ].map((p, i) => (
         <mesh key={i} position={p as [number, number, number]} castShadow>
           <boxGeometry args={[0.06, 0.86, 0.06]} />
-          <meshStandardMaterial color="#1a1612" roughness={0.6} metalness={0.4} envMapIntensity={0.8} />
+          <meshPhysicalMaterial
+            color="#1a1612"
+            roughness={0.6}
+            metalness={0.65}
+            envMapIntensity={1.1}
+            clearcoat={0.3}
+            clearcoatRoughness={0.5}
+          />
         </mesh>
       ))}
       {/* Floor */}

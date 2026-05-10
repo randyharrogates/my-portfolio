@@ -31,7 +31,14 @@ export const Keyboard: React.FC<KeyboardProps> = ({ reducedMotion }) => {
       {/* Body */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[0.95, 0.045, 0.32]} />
-        <meshStandardMaterial color="#13110f" roughness={0.6} metalness={0.3} envMapIntensity={0.8} />
+        <meshPhysicalMaterial
+          color="#13110f"
+          roughness={0.6}
+          metalness={0.3}
+          envMapIntensity={1.1}
+          clearcoat={0.3}
+          clearcoatRoughness={0.4}
+        />
       </mesh>
       {/* Underside backlight glow plane */}
       <mesh position={[0, -0.01, 0]}>
@@ -122,8 +129,8 @@ export const Mug: React.FC<MugProps> = ({ reducedMotion }) => {
         <meshStandardMaterial color="#2a1c12" roughness={0.4} />
       </mesh>
       {/* Handle */}
-      <mesh position={[0.085, 0.0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.04, 0.012, 8, 16, Math.PI]} />
+      <mesh position={[0.085, 0.0, 0]} rotation={[0, 0, -Math.PI / 2]} castShadow>
+        <torusGeometry args={[0.045, 0.012, 8, 24, Math.PI]} />
         <meshStandardMaterial color="#c8bfb5" roughness={0.6} envMapIntensity={0.8} />
       </mesh>
       {/* Steam */}
@@ -202,7 +209,13 @@ export const ServerTower: React.FC<ServerTowerProps> = ({
       {/* Brushed-metal front panel */}
       <mesh position={[0.215, 0, 0]}>
         <boxGeometry args={[0.005, 0.92, 0.48]} />
-        <meshStandardMaterial color="#2a2825" roughness={0.4} metalness={0.85} envMapIntensity={0.8} />
+        <meshPhysicalMaterial
+          color="#2a2825"
+          roughness={0.4}
+          metalness={0.85}
+          envMapIntensity={1.1}
+          anisotropy={0.6}
+        />
       </mesh>
       {/* LEDs */}
       {[0.3, 0.18, 0.06, -0.06, -0.18].map((y, i) => (

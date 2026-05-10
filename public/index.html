@@ -13,6 +13,10 @@
 
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
+    <!-- Warm cache for the HDRI used by the lazy 3D scene; non-blocking. -->
+    <link rel="preload" as="fetch" type="image/x-hdr"
+          href="%PUBLIC_URL%/hdri/warm-evening-1k.hdr" crossorigin />
+
     <!-- JetBrains Mono font -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

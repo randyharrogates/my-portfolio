@@ -49,10 +49,10 @@ export const FramedPhoto: React.FC<FramedPhotoProps> = ({ avatarUrl }) => {
   }, [avatarUrl]);
 
   return (
-    <group position={[-0.95, 0.04, 0.45]} rotation={[-0.08, 0.35, 0]}>
+    <group position={[-0.78, 0.18, 0.28]} rotation={[-0.20, 0.30, 0]}>
       {/* Frame */}
       <mesh castShadow>
-        <boxGeometry args={[0.18, 0.22, 0.025]} />
+        <boxGeometry args={[0.24, 0.30, 0.025]} />
         <meshStandardMaterial
           color="#1a1714"
           roughness={0.6}
@@ -62,7 +62,7 @@ export const FramedPhoto: React.FC<FramedPhotoProps> = ({ avatarUrl }) => {
       </mesh>
       {/* Mount */}
       <mesh position={[0, 0, 0.014]}>
-        <planeGeometry args={[0.15, 0.18]} />
+        <planeGeometry args={[0.20, 0.26]} />
         {tex ? (
           <meshStandardMaterial map={tex} roughness={0.7} />
         ) : (
@@ -70,7 +70,7 @@ export const FramedPhoto: React.FC<FramedPhotoProps> = ({ avatarUrl }) => {
         )}
       </mesh>
       <Text
-        position={[0, -0.115, 0.014]}
+        position={[0, -0.155, 0.014]}
         fontSize={0.018}
         color="#5a5450"
         anchorX="center"
@@ -80,7 +80,7 @@ export const FramedPhoto: React.FC<FramedPhotoProps> = ({ avatarUrl }) => {
       </Text>
       {/* Easel stand — keeps the frame from floating on the desk surface. */}
       <mesh position={[0, 0, -0.025]} rotation={[0, 0, 0.21]} castShadow>
-        <boxGeometry args={[0.04, 0.18, 0.015]} />
+        <boxGeometry args={[0.05, 0.24, 0.015]} />
         <meshStandardMaterial color="#13110f" roughness={0.7} metalness={0.2} envMapIntensity={0.8} />
       </mesh>
     </group>
