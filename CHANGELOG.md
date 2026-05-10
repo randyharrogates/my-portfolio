@@ -12,11 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **(landing)** Aspect-aware idle camera — on portrait viewports the camera pulls back to `[0.5, 2.0, 5.5]` and widens FOV from 42° to 52° so all 6 monitors fit on a phone in portrait orientation; resize / orientationchange swaps the pose live via `useViewportAspect()` and refs threaded through `CameraRig`
 - **(landing)** Touch support for drag-orbit — single-finger drag rotates the camera (existing 4 px threshold + yaw/pitch clamps preserved); listeners now use `setPointerCapture` on the wrapper so a wandering finger keeps streaming events
 - **(landing)** Two-finger pinch-to-dolly — pinch-zoom maps to camera orbit radius clamped to `0.6×–1.5×` of the idle distance; pinch→single transition re-arms the drag baseline so no snap, and a tap-after-pinch can't accidentally focus a monitor
+- **(landing)** Desk-top photo frame — `FramedPhoto` moved off the back wall onto the desk surface (left of the keyboard, with a slight forward tilt and a small easel stand) so the GitHub avatar reads from the idle camera pose instead of floating awkwardly behind the workstation
+- **(landing)** Wide ceiling spotlight that washes the whole desk surface — replaces the removed task lamp; intensity follows `tint.intensityScale` so it tracks the existing time-of-day grading and casts soft 2K shadows when fidelity allows
+- **(landing)** HDRI environment lighting via drei `<Environment preset="apartment" environmentIntensity={0.35}>` for image-based ambient reflections on metallic surfaces (gated `!lowFidelity`)
+- **(landing)** Volumetric dust beam — cone-shaped `<DustBeam>` particle field beneath the new ceiling spot gives a visible god-ray feel without paying for a `GodRays` postprocessing pass (gated `!lowFidelity`)
+- **(landing)** Cinematic SSAO via `<N8AO>` and screen-space tilt-shift via `<TiltShift2>` — TiltShift2 fakes the depth-of-field look without re-introducing the Bloom + DOF `GL_INVALID_OPERATION` conflict on Chrome/ANGLE
 
 ### Fixed
 
 - **(landing)** Mobile brightness regression — `Postprocessing` now mounts a minimal `<EffectComposer>` containing only `<ToneMapping mode={ACES_FILMIC}/>` on low-fidelity (mobile / reduced-motion); the CRT shader's `col *= 4.6` brightening compresses correctly into [0, 1] instead of being GPU-clamped, restoring the glowing-monitor look on phones
 - **(landing)** Touch gestures consumed by browser default pan/scroll — added `touch-action: none` and `user-select: none` to `.landing-bleed` so the 3D scene receives pointer events directly (inner pages still pinch-zoom normally)
+
+### Changed
+
+- **(landing)** Removed the cursor-tracking desk lamp (`Lamp` component, `cursorWorldRef`, world-raycasting branch of `CursorTracker`) — the green status LED ring no longer occludes the right-side monitors; the new ceiling spotlight covers the same fill-light role
+- **(landing)** Stronger Bloom — intensity 0.95 → 1.15, threshold 0.5 → 0.35, radius 0.82 → 1.0 so monitor emissives glow more visibly against the ACES tone-map
+- **(landing)** Sharper soft shadows — Canvas now requests `shadows`, `gl.shadowMap.type = THREE.PCFSoftShadowMap`, output color space pinned to `THREE.SRGBColorSpace`, and key-light + ceiling-spot shadow map size raised 1024 → 2048 (mobile branch stays at 256²)
+- **(landing)** `envMapIntensity={0.8}` set on 17 metallic surfaces (desk wood + legs, monitor stalks / base discs / bezels, mug, server tower, brushed-metal panel, server lid, rack panel, chair pedestal + wheels, photo frame + easel) so the new HDRI actually contributes to specular response
+- **(styles)** Cap inner-page content width at 1100 px so wide monitors don't render terminal pages edge-to-edge — `.terminal-content > *` now centers with auto margins
+- **(pages)** Resume page wrapper switched to a flex column layout so the embedded PDF viewer stretches to fill available terminal height instead of using a fixed `calc(100vh - 260px)` window
+- **(assets)** Refreshed `resume.pdf` from the source `.tex`
 
 ## [0.3.0] - 2026-05-10
 
