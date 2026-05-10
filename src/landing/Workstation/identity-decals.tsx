@@ -36,7 +36,7 @@ export const Nameplate: React.FC = () => (
   </Text>
 );
 
-/** Frame on the back wall — uses GitHub avatar texture if available, else portrait card. */
+/** Desk-top photo frame — uses GitHub avatar texture if available, else portrait card. */
 interface FramedPhotoProps {
   avatarUrl?: string | null;
 }
@@ -49,15 +49,20 @@ export const FramedPhoto: React.FC<FramedPhotoProps> = ({ avatarUrl }) => {
   }, [avatarUrl]);
 
   return (
-    <group position={[-2.0, 1.45, -1.55]} rotation={[0, 0.18, 0]}>
+    <group position={[-0.78, 0.18, 0.28]} rotation={[-0.20, 0.30, 0]}>
       {/* Frame */}
-      <mesh>
-        <boxGeometry args={[0.55, 0.55, 0.04]} />
-        <meshStandardMaterial color="#1a1714" roughness={0.6} metalness={0.3} />
+      <mesh castShadow>
+        <boxGeometry args={[0.24, 0.30, 0.025]} />
+        <meshStandardMaterial
+          color="#1a1714"
+          roughness={0.6}
+          metalness={0.3}
+          envMapIntensity={0.8}
+        />
       </mesh>
       {/* Mount */}
-      <mesh position={[0, 0, 0.022]}>
-        <planeGeometry args={[0.46, 0.46]} />
+      <mesh position={[0, 0, 0.014]}>
+        <planeGeometry args={[0.20, 0.26]} />
         {tex ? (
           <meshStandardMaterial map={tex} roughness={0.7} />
         ) : (
@@ -65,14 +70,19 @@ export const FramedPhoto: React.FC<FramedPhotoProps> = ({ avatarUrl }) => {
         )}
       </mesh>
       <Text
-        position={[0, -0.32, 0.025]}
-        fontSize={0.042}
+        position={[0, -0.155, 0.014]}
+        fontSize={0.018}
         color="#5a5450"
         anchorX="center"
         anchorY="middle"
       >
         {portfolioData.identity.role}
       </Text>
+      {/* Easel stand — keeps the frame from floating on the desk surface. */}
+      <mesh position={[0, 0, -0.025]} rotation={[0, 0, 0.21]} castShadow>
+        <boxGeometry args={[0.05, 0.24, 0.015]} />
+        <meshStandardMaterial color="#13110f" roughness={0.7} metalness={0.2} envMapIntensity={0.8} />
+      </mesh>
     </group>
   );
 };
