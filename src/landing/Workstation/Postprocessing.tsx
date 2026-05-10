@@ -9,7 +9,6 @@ import {
   Noise,
   ToneMapping,
   N8AO,
-  TiltShift2,
 } from "@react-three/postprocessing";
 import { BlendFunction, ToneMappingMode } from "postprocessing";
 
@@ -22,8 +21,8 @@ interface PostprocessingProps {
  * Cinematic postfx pipeline. Real DOF is intentionally avoided — pairing
  * @react-three/postprocessing's DepthOfField with Bloom triggers
  * GL_INVALID_OPERATION on Chrome/ANGLE (shared depth/stencil attachment).
- * TiltShift2 is a screen-space blur that fakes the same look without a depth
- * pass, so it composes cleanly with Bloom.
+ * Atmospheric haze (fogExp2 in Scene) handles depth perception instead of
+ * screen-space blur, keeping foreground geometry crisp.
  */
 const Postprocessing: React.FC<PostprocessingProps> = ({
   enabled,
@@ -50,14 +49,13 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
       />
       <Bloom
         intensity={focused ? 1.4 : 1.15}
-        luminanceThreshold={0.35}
+        luminanceThreshold={0.5}
         luminanceSmoothing={0.22}
         mipmapBlur
-        radius={1.0}
+        radius={0.75}
       />
-      <TiltShift2 blur={0.18} samples={10} />
       <ChromaticAberration
-        offset={[0.0008, 0.0012]}
+        offset={[0.0004, 0.0006]}
         radialModulation={false}
         modulationOffset={0}
       />

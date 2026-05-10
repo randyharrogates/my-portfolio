@@ -8,7 +8,6 @@ import type { SectionConfig } from "../sections.ts";
 import { createMonitorContent, createMatrixRain } from "./MonitorContent.ts";
 
 const ACCENT = "#e8632a";
-const PANEL = "#1d1b19";
 
 /** CRT shader material — adds scanlines, slight chromatic shift, vignette. */
 function createCRTMaterial(map: THREE.Texture): THREE.ShaderMaterial {
@@ -40,7 +39,7 @@ function createCRTMaterial(map: THREE.Texture): THREE.ShaderMaterial {
         float r2 = dot(c, c);
         vec2 uv = vUv + c * r2 * 0.025;
 
-        float ca = 0.0015 + uHover * 0.0035;
+        float ca = 0.0007 + uHover * 0.002;
         vec3 col;
         col.r = texture2D(uMap, uv + vec2(ca, 0.0)).r;
         col.g = texture2D(uMap, uv).g;
@@ -169,7 +168,14 @@ const Monitor: React.FC<MonitorProps> = ({
         }}
       >
         <boxGeometry args={[cfg.size[0] + 0.04, cfg.size[1] + 0.04, 0.06]} />
-        <meshStandardMaterial color="#1a1714" roughness={0.6} metalness={0.25} envMapIntensity={0.8} />
+        <meshPhysicalMaterial
+          color="#1a1714"
+          roughness={0.34}
+          metalness={0.05}
+          envMapIntensity={1.1}
+          clearcoat={0.65}
+          clearcoatRoughness={0.18}
+        />
       </mesh>
 
       {/* Inner bezel rim — slight bevel highlight */}
@@ -201,12 +207,12 @@ const Monitor: React.FC<MonitorProps> = ({
           cfg.size[1] / 2 + (hovered ? 0.18 : 0.1),
           0.05,
         ]}
-        fontSize={0.06}
-        color={hovered ? ACCENT : "#5a5450"}
+        fontSize={0.078}
+        color={hovered ? ACCENT : "#b8a896"}
         anchorX="center"
         anchorY="middle"
-        outlineColor={PANEL}
-        outlineWidth={0.002}
+        outlineColor="#0a0807"
+        outlineWidth={0.0035}
       >
         {cfg.label.toUpperCase()}
       </Text>

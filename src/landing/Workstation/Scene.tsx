@@ -1,8 +1,8 @@
 /** @format */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Environment } from "@react-three/drei";
-import Lighting from "./Lighting.tsx";
+import Lighting, { tintForHour } from "./Lighting.tsx";
 import Desk from "./Desk.tsx";
 import Monitor from "./Monitor.tsx";
 import {
@@ -14,8 +14,8 @@ import {
   ServerRackPanel,
   Chair,
 } from "./Props.tsx";
-import Plant from "./Plant.tsx";
 import Dust, { DustBeam } from "./Particles.tsx";
+import LightShafts from "./LightShafts.tsx";
 import { SECTIONS } from "../sections.ts";
 import {
   Nameplate,
@@ -49,16 +49,17 @@ const Scene: React.FC<SceneProps> = ({
   lowFidelity,
   ambientActive,
 }) => {
+  const tint = useMemo(() => tintForHour(new Date().getHours()), []);
   return (
     <>
-      <color attach="background" args={["#070605"]} />
-      <fog attach="fog" args={["#0a0807", 8, 22]} />
+      <color attach="background" args={["#1a120a"]} />
+      <fogExp2 attach="fog" args={["#241608", 0.085]} />
 
       {!lowFidelity && (
         <Environment
-          preset="apartment"
+          files={`${process.env.PUBLIC_URL}/hdri/warm-evening-1k.hdr`}
           background={false}
-          environmentIntensity={0.35}
+          environmentIntensity={0.55}
         />
       )}
 
@@ -72,7 +73,6 @@ const Scene: React.FC<SceneProps> = ({
       <ServerTower reducedMotion={reducedMotion} konami={konami} />
       <ServerRackPanel />
       <Chair reducedMotion={reducedMotion} konami={konami} />
-      <Plant reducedMotion={reducedMotion} />
 
       <Nameplate />
       <FramedPhoto avatarUrl={avatarUrl} />
@@ -97,6 +97,7 @@ const Scene: React.FC<SceneProps> = ({
       {!lowFidelity && (
         <DustBeam active={ambientActive} reducedMotion={reducedMotion} />
       )}
+      {!lowFidelity && <LightShafts keyColor={tint.key} />}
     </>
   );
 };
