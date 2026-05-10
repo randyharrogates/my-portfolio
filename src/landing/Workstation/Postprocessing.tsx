@@ -26,7 +26,16 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
   enabled,
   focused,
 }) => {
-  if (!enabled) return null;
+  // Low-fidelity / reduced-motion path: keep ACES tonemapping so the CRT
+  // shader's emissive multiplier compresses correctly into [0,1]; skip the
+  // expensive bloom / vignette / noise / chromatic aberration passes.
+  if (!enabled) {
+    return (
+      <EffectComposer multisampling={0}>
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      </EffectComposer>
+    );
+  }
 
   return (
     <EffectComposer multisampling={0}>

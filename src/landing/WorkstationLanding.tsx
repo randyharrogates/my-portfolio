@@ -18,12 +18,21 @@ import CameraRig, { type CameraRigInputs } from "./Workstation/CameraRig.tsx";
 import Postprocessing from "./Workstation/Postprocessing.tsx";
 import Audio from "./Workstation/Audio.tsx";
 import EasterEgg from "./Workstation/EasterEgg.tsx";
-import { SECTIONS, IDLE_CAMERA_POS } from "./sections.ts";
+import {
+  SECTIONS,
+  IDLE_CAMERA_POS,
+  IDLE_CAMERA_LOOK,
+  IDLE_CAMERA_POS_PORTRAIT,
+  IDLE_CAMERA_LOOK_PORTRAIT,
+  IDLE_CAMERA_FOV_LANDSCAPE,
+  IDLE_CAMERA_FOV_PORTRAIT,
+} from "./sections.ts";
 import {
   useFidelityMode,
   useAudioMutedToggle,
   useReducedMotion,
   useDocumentHidden,
+  useViewportAspect,
   isMobileViewport,
 } from "./use-low-power.ts";
 import { portfolioData } from "../data/portfolio.ts";
@@ -83,6 +92,8 @@ const WorkstationLanding: React.FC = () => {
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
   const hidden = useDocumentHidden();
+  const aspect = useViewportAspect();
+  const isPortrait = aspect < 1;
   const { mode, setMode, lowFidelity, reportFps } = useFidelityMode();
   const { muted: audioMuted, toggle: toggleAudio } = useAudioMutedToggle();
 
@@ -106,11 +117,40 @@ const WorkstationLanding: React.FC = () => {
   const bootElapsedRef = useRef(0);
   const dragYawRef = useRef(0);
   const dragPitchRef = useRef(0);
+  const dragRadiusRef = useRef(1);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
   const pointerDownRef = useRef(false);
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStartDistRef = useRef(0);
+  const pinchStartRadiusRef = useRef(1);
+  const wasMultiRef = useRef(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [grabbing, setGrabbing] = useState(false);
+
+  // Aspect-aware camera pose. Refs (not state) so CameraRig pulls live values
+  // each frame and lerps smoothly into the new framing on resize/rotate.
+  const idlePosRef = useRef(
+    new THREE.Vector3(...(isPortrait ? IDLE_CAMERA_POS_PORTRAIT : IDLE_CAMERA_POS))
+  );
+  const idleLookRef = useRef(
+    new THREE.Vector3(...(isPortrait ? IDLE_CAMERA_LOOK_PORTRAIT : IDLE_CAMERA_LOOK))
+  );
+  const fovRef = useRef(
+    isPortrait ? IDLE_CAMERA_FOV_PORTRAIT : IDLE_CAMERA_FOV_LANDSCAPE
+  );
+
+  useEffect(() => {
+    if (isPortrait) {
+      idlePosRef.current.set(...IDLE_CAMERA_POS_PORTRAIT);
+      idleLookRef.current.set(...IDLE_CAMERA_LOOK_PORTRAIT);
+      fovRef.current = IDLE_CAMERA_FOV_PORTRAIT;
+    } else {
+      idlePosRef.current.set(...IDLE_CAMERA_POS);
+      idleLookRef.current.set(...IDLE_CAMERA_LOOK);
+      fovRef.current = IDLE_CAMERA_FOV_LANDSCAPE;
+    }
+  }, [isPortrait]);
 
   const [booting, setBooting] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -177,67 +217,132 @@ const WorkstationLanding: React.FC = () => {
     };
   }, []);
 
-  // Drag-orbit: pointer handlers on the bleed wrapper. Skipped during boot,
-  // focus dolly, or scroll scrub so the rig only orbits in the idle branch.
+  // Drag-orbit (single pointer) + pinch-dolly (two pointers). Listeners live
+  // on the wrapper with setPointerCapture so a finger that drifts off the
+  // bounding rect keeps streaming pointermove. Skipped during boot, focus
+  // dolly, or scroll scrub so the rig only orbits in the idle branch.
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
 
+    const dist = (
+      a: { x: number; y: number },
+      b: { x: number; y: number }
+    ) => Math.hypot(b.x - a.x, b.y - a.y);
+
     const onPointerDown = (e: PointerEvent) => {
       if (focusedId !== null || booting || scrollScrub !== null) return;
-      pointerDownRef.current = true;
-      isDraggingRef.current = false;
-      dragStartRef.current = {
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* setPointerCapture can throw if the element is detached — ignore */
+      }
+      activePointersRef.current.set(e.pointerId, {
         x: e.clientX,
         y: e.clientY,
-        yaw: dragYawRef.current,
-        pitch: dragPitchRef.current,
-      };
+      });
+      const n = activePointersRef.current.size;
+
+      if (n === 1) {
+        pointerDownRef.current = true;
+        isDraggingRef.current = false;
+        dragStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          yaw: dragYawRef.current,
+          pitch: dragPitchRef.current,
+        };
+      } else if (n === 2) {
+        // Single → pinch transition: cancel any in-flight drag, baseline pinch.
+        isDraggingRef.current = false;
+        wasMultiRef.current = true;
+        const [a, b] = Array.from(activePointersRef.current.values());
+        pinchStartDistRef.current = dist(a, b);
+        pinchStartRadiusRef.current = dragRadiusRef.current;
+      }
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      if (!pointerDownRef.current) return;
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      if (!isDraggingRef.current && Math.abs(dx) + Math.abs(dy) > 4) {
-        isDraggingRef.current = true;
-        setGrabbing(true);
+      if (!activePointersRef.current.has(e.pointerId)) return;
+      activePointersRef.current.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY,
+      });
+      const n = activePointersRef.current.size;
+
+      if (n === 1 && pointerDownRef.current) {
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        if (!isDraggingRef.current && Math.abs(dx) + Math.abs(dy) > 4) {
+          isDraggingRef.current = true;
+          setGrabbing(true);
+        }
+        if (!isDraggingRef.current) return;
+        const yaw = dragStartRef.current.yaw - dx * 0.005;
+        const pitch = dragStartRef.current.pitch - dy * 0.004;
+        dragYawRef.current = Math.max(
+          -Math.PI / 3,
+          Math.min(Math.PI / 3, yaw)
+        );
+        dragPitchRef.current = Math.max(-0.6, Math.min(0.4, pitch));
+      } else if (n >= 2 && pinchStartDistRef.current > 0) {
+        const [a, b] = Array.from(activePointersRef.current.values());
+        const ratio = dist(a, b) / pinchStartDistRef.current;
+        // Spreading fingers (ratio > 1) zooms in → smaller orbit radius.
+        const next = pinchStartRadiusRef.current / ratio;
+        dragRadiusRef.current = Math.max(0.6, Math.min(1.5, next));
       }
-      if (!isDraggingRef.current) return;
-      const yaw = dragStartRef.current.yaw - dx * 0.005;
-      const pitch = dragStartRef.current.pitch - dy * 0.004;
-      dragYawRef.current = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, yaw));
-      dragPitchRef.current = Math.max(-0.6, Math.min(0.4, pitch));
     };
 
-    const endDrag = () => {
-      pointerDownRef.current = false;
-      setGrabbing(false);
-      // Defer clearing the drag flag so the synthetic R3F monitor-click event
-      // (which fires after pointerup) sees it and bails out via handleClickSection.
-      setTimeout(() => {
+    const onPointerUp = (e: PointerEvent) => {
+      if (!activePointersRef.current.has(e.pointerId)) return;
+      activePointersRef.current.delete(e.pointerId);
+      const n = activePointersRef.current.size;
+
+      if (n === 0) {
+        pointerDownRef.current = false;
+        setGrabbing(false);
+        // Defer flag clear so the synthetic R3F monitor-click event sees the
+        // drag/multi flag and bails out in handleClickSection.
+        setTimeout(() => {
+          isDraggingRef.current = false;
+          wasMultiRef.current = false;
+        }, 0);
+      } else if (n === 1) {
+        // Pinch ended with one finger remaining — re-arm drag baseline at
+        // the surviving finger's position so further movement doesn't snap.
+        const [last] = Array.from(activePointersRef.current.values());
+        dragStartRef.current = {
+          x: last.x,
+          y: last.y,
+          yaw: dragYawRef.current,
+          pitch: dragPitchRef.current,
+        };
+        pointerDownRef.current = true;
         isDraggingRef.current = false;
-      }, 0);
+      }
     };
 
     el.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", endDrag);
-    window.addEventListener("pointercancel", endDrag);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", onPointerUp);
+    el.addEventListener("pointercancel", onPointerUp);
     return () => {
       el.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", endDrag);
-      window.removeEventListener("pointercancel", endDrag);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onPointerUp);
+      el.removeEventListener("pointercancel", onPointerUp);
     };
   }, [focusedId, booting, scrollScrub]);
 
   // Snap-back: when a monitor takes focus, decay the user's drag yaw/pitch to 0
-  // over the same window as the focus dolly so the framing lands on-axis.
+  // and the pinch radius to 1 over the same window as the focus dolly so the
+  // framing lands on-axis at the default distance.
   useEffect(() => {
     if (focusedId === null) return;
     const startYaw = dragYawRef.current;
     const startPitch = dragPitchRef.current;
+    const startRadius = dragRadiusRef.current;
     const start = performance.now();
     let raf = 0;
     const step = (now: number) => {
@@ -246,6 +351,7 @@ const WorkstationLanding: React.FC = () => {
       const decay = 1 - e;
       dragYawRef.current = startYaw * decay;
       dragPitchRef.current = startPitch * decay;
+      dragRadiusRef.current = 1 + (startRadius - 1) * decay;
       if (k < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -292,7 +398,7 @@ const WorkstationLanding: React.FC = () => {
 
   const handleClickSection = useCallback(
     (id: string) => {
-      if (isDraggingRef.current) return;
+      if (isDraggingRef.current || wasMultiRef.current) return;
       const cfg = SECTIONS.find((s) => s.id === id);
       if (!cfg) return;
       const euler = new THREE.Euler(...cfg.rotation);
@@ -360,8 +466,12 @@ const WorkstationLanding: React.FC = () => {
       reducedMotion,
       dragYawRef,
       dragPitchRef,
+      dragRadiusRef,
+      idlePosRef,
+      idleLookRef,
+      fovRef,
     }),
-    [focusTarget, focusLook, booting, scrollScrub, reducedMotion]
+    [focusTarget, focusLook, booting, scrollScrub, reducedMotion, dragRadiusRef, idlePosRef, idleLookRef, fovRef]
   );
 
   const dpr: [number, number] = isMobileViewport()
@@ -386,7 +496,12 @@ const WorkstationLanding: React.FC = () => {
           powerPreference: lowFidelity ? "low-power" : "high-performance",
           alpha: false,
         }}
-        camera={{ position: IDLE_CAMERA_POS, fov: 42, near: 0.1, far: 100 }}
+        camera={{
+          position: isPortrait ? IDLE_CAMERA_POS_PORTRAIT : IDLE_CAMERA_POS,
+          fov: isPortrait ? IDLE_CAMERA_FOV_PORTRAIT : IDLE_CAMERA_FOV_LANDSCAPE,
+          near: 0.1,
+          far: 100,
+        }}
         frameloop={frameloop}
         style={{ background: PAPER, position: "absolute", inset: 0 }}
       >
