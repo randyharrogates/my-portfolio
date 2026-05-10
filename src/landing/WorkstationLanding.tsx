@@ -59,14 +59,9 @@ const FpsSampler: React.FC<FpsSamplerProps> = ({ onSample }) => {
 
 interface CursorTrackerProps {
   ndcRef: React.MutableRefObject<{ x: number; y: number }>;
-  worldRef: React.MutableRefObject<THREE.Vector3>;
 }
 
-const CursorTracker: React.FC<CursorTrackerProps> = ({ ndcRef, worldRef }) => {
-  const planeRef = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.07));
-  const raycasterRef = useRef(new THREE.Raycaster());
-  const ndcVecRef = useRef(new THREE.Vector2());
-
+const CursorTracker: React.FC<CursorTrackerProps> = ({ ndcRef }) => {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -77,14 +72,6 @@ const CursorTracker: React.FC<CursorTrackerProps> = ({ ndcRef, worldRef }) => {
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
   }, [ndcRef]);
-
-  useFrame((state) => {
-    ndcVecRef.current.set(ndcRef.current.x, ndcRef.current.y);
-    raycasterRef.current.setFromCamera(ndcVecRef.current, state.camera);
-    const hit = new THREE.Vector3();
-    raycasterRef.current.ray.intersectPlane(planeRef.current, hit);
-    if (!isNaN(hit.x)) worldRef.current.copy(hit);
-  });
   return null;
 };
 
@@ -112,7 +99,6 @@ const WorkstationLanding: React.FC = () => {
 
   // High-frequency refs (mutated, not setState)
   const cursorNdcRef = useRef({ x: 0, y: 0 });
-  const cursorWorldRef = useRef(new THREE.Vector3(0, 0, 0));
   const idleTimeRef = useRef(0);
   const bootElapsedRef = useRef(0);
   const dragYawRef = useRef(0);
@@ -232,10 +218,15 @@ const WorkstationLanding: React.FC = () => {
 
     const onPointerDown = (e: PointerEvent) => {
       if (focusedId !== null || booting || scrollScrub !== null) return;
-      try {
-        el.setPointerCapture(e.pointerId);
-      } catch {
-        /* setPointerCapture can throw if the element is detached — ignore */
+      // Capture only touch/pen so a finger that drifts off the wrapper keeps
+      // streaming pointermove. Mouse capture would redirect pointerup away
+      // from the canvas and break R3F's mesh click pipeline (bezel onClick).
+      if (e.pointerType === "touch" || e.pointerType === "pen") {
+        try {
+          el.setPointerCapture(e.pointerId);
+        } catch {
+          /* setPointerCapture can throw if the element is detached — ignore */
+        }
       }
       activePointersRef.current.set(e.pointerId, {
         x: e.clientX,
@@ -478,7 +469,7 @@ const WorkstationLanding: React.FC = () => {
     ? [1, 1]
     : lowFidelity
     ? [1, 1.0]
-    : [1, 1.5];
+    : [1, 2.0];
 
   const frameloop = hidden ? "never" : "always";
   const ambientActive = !lowFidelity && !reducedMotion;
@@ -496,6 +487,11 @@ const WorkstationLanding: React.FC = () => {
           powerPreference: lowFidelity ? "low-power" : "high-performance",
           alpha: false,
         }}
+        shadows
+        onCreated={({ gl }) => {
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+        }}
         camera={{
           position: isPortrait ? IDLE_CAMERA_POS_PORTRAIT : IDLE_CAMERA_POS,
           fov: isPortrait ? IDLE_CAMERA_FOV_PORTRAIT : IDLE_CAMERA_FOV_LANDSCAPE,
@@ -507,7 +503,7 @@ const WorkstationLanding: React.FC = () => {
       >
         <AdaptiveDpr pixelated />
         <FpsSampler onSample={reportFps} />
-        <CursorTracker ndcRef={cursorNdcRef} worldRef={cursorWorldRef} />
+        <CursorTracker ndcRef={cursorNdcRef} />
         <Suspense fallback={null}>
           <Scene
             hoveredId={hoveredId}
@@ -516,7 +512,6 @@ const WorkstationLanding: React.FC = () => {
             flashAmount={flashAmount}
             matrixRain={matrixRain}
             reducedMotion={reducedMotion}
-            cursorWorld={cursorWorldRef.current}
             konami={konami}
             avatarUrl={avatarUrl}
             lowFidelity={lowFidelity}

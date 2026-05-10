@@ -1,8 +1,8 @@
 /** @format */
 
 import React, { useMemo } from "react";
-import * as THREE from "three";
-import Lighting from "./Lighting.tsx";
+import { Environment } from "@react-three/drei";
+import Lighting, { tintForHour } from "./Lighting.tsx";
 import Desk from "./Desk.tsx";
 import Monitor from "./Monitor.tsx";
 import {
@@ -13,17 +13,16 @@ import {
   ServerTower,
   ServerRackPanel,
   Chair,
-  Lamp,
 } from "./Props.tsx";
 import Plant from "./Plant.tsx";
-import Dust from "./Particles.tsx";
+import Dust, { DustBeam } from "./Particles.tsx";
+import LightShafts from "./LightShafts.tsx";
 import { SECTIONS } from "../sections.ts";
 import {
   Nameplate,
   FramedPhoto,
   TechStickers,
   RoleMarquee,
-  statusColor,
 } from "./identity-decals.tsx";
 
 interface SceneProps {
@@ -33,7 +32,6 @@ interface SceneProps {
   flashAmount: number;
   matrixRain: boolean;
   reducedMotion: boolean;
-  cursorWorld: THREE.Vector3;
   konami: boolean;
   avatarUrl?: string | null;
   lowFidelity: boolean;
@@ -47,18 +45,24 @@ const Scene: React.FC<SceneProps> = ({
   flashAmount,
   matrixRain,
   reducedMotion,
-  cursorWorld,
   konami,
   avatarUrl,
   lowFidelity,
   ambientActive,
 }) => {
-  const status = useMemo(() => statusColor(), []);
-
+  const tint = useMemo(() => tintForHour(new Date().getHours()), []);
   return (
     <>
-      <color attach="background" args={["#070605"]} />
-      <fog attach="fog" args={["#0a0807", 8, 22]} />
+      <color attach="background" args={["#1a120a"]} />
+      <fogExp2 attach="fog" args={["#241608", 0.085]} />
+
+      {!lowFidelity && (
+        <Environment
+          files={`${process.env.PUBLIC_URL}/hdri/warm-evening-1k.hdr`}
+          background={false}
+          environmentIntensity={1.15}
+        />
+      )}
 
       <Lighting lowFidelity={lowFidelity} />
 
@@ -70,8 +74,7 @@ const Scene: React.FC<SceneProps> = ({
       <ServerTower reducedMotion={reducedMotion} konami={konami} />
       <ServerRackPanel />
       <Chair reducedMotion={reducedMotion} konami={konami} />
-      <Lamp cursorWorld={cursorWorld} statusColor={status} />
-      <Plant reducedMotion={reducedMotion} />
+      <Plant reducedMotion={reducedMotion} lowFidelity={lowFidelity} />
 
       <Nameplate />
       <FramedPhoto avatarUrl={avatarUrl} />
@@ -93,6 +96,10 @@ const Scene: React.FC<SceneProps> = ({
       ))}
 
       <Dust active={ambientActive} reducedMotion={reducedMotion} />
+      {!lowFidelity && (
+        <DustBeam active={ambientActive} reducedMotion={reducedMotion} />
+      )}
+      {!lowFidelity && <LightShafts keyColor={tint.key} />}
     </>
   );
 };

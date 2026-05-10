@@ -4,7 +4,7 @@ import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-interface TimeOfDayTint {
+export interface TimeOfDayTint {
   key: string;
   rim: string;
   hemi: [string, string];
@@ -12,10 +12,10 @@ interface TimeOfDayTint {
   intensityScale: number;
 }
 
-function tintForHour(hour: number): TimeOfDayTint {
+export function tintForHour(hour: number): TimeOfDayTint {
   if (hour >= 18 && hour < 22) {
     return {
-      key: "#ffb380",
+      key: "#ff9f60",
       rim: "#ff7a3c",
       hemi: ["#3a2418", "#0a0807"],
       fill: "#3a4a6a",
@@ -67,11 +67,11 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
     if (keyRef.current) {
       const t = state.clock.elapsedTime;
       keyRef.current.intensity =
-        (3.4 * tint.intensityScale) + Math.sin(t * 0.4) * 0.12;
+        (2.9 * tint.intensityScale) + Math.sin(t * 0.4) * 0.12;
     }
     if (rimRef.current) {
       const t = state.clock.elapsedTime;
-      rimRef.current.intensity = 2.4 + Math.sin(t * 0.5 + 1.4) * 0.18;
+      rimRef.current.intensity = 2.0 + Math.sin(t * 0.5 + 1.4) * 0.18;
     }
   });
 
@@ -83,18 +83,18 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         position={[-1.4, 3.0, 1.6]}
         angle={0.95}
         penumbra={0.7}
-        intensity={3.4 * tint.intensityScale}
+        intensity={2.9 * tint.intensityScale}
         color={tint.key}
         distance={11}
         decay={1.4}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 1024}
+        shadow-mapSize={lowFidelity ? 256 : 4096}
         shadow-bias={-0.0006}
       />
       <pointLight
         ref={rimRef}
         position={[2.6, 1.4, 0.8]}
-        intensity={2.4}
+        intensity={2.0}
         color={tint.rim}
         distance={6}
         decay={2}
@@ -106,8 +106,30 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         distance={6}
         decay={2}
       />
+      {/* Avatar fill — small, localized to the desk photo frame */}
+      <pointLight
+        position={[-0.78, 0.6, 0.28]}
+        intensity={0.8}
+        color="#c8d0e8"
+        distance={1.2}
+        decay={2}
+      />
+      {/* Ceiling wash — broad, soft top-down spot covering the whole desk. */}
+      <spotLight
+        position={[0.0, 3.2, 0.4]}
+        target-position={[0.0, 0.0, 0.0]}
+        angle={1.05}
+        penumbra={0.85}
+        intensity={1.3 * tint.intensityScale}
+        color={tint.key}
+        distance={6.5}
+        decay={1.6}
+        castShadow={!lowFidelity}
+        shadow-mapSize={lowFidelity ? 256 : 4096}
+        shadow-bias={-0.0005}
+      />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}
-      <ambientLight intensity={0.18} color="#3a2e22" />
+      <ambientLight intensity={0.22} color="#3a2e22" />
     </>
   );
 };
