@@ -140,12 +140,13 @@ const Monitor: React.FC<MonitorProps> = ({
               color="#1f1c19"
               roughness={0.35}
               metalness={0.85}
+              envMapIntensity={0.8}
             />
           </mesh>
           {/* base disc */}
           <mesh position={[0, -stalkHeight + 0.005, 0]}>
             <cylinderGeometry args={[0.12, 0.13, 0.012, 18]} />
-            <meshStandardMaterial color="#15120f" roughness={0.5} metalness={0.6} />
+            <meshStandardMaterial color="#15120f" roughness={0.5} metalness={0.6} envMapIntensity={0.8} />
           </mesh>
         </>
       )}
@@ -168,7 +169,7 @@ const Monitor: React.FC<MonitorProps> = ({
         }}
       >
         <boxGeometry args={[cfg.size[0] + 0.04, cfg.size[1] + 0.04, 0.06]} />
-        <meshStandardMaterial color="#1a1714" roughness={0.6} metalness={0.25} />
+        <meshStandardMaterial color="#1a1714" roughness={0.6} metalness={0.25} envMapIntensity={0.8} />
       </mesh>
 
       {/* Inner bezel rim — slight bevel highlight */}

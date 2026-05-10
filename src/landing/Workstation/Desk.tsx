@@ -9,6 +9,7 @@ function createWoodMaterial(): THREE.MeshStandardMaterial {
     color: "#3a2a1d",
     roughness: 0.78,
     metalness: 0.04,
+    envMapIntensity: 0.8,
   });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
@@ -71,7 +72,7 @@ const Desk: React.FC = () => {
       ].map((p, i) => (
         <mesh key={i} position={p as [number, number, number]} castShadow>
           <boxGeometry args={[0.06, 0.86, 0.06]} />
-          <meshStandardMaterial color="#1a1612" roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color="#1a1612" roughness={0.6} metalness={0.4} envMapIntensity={0.8} />
         </mesh>
       ))}
       {/* Floor */}

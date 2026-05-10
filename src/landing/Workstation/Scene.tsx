@@ -1,7 +1,7 @@
 /** @format */
 
-import React, { useMemo } from "react";
-import * as THREE from "three";
+import React from "react";
+import { Environment } from "@react-three/drei";
 import Lighting from "./Lighting.tsx";
 import Desk from "./Desk.tsx";
 import Monitor from "./Monitor.tsx";
@@ -13,17 +13,15 @@ import {
   ServerTower,
   ServerRackPanel,
   Chair,
-  Lamp,
 } from "./Props.tsx";
 import Plant from "./Plant.tsx";
-import Dust from "./Particles.tsx";
+import Dust, { DustBeam } from "./Particles.tsx";
 import { SECTIONS } from "../sections.ts";
 import {
   Nameplate,
   FramedPhoto,
   TechStickers,
   RoleMarquee,
-  statusColor,
 } from "./identity-decals.tsx";
 
 interface SceneProps {
@@ -33,7 +31,6 @@ interface SceneProps {
   flashAmount: number;
   matrixRain: boolean;
   reducedMotion: boolean;
-  cursorWorld: THREE.Vector3;
   konami: boolean;
   avatarUrl?: string | null;
   lowFidelity: boolean;
@@ -47,18 +44,23 @@ const Scene: React.FC<SceneProps> = ({
   flashAmount,
   matrixRain,
   reducedMotion,
-  cursorWorld,
   konami,
   avatarUrl,
   lowFidelity,
   ambientActive,
 }) => {
-  const status = useMemo(() => statusColor(), []);
-
   return (
     <>
       <color attach="background" args={["#070605"]} />
       <fog attach="fog" args={["#0a0807", 8, 22]} />
+
+      {!lowFidelity && (
+        <Environment
+          preset="apartment"
+          background={false}
+          environmentIntensity={0.35}
+        />
+      )}
 
       <Lighting lowFidelity={lowFidelity} />
 
@@ -70,7 +72,6 @@ const Scene: React.FC<SceneProps> = ({
       <ServerTower reducedMotion={reducedMotion} konami={konami} />
       <ServerRackPanel />
       <Chair reducedMotion={reducedMotion} konami={konami} />
-      <Lamp cursorWorld={cursorWorld} statusColor={status} />
       <Plant reducedMotion={reducedMotion} />
 
       <Nameplate />
@@ -93,6 +94,9 @@ const Scene: React.FC<SceneProps> = ({
       ))}
 
       <Dust active={ambientActive} reducedMotion={reducedMotion} />
+      {!lowFidelity && (
+        <DustBeam active={ambientActive} reducedMotion={reducedMotion} />
+      )}
     </>
   );
 };

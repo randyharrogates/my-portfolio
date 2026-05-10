@@ -8,6 +8,8 @@ import {
   Vignette,
   Noise,
   ToneMapping,
+  N8AO,
+  TiltShift2,
 } from "@react-three/postprocessing";
 import { BlendFunction, ToneMappingMode } from "postprocessing";
 
@@ -17,10 +19,11 @@ interface PostprocessingProps {
 }
 
 /**
- * Cinematic postfx pipeline. DOF is intentionally omitted — pairing it with
- * Bloom triggers GL_INVALID_OPERATION warnings on Chrome/ANGLE because both
- * passes share the same depth/stencil attachment. The look survives without it
- * thanks to bloom + film grain + vignette.
+ * Cinematic postfx pipeline. Real DOF is intentionally avoided — pairing
+ * @react-three/postprocessing's DepthOfField with Bloom triggers
+ * GL_INVALID_OPERATION on Chrome/ANGLE (shared depth/stencil attachment).
+ * TiltShift2 is a screen-space blur that fakes the same look without a depth
+ * pass, so it composes cleanly with Bloom.
  */
 const Postprocessing: React.FC<PostprocessingProps> = ({
   enabled,
@@ -39,13 +42,20 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
 
   return (
     <EffectComposer multisampling={0}>
+      <N8AO
+        aoRadius={0.4}
+        intensity={2.5}
+        distanceFalloff={0.8}
+        quality="medium"
+      />
       <Bloom
-        intensity={focused ? 1.25 : 0.95}
-        luminanceThreshold={0.5}
+        intensity={focused ? 1.4 : 1.15}
+        luminanceThreshold={0.35}
         luminanceSmoothing={0.22}
         mipmapBlur
-        radius={0.82}
+        radius={1.0}
       />
+      <TiltShift2 blur={0.18} samples={10} />
       <ChromaticAberration
         offset={[0.0008, 0.0012]}
         radialModulation={false}
