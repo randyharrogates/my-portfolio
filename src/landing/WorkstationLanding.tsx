@@ -469,7 +469,7 @@ const WorkstationLanding: React.FC = () => {
     ? [1, 1]
     : lowFidelity
     ? [1, 1.0]
-    : [1, 1.5];
+    : [1, 2.0];
 
   const frameloop = hidden ? "never" : "always";
   const ambientActive = !lowFidelity && !reducedMotion;

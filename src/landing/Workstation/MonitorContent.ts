@@ -21,6 +21,7 @@ const W = 512;
 const H = 320;
 const SMALL_W = 384;
 const SMALL_H = 256;
+export const TEXT_DPR = 4;
 
 function mkCanvas(w: number, h: number): {
   canvas: HTMLCanvasElement;
@@ -28,14 +29,15 @@ function mkCanvas(w: number, h: number): {
   texture: THREE.CanvasTexture;
 } {
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = w * TEXT_DPR;
+  canvas.height = h * TEXT_DPR;
   const ctx = canvas.getContext("2d", { alpha: false })!;
+  ctx.scale(TEXT_DPR, TEXT_DPR);
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = 16;
   return { canvas, ctx, texture };
 }
 

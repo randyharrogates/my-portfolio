@@ -5,11 +5,11 @@ import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
 import type { SectionConfig } from "../sections.ts";
-import { createMonitorContent, createMatrixRain } from "./MonitorContent.ts";
+import { createMonitorContent, createMatrixRain, TEXT_DPR } from "./MonitorContent.ts";
 
 const ACCENT = "#e8632a";
 
-/** CRT shader material — adds scanlines, slight chromatic shift, vignette. */
+/** Flat-panel shader — minimal scanline modulation, no curvature/CA/vignette. */
 function createCRTMaterial(map: THREE.Texture): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -35,30 +35,16 @@ function createCRTMaterial(map: THREE.Texture): THREE.ShaderMaterial {
       varying vec2 vUv;
 
       void main() {
-        vec2 c = vUv - 0.5;
-        float r2 = dot(c, c);
-        vec2 uv = vUv + c * r2 * 0.025;
-
-        float ca = 0.0007 + uHover * 0.002;
-        vec3 col;
-        col.r = texture2D(uMap, uv + vec2(ca, 0.0)).r;
-        col.g = texture2D(uMap, uv).g;
-        col.b = texture2D(uMap, uv - vec2(ca, 0.0)).b;
+        vec2 uv = vUv;
+        vec3 col = texture2D(uMap, uv).rgb;
 
         float scan = sin(uv.y * 320.0 + uTime * 1.5) * 0.5 + 0.5;
-        col *= 0.92 + scan * 0.08;
+        col *= 0.98 + scan * 0.02;
 
-        float vig = smoothstep(0.95, 0.45, length(c));
-        col *= 0.92 + vig * 0.18;
-
-        // brighten so the screen reads as a glowing emissive surface
-        col *= 4.6;
-        // give the dark CRT areas a warm phosphor base glow so the screen always reads as on
-        col += vec3(0.22, 0.16, 0.12);
+        col *= 2.2;
 
         col += vec3(uFlash);
         col += vec3(0.91, 0.39, 0.16) * uHover * 0.32;
-        col *= 0.985 + sin(uTime * 11.0) * 0.015;
 
         gl_FragColor = vec4(col, 1.0);
       }
@@ -96,8 +82,8 @@ const Monitor: React.FC<MonitorProps> = ({
     () =>
       createMatrixRain(
         content,
-        content.texture.image.width,
-        content.texture.image.height
+        content.texture.image.width / TEXT_DPR,
+        content.texture.image.height / TEXT_DPR
       ),
     [content]
   );

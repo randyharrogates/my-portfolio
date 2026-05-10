@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-05-11
+
+### Added
+
+- **(landing)** Detailed potted plant — Poly Haven CC0 `potted_plant_04` (1k diffuse + normal + ARM textures, ~2.1 MB) loaded via drei `useGLTF`, replacing the 12 extruded-teardrop primitives so leaf veins, translucency and specular highlights actually read. Primitive plant retained as `lowFidelity` fallback so reduced-motion / low-power viewers skip the asset hit
+- **(landing)** Procedural ceramic mug — 1024 × 256 canvas-rendered "RANDY'S WORKSTATION" label tiles around the cylinder with accent-orange rim bands; switched body + handle to `meshPhysicalMaterial` with `clearcoat=1.0` / `clearcoatRoughness=0.06` for ceramic glaze; cylinder radial segments 18 → 32 so the silhouette rounds correctly under the spotlight
+- **(assets)** `public/models/potted_plant_04/` — gltf + bin + 3 JPEG textures, served directly from `public/` (zero JS bundle delta)
+
+### Changed
+
+- **(landing)** Plant repositioned forward (z = -0.45 → 0.10) so it no longer occludes the SKILLS monitor stalk from the default landing pose
+- **(landing)** Desk surface now reads as brushed aluminum — wood-grain `onBeforeCompile` shader replaced with anisotropic brush streaks along world-Z, low-amplitude roughness variation, and a worldspace edge mask that fakes AO grounding toward the desk perimeter; base material `#3a3531`, metalness 0.78, clearcoat 0.25
+- **(landing)** IBL `environmentIntensity` 0.55 → 1.15 so the warm-evening HDRI actually drives reflections and PBR specular on metallic / ceramic surfaces
+- **(landing)** CRT shader brightness multiplier 3.4 → 2.2 — the previous value pushed monitor pixels so far through ACES that surrounding desk/plant detail tone-mapped into mush; screens still read bright while the scene preserves dynamic range
+- **(landing)** Monitor text resolution 4× — `MonitorContent.ts` now backs every screen canvas with a 4× DPR buffer (`TEXT_DPR = 4`) and bumps texture anisotropy 4 → 16; ABOUT / PROJECTS / SKILLS / BLOG / RESUME / CONTACT readouts no longer alias when the camera dollies in
+- **(landing)** Sharper key + ceiling spotlight shadows — `shadow-mapSize` 2048 → 4096 on both lights (mobile / low-fidelity branch unchanged at 256²)
+- **(landing)** Desktop DPR cap raised 1.5 → 2.0 so retina viewers get crisper edges; mobile + low-fidelity branches stay at 1.0
+- **(landing)** MSAA enabled (`multisampling=4`) in `EffectComposer` and bloom tightened (`luminanceThreshold` 0.5 → 0.7, intensity 0.85 → 0.55, focused 1.05 → 0.7) so highlights bloom selectively instead of flooding the whole scene
+
 ## [0.4.0] - 2026-05-10
 
 ### Added

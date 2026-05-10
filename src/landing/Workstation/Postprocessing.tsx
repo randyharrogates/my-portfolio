@@ -4,13 +4,11 @@ import React from "react";
 import {
   EffectComposer,
   Bloom,
-  ChromaticAberration,
   Vignette,
-  Noise,
   ToneMapping,
   N8AO,
 } from "@react-three/postprocessing";
-import { BlendFunction, ToneMappingMode } from "postprocessing";
+import { ToneMappingMode } from "postprocessing";
 
 interface PostprocessingProps {
   enabled: boolean;
@@ -40,7 +38,7 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
   }
 
   return (
-    <EffectComposer multisampling={0}>
+    <EffectComposer multisampling={4}>
       <N8AO
         aoRadius={0.4}
         intensity={2.5}
@@ -48,23 +46,13 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
         quality="medium"
       />
       <Bloom
-        intensity={focused ? 1.4 : 1.15}
-        luminanceThreshold={0.5}
+        intensity={focused ? 0.7 : 0.55}
+        luminanceThreshold={0.7}
         luminanceSmoothing={0.22}
         mipmapBlur
         radius={0.75}
       />
-      <ChromaticAberration
-        offset={[0.0004, 0.0006]}
-        radialModulation={false}
-        modulationOffset={0}
-      />
-      <Noise
-        opacity={0.05}
-        blendFunction={BlendFunction.OVERLAY}
-        premultiply
-      />
-      <Vignette eskil={false} offset={0.32} darkness={0.42} />
+      <Vignette eskil={false} offset={0.32} darkness={0.28} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
