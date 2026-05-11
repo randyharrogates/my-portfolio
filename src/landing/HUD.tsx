@@ -2,12 +2,8 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import type { FidelityMode } from "./use-low-power.ts";
 
 interface HUDProps {
-  mode: FidelityMode;
-  effectiveLow: boolean;
-  onCycleMode: () => void;
   audioMuted: boolean;
   onToggleAudio: () => void;
   bootSkippable?: boolean;
@@ -103,16 +99,11 @@ const SKIP_LINK_STYLE: React.CSSProperties = {
 };
 
 const HUD: React.FC<HUDProps> = ({
-  mode,
-  effectiveLow,
-  onCycleMode,
   audioMuted,
   onToggleAudio,
   bootSkippable,
   onSkipBoot,
 }) => {
-  const fidelityLabel =
-    mode === "auto" ? (effectiveLow ? "auto·low" : "auto·full") : mode;
   return (
     <>
       <a
@@ -136,15 +127,6 @@ const HUD: React.FC<HUDProps> = ({
       </div>
 
       <div style={RIGHT_STACK}>
-        <button
-          type="button"
-          style={BTN}
-          onClick={onCycleMode}
-          aria-label="cycle fidelity mode"
-          title="cycle fidelity (auto/low/full)"
-        >
-          fx: {fidelityLabel}
-        </button>
         <button
           type="button"
           style={BTN}

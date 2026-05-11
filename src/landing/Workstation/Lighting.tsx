@@ -51,10 +51,9 @@ export function tintForHour(hour: number): TimeOfDayTint {
 
 interface LightingProps {
   hourOverride?: number;
-  lowFidelity?: boolean;
 }
 
-const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
+const Lighting: React.FC<LightingProps> = ({ hourOverride }) => {
   const tint = useMemo(() => {
     const h = hourOverride ?? new Date().getHours();
     return tintForHour(h);
@@ -77,7 +76,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
 
   return (
     <>
-      <hemisphereLight args={[tint.hemi[0], tint.hemi[1], 0.55]} />
+      <hemisphereLight args={[tint.hemi[0], tint.hemi[1], 0.7]} />
       <spotLight
         ref={keyRef}
         position={[-1.4, 3.0, 1.6]}
@@ -87,9 +86,6 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         color={tint.key}
         distance={11}
         decay={1.4}
-        castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 2048}
-        shadow-bias={-0.0006}
       />
       <pointLight
         ref={rimRef}
@@ -124,12 +120,21 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         color={tint.key}
         distance={6.5}
         decay={1.6}
-        castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 2048}
-        shadow-bias={-0.0005}
+      />
+      {/* Pendant desk lamp — warm spotlight hanging above the desk, aimed
+       *  down to light the chair, plant and desk surface. No shadows (cheap). */}
+      <spotLight
+        position={[0.0, 2.2, 0.55]}
+        target-position={[0.0, 0.0, 0.55]}
+        angle={0.75}
+        penumbra={0.85}
+        intensity={1.1}
+        color="#ffd8a0"
+        distance={4.2}
+        decay={1.8}
       />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}
-      <ambientLight intensity={0.22} color="#3a2e22" />
+      <ambientLight intensity={0.32} color="#3a2e22" />
     </>
   );
 };
