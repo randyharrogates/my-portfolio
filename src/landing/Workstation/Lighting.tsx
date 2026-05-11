@@ -81,7 +81,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         args={[
           tint.hemi[0],
           lowFidelity ? "#2a2018" : tint.hemi[1],
-          lowFidelity ? 0.95 : 0.55,
+          lowFidelity ? 1.15 : 0.55,
         ]}
       />
       <spotLight
@@ -135,7 +135,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         target-position={[0.0, 0.0, 0.0]}
         angle={1.05}
         penumbra={0.85}
-        intensity={0.75 * tint.intensityScale}
+        intensity={(lowFidelity ? 1.4 : 0.75) * tint.intensityScale}
         color={tint.key}
         distance={6.5}
         decay={1.6}
@@ -144,7 +144,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         shadow-bias={-0.0005}
       />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}
-      <ambientLight intensity={lowFidelity ? 0.5 : 0.22} color="#3a2e22" />
+      <ambientLight intensity={lowFidelity ? 0.75 : 0.22} color="#3a2e22" />
     </>
   );
 };
