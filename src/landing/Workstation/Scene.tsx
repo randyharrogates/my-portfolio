@@ -100,7 +100,7 @@ const Scene: React.FC<SceneProps> = ({
       <ServerTower reducedMotion={reducedMotion} konami={konami} />
       <ServerRackPanel />
       <Chair reducedMotion={reducedMotion} konami={konami} />
-      <Plant reducedMotion={reducedMotion} lowFidelity={lowFidelity} />
+      <Plant reducedMotion={reducedMotion} />
 
       <Nameplate />
       <FramedPhoto avatarUrl={avatarUrl} />
