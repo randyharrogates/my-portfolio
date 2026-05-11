@@ -7,8 +7,10 @@ import { HALL_HUB_RADIUS, HALL_CEILING_HEIGHT } from "../sections.ts";
 
 const FLOOR_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-floor.glb`;
 const COLUMN_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-column.glb`;
+const DOME_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-dome.glb`;
 useGLTF.preload(FLOOR_GLB);
 useGLTF.preload(COLUMN_GLB);
+useGLTF.preload(DOME_GLB);
 
 const COLUMN_BASE_MATERIAL = new THREE.MeshStandardMaterial({
   color: "#8a6328",
@@ -26,6 +28,23 @@ const COLUMN_CAPITAL_MATERIAL = new THREE.MeshStandardMaterial({
   roughness: 0.2,
   emissive: new THREE.Color("#e8b45a"),
   emissiveIntensity: 0.1,
+});
+
+const DOME_SHELL_MATERIAL = new THREE.MeshStandardMaterial({
+  color: "#0e1e22",
+  metalness: 0.4,
+  roughness: 0.7,
+  side: THREE.BackSide,
+  emissive: new THREE.Color("#16383c"),
+  emissiveIntensity: 0.18,
+});
+const DOME_LATTICE_MATERIAL = new THREE.MeshStandardMaterial({
+  color: "#8a6328",
+  metalness: 0.92,
+  roughness: 0.28,
+  emissive: new THREE.Color("#e8b45a"),
+  emissiveIntensity: 0.35,
+  side: THREE.DoubleSide,
 });
 
 const SLAB_MATERIAL = new THREE.MeshStandardMaterial({
@@ -54,6 +73,33 @@ const INLAY_MATERIAL = new THREE.MeshStandardMaterial({
  *  with explicit materials — `<primitive object={scene} />` ignores material
  *  overrides on un-cloned glTF nodes here.
  */
+/** Faceted geodesic dome ceiling + brass lattice overlay, loaded from
+ *  `hub-dome.glb`. Same extract-geometry-from-named-meshes pattern as
+ *  the floor and columns; mounted at world origin since vertex positions
+ *  already encode the z=HALL_CEILING_HEIGHT base. */
+const HubDome: React.FC = () => {
+  const { scene } = useGLTF(DOME_GLB);
+  const { shellGeom, latticeGeom } = useMemo(() => {
+    let shellGeom: THREE.BufferGeometry | null = null;
+    let latticeGeom: THREE.BufferGeometry | null = null;
+    scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      if (o.name === "hub-dome-shell") shellGeom = m.geometry;
+      else if (o.name === "hub-dome-lattice") latticeGeom = m.geometry;
+    });
+    return { shellGeom, latticeGeom };
+  }, [scene]);
+
+  if (!shellGeom || !latticeGeom) return null;
+  return (
+    <group>
+      <mesh geometry={shellGeom} material={DOME_SHELL_MATERIAL} />
+      <mesh geometry={latticeGeom} material={DOME_LATTICE_MATERIAL} />
+    </group>
+  );
+};
+
 /** Six column instances of `hub-column.glb`, placed at hex-edge midpoints
  *  so each column flanks two adjacent alcove openings (not at vertices —
  *  those point at alcoves and would block the arches). Geometry extracted
@@ -165,25 +211,7 @@ const Hub: React.FC = () => {
 
       <HubColumns />
 
-      {/* Dome — top half of a sphere; back-faces visible so it reads from
-       *  inside. */}
-      <mesh
-        position={[0, HALL_CEILING_HEIGHT, 0]}
-        rotation={[0, 0, 0]}
-        scale={[1, 0.65, 1]}
-      >
-        <sphereGeometry
-          args={[HALL_HUB_RADIUS * 1.5, 36, 18, 0, Math.PI * 2, 0, Math.PI / 2]}
-        />
-        <meshStandardMaterial
-          color="#0e1e22"
-          metalness={0.4}
-          roughness={0.7}
-          side={THREE.BackSide}
-          emissive="#16383c"
-          emissiveIntensity={0.18}
-        />
-      </mesh>
+      <HubDome />
 
       {/* Skylight aperture — small bright disc at dome apex, drives the
        *  god-ray spawn point. */}
