@@ -88,6 +88,37 @@ visual diff.
 - **Next session priority**: dome ceiling (Asset 2.4) — biggest single
   visual-impact piece; the Wakandan-futuristic identity payoff.
 
+#### Session 3 — 2026-05-11 — ornamented capital + base (asset 2.3)
+- **Built**: 5-tier hex stack for both column **base** AND **capital**,
+  joined into one mesh per part. Alternating 30°/0° Z-rotation between
+  adjacent tiers creates a stepped/staircase silhouette that reads as
+  carved ornament without leaving placeholder territory.
+  - Base profile (bottom→top): plinth · lower torus · middle · upper
+    torus · apophyge. Total 0.4m.
+  - Capital profile (bottom→top): neck · lower band · echinus · upper
+    band · abacus. Total 0.7m.
+- **Script**: `blender/scripts/hub/columns.py` — extended with
+  `_make_tier`, `_join_pieces`, `BASE_TIER_PROFILE`,
+  `CAPITAL_TIER_PROFILE` data tables. The 3-named-mesh contract is
+  preserved (`hub-column-{base,shaft,capital}`) so the React side
+  needs no changes.
+- **Geometry budget**: base 60 verts / 40 faces, capital 60 verts /
+  40 faces, shaft unchanged at 12 verts / 8 faces. Per-column total
+  ~132 verts — still trivial relative to the 8k/column budget.
+- **Output**: `public/models/hall/hub-column.glb` (re-exported, replaces
+  session 2 plain-prism version).
+- **Verification**: live `/hall` renders tiered ornament on both
+  base and capital of all 6 columns; 60 fps; 0 console errors;
+  build + tests pass.
+- **Honest read**: ~4-5/10 ornament density vs Hall of Zero Limits
+  reference. Procedural geometry can stack tiers cleanly but can't
+  carve organic Wakandan tracery without authoring intent. The
+  actual ornament-vs-budget call still lives at 2.🎯 (paid KitBash3D
+  + Sketchfab hero capitals can close most of the remaining gap).
+- **Time spent**: ~35 min.
+- **Next session priority**: dome ceiling (Asset 2.4) — biggest single
+  visual-impact piece; the Wakandan-futuristic identity payoff.
+
 #### Pending references for Phase 2 decision point
 - `phase-2-hub-wide.png` — match to `refs/hozl-01-hub-wide.png`
 - `phase-2-column-detail.png` — match to `refs/hozl-02-column-detail.png`

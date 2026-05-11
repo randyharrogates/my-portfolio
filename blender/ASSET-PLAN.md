@@ -33,7 +33,7 @@ side-by-side against `refs/hozl-*.png` and score for the
 |---|---|---|---|---|
 | 2.1 | Hexagonal floor slab + inlay | `hub/floor.py` | radius 3m, 6 sides, 0.10m thick, 0.04m bevel; inlay disk 2.4m radius at z+0.001 | ✅ 2026-05-11 |
 | 2.2 | 6 brass columns (between alcoves) | `hub/columns.py` | base + tapered shaft + capital; one glb at origin, instantiated 6× in React at hex-edge midpoints (angles 30°/90°/150°/210°/270°/330°); height = `HALL_CEILING_HEIGHT` | ✅ 2026-05-11 |
-| 2.3 | Column capitals (carved ornament) | `hub/capital.py` | The ornament-density risk piece. Procedural extrusion + array + bevel + boolean cuts. If <6/10 vs reference, this is where paid kit pays off. | 🔒 (after 2.2) |
+| 2.3 | Ornamented column capitals + base | `hub/columns.py` (extended) | Procedural placeholder: 5-tier hex stack with alternating 30°/0° rotation per layer for both base AND capital, joined into one mesh per part. Honest ~4-5/10 vs reference — keeps the React side's `hub-column-{base,shaft,capital}` 3-mesh contract. Real Wakandan-carved tracery / engraved grooves stays the actual decision-point question at 2.🎯. | ✅ 2026-05-11 |
 | 2.4 | Dome ceiling | `hub/dome.py` | Geometry-node hex tessellation at radius ~5m; backface visible from inside; emissive lattice slats | ⬜ session 3 |
 | 2.5 | Wall panels between columns | `hub/walls.py` | Six panels filling between adjacent columns; triangle-tracery motif via geometry nodes (`common/motif.py`) | ⬜ session 4 |
 | 2.6 | Skylight aperture mesh | `hub/skylight.py` | Hex ring at dome apex, drives the god-ray spawn point on the React side | 🔒 (after 2.4) |
