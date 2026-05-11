@@ -1,8 +1,8 @@
 /** @format */
 
-import React, { useMemo } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { useIsMobileViewport, type FidelityMode } from "./use-low-power.ts";
+import type { FidelityMode } from "./use-low-power.ts";
 
 interface HUDProps {
   mode: FidelityMode;
@@ -45,10 +45,8 @@ const RIGHT_STACK: React.CSSProperties = {
   fontSize: 11,
 };
 
-/** Base button style. `backdrop-filter: blur()` is a per-frame full-screen
- *  composite pass and is brutal on mobile GPUs; we strip it on phones and
- *  compensate with a more opaque background so the text stays readable. */
-const BTN_BASE: React.CSSProperties = {
+const BTN: React.CSSProperties = {
+  background: "rgba(20, 17, 15, 0.78)",
   border: "1px solid #3a3532",
   color: "#c8bfb5",
   padding: "5px 10px",
@@ -58,6 +56,7 @@ const BTN_BASE: React.CSSProperties = {
   letterSpacing: 0.3,
   cursor: "pointer",
   textDecoration: "none",
+  backdropFilter: "blur(4px)",
 };
 
 const HINT_STYLE: React.CSSProperties = {
@@ -74,7 +73,8 @@ const HINT_STYLE: React.CSSProperties = {
   zIndex: 2,
 };
 
-const SKIP_POSITION: React.CSSProperties = {
+const SKIP_STYLE: React.CSSProperties = {
+  ...BTN,
   position: "absolute",
   bottom: 18,
   right: 16,
@@ -111,19 +111,6 @@ const HUD: React.FC<HUDProps> = ({
   bootSkippable,
   onSkipBoot,
 }) => {
-  const isMobile = useIsMobileViewport();
-  const BTN = useMemo<React.CSSProperties>(
-    () => ({
-      ...BTN_BASE,
-      background: isMobile ? "rgba(20, 17, 15, 0.88)" : "rgba(20, 17, 15, 0.78)",
-      backdropFilter: isMobile ? undefined : "blur(4px)",
-    }),
-    [isMobile]
-  );
-  const SKIP_STYLE = useMemo<React.CSSProperties>(
-    () => ({ ...BTN, ...SKIP_POSITION }),
-    [BTN]
-  );
   const fidelityLabel =
     mode === "auto" ? (effectiveLow ? "auto·low" : "auto·full") : mode;
   return (
