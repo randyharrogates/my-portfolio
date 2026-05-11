@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-05-11
+
+### Added
+
+- **(landing)** Hall of Zero Limits 3D landing system at `/#/hall` — central hexagonal rotunda (hub) with six alcoves arrayed at 60° intervals, one per section (about, projects, skills, blog, resume, contact). Lazy-loaded via `React.lazy` so the main bundle is untouched; existing Workstation at `/` continues to be the default landing throughout the build-out
+- **(landing)** `CameraDirector.tsx` — N-target Bezier camera path system with cubic ease-in-out (1.2s flies between named viewpoints), idle hub orbit, and bird's-eye boot-sequence pose. Supersedes the single-target dolly in the Workstation
+- **(landing)** Hologram screen shader (`Hologram.tsx`) — curved-plane GLSL with chroma aberration, rolling scanlines, fresnel rim, time-modulated flicker, normal-blended alpha derived from content luminance. One per alcove, tinted by `HALL_THEMES[id].hologramColor`
+- **(landing)** Per-alcove procedural hologram content — `AboutTimeline`, `ProjectTiles`, `SkillConstellation`, `BlogFeed`, `ScrollingResume`, `ContactArray`. All canvas-rendered, pull from existing `src/data/portfolio.ts` (no data duplication), uploaded as `THREE.CanvasTexture` to the hologram material
+- **(landing)** `HallLanding.tsx` — Canvas host with keyboard nav (`1–6` jumps to alcoves, `0` returns to hub, `M` toggles map, `Esc` clears), bidirectional URL hash sync (`/hall/<alcove>`), boot sequence gated by `localStorage.getItem('landing.hall.bootSeen')`, and a "skip to terminal" escape hatch
+- **(landing)** Top-down map overlay (`Map.tsx`) — six labeled hex tiles arranged around the hub; click a tile to fly the camera; press `M` again or `Esc` to dismiss. The "Hall image 3 style" wayfinding mockup from the original design brief
+- **(landing)** Hall HUD overlay — phase chip, map/audio/fidelity toggles, dynamic lower-third caption per active target, FPS counter, keymap hint, "back to workstation" link. Separate from the Workstation HUD so its styling can diverge
+- **(landing)** Procedural Web Audio synth (`HallAudio.tsx`) — ambient drone + per-transition whoosh + per-alcove shimmer. Replaces a CC0 sample library for first pass; samples can layer in later. Mute persists across navigation
+- **(landing)** Hall postprocessing chain — SMAA + N8AO + Bloom + Vignette + ACES tone-mapping. Tuned for the cooler hub palette vs the warm Workstation route; both routes share the same post pipeline but with different intensities
+- **(landing)** Hall atmosphere — god-ray cone from the dome skylight, pulsing floor-glow rings, particle motes (~250–600 instances depending on fidelity), depth-haze fog tinted to the hub palette. Each layer gated on `!lowFidelity && !reducedMotion`
+- **(landing)** Six themed alcoves (`Alcove.tsx`) — half-hexagonal pavilions with arched hub-facing arches, back-wall-mounted holograms, practical fill light per alcove, click hit-volumes for camera flyovers. Orientation math (`alcoveAngle` / `alcoveFacing` / `alcoveCentre` / `alcoveFocalPose` in `sections.ts`) keeps geometry, camera poses, and the map overlay in sync from one source of truth
+- **(landing)** Hub hexagonal floor — first Blender-MCP-generated asset, replacing the placeholder cylinder pair. 6-sided slab (vertex-radius 3m, 0.10m thick, 0.04m angle-bevel) + nested 80%-ratio hex inlay disk. Flat edges align with the six alcove directions
+- **(landing)** Atmosphere floor-glow rings + Hub outer ring — `RingGeometry` segments swapped from 64 → 6 so the entire hub reads as hexagonal. Without this, the circular rings dominated and the hex floor was barely legible from the idle-orbit camera pose
+- **(blender)** `blender/` repo-root pipeline — `scripts/common/{export.py, pbr.py, motif.py}` helpers; `scripts/hub/floor.py` deterministic builder for the hexagonal floor; `mcp-setup/` with the ahujasid/blender-mcp addon staged + headless installer; `MOODBOARD.md`, `RENDER-LOG.md`, `ASSET-PLAN.md`, `README.md` planning docs
+- **(blender)** `.mcp.json` at repo root — Claude Code MCP config wiring `uvx blender-mcp` so live geometry generation works from this chat
+- **(assets)** `public/models/hall/hub-floor.glb` — 13KB uncompressed glb, first piece of real Blender geometry shipped to the React side
+- **(docs)** `blender/ASSET-PLAN.md` — single source of truth for every Blender asset planned across Phases 2/4/5/6/8, with status emojis and budget targets per zone
+- **(docs)** `blender/RENDER-LOG.md` — per-session record of what shipped, gotchas resolved, time spent; entry 1 captures the Draco-decoder and `<primitive object={scene}>` lessons so session 2+ doesn't re-discover them
+
+### Fixed
+
+- **(landing)** Hex floor no longer invisible — Phase-1 export used Draco level 7 (4.3KB), but the React app doesn't register a `DRACOLoader`, so `useGLTF` suspended forever (silently, no thrown error). Switched `scripts/common/export.py` default to `use_draco=False` (still parameterizable for future hero assets when a decoder is wired). Re-exported to 13KB
+- **(landing)** Hex-floor materials weren't overriding via `<primitive object={scene}>` — the path traverses-and-assigns but glTF-loaded child nodes inside an unmounted primitive ignore React-side material assignment. Switched `HubFloor` to extract `BufferGeometry` from named meshes via `useMemo([scene])` and mount as plain `<mesh geometry={...}>` with explicit `material={...}` — works reliably and gives React full control over shadows/transforms
+
+### Changed
+
+- **(routing)** `src/App.tsx` — added `/hall` and `/hall/<section>` HashRouter routes mapping to the lazy-loaded `HallLanding`. Existing Workstation route at `/` untouched. Global ESC handler now skips Hall paths so Hall manages its own escape behavior
+- **(landing)** `src/landing/sections.ts` — extended with Hall-specific scene config: `HALL_HUB_RADIUS`, `HALL_ALCOVE_RADIUS`, `HALL_CEILING_HEIGHT`, `HALL_ALCOVE_ORDER`, alcove pose math (`alcoveAngle` / `alcoveFacing` / `alcoveCentre` / `alcoveFocalPose`), `HALL_HUB_POSE`, `HALL_BOOT_POSE`, `HALL_THEMES` palette, `buildHallTargetPoses` helper for the CameraDirector. Workstation config untouched
+- **(landing)** `src/landing/HUD.tsx` — small adjustments so the HUD doesn't collide with the Hall route (Hall has its own HUD overlay; the legacy HUD stays mounted for the Workstation)
+- **(config)** `.claude/settings.json` — permissions adjusted for the Blender MCP + Playwright tooling used during the session
+
 ## [0.6.0] - 2026-05-11
 
 ### Added
