@@ -96,7 +96,7 @@ const WorkstationLanding: React.FC = () => {
   const isPortrait = aspect < 1;
   const isMobile = useIsMobileViewport();
   const { mode, setMode, lowFidelity, reportFps } = useFidelityMode();
-  const mobileLowFi = isMobile && lowFidelity;
+  const mobileLowFi = isMobile;
   const { muted: audioMuted, toggle: toggleAudio } = useAudioMutedToggle();
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -566,7 +566,7 @@ const WorkstationLanding: React.FC = () => {
       : [1, 1]
     : lowFidelity
     ? [1, 1.0]
-    : [1, 1.5];
+    : [1, 1.25];
 
   const frameloop: "never" | "always" | "demand" = hidden
     ? "never"
@@ -625,7 +625,7 @@ const WorkstationLanding: React.FC = () => {
         </Suspense>
         <CameraRig inputs={rigInputs} />
         <Postprocessing
-          enabled={!lowFidelity && !reducedMotion}
+          enabled={!lowFidelity && !reducedMotion && !mobileLowFi}
           focused={focusedId !== null}
         />
         <Audio
