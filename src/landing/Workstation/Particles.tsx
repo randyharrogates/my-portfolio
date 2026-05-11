@@ -12,7 +12,7 @@ interface DustProps {
 
 /** Volumetric-style dust particles: additive billboards drifting in the key-light beam. */
 const Dust: React.FC<DustProps> = ({
-  count = 180,
+  count = 40,
   reducedMotion,
   active,
 }) => {
@@ -63,7 +63,7 @@ const Dust: React.FC<DustProps> = ({
         size={0.013}
         color="#ffd9a8"
         transparent
-        opacity={0.30}
+        opacity={0.08}
         sizeAttenuation
         blending={THREE.AdditiveBlending}
         depthWrite={false}
@@ -85,7 +85,7 @@ interface DustBeamProps {
  * spot position [0, 3.2, 0.4] and whose base spans the desk surface.
  */
 export const DustBeam: React.FC<DustBeamProps> = ({
-  count = 320,
+  count = 160,
   reducedMotion,
   active,
 }) => {

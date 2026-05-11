@@ -1,10 +1,11 @@
 /** @format */
 
 import React, { useMemo } from "react";
-import { Environment } from "@react-three/drei";
+import { Environment, ContactShadows, SoftShadows } from "@react-three/drei";
 import Lighting, { tintForHour } from "./Lighting.tsx";
 import Desk from "./Desk.tsx";
 import Monitor from "./Monitor.tsx";
+import Room from "./Room.tsx";
 import {
   Keyboard,
   Trackpad,
@@ -36,6 +37,8 @@ interface SceneProps {
   avatarUrl?: string | null;
   lowFidelity: boolean;
   ambientActive: boolean;
+  keyboardFocusedId: string | null;
+  registerMonitorButton: (id: string, el: HTMLButtonElement | null) => void;
 }
 
 const Scene: React.FC<SceneProps> = ({
@@ -49,12 +52,14 @@ const Scene: React.FC<SceneProps> = ({
   avatarUrl,
   lowFidelity,
   ambientActive,
+  keyboardFocusedId,
+  registerMonitorButton,
 }) => {
   const tint = useMemo(() => tintForHour(new Date().getHours()), []);
   return (
     <>
       <color attach="background" args={["#1a120a"]} />
-      <fogExp2 attach="fog" args={["#241608", 0.085]} />
+      <fogExp2 attach="fog" args={["#241608", 0.11]} />
 
       {!lowFidelity && (
         <Environment
@@ -64,9 +69,30 @@ const Scene: React.FC<SceneProps> = ({
         />
       )}
 
+      {/* PCSS-style soft shadows: contact-distance penumbra (tight at the
+       *  foot of a desk leg, soft at the floor). Mutates the shadow shader
+       *  globally so all shadow-casting lights pick it up. Gated to non-
+       *  lowFidelity since the extra sampling has a per-frame cost. */}
+      {!lowFidelity && <SoftShadows size={25} focus={0.5} samples={8} />}
+
       <Lighting lowFidelity={lowFidelity} />
 
-      <Desk />
+      <Room tint={tint} lowFidelity={lowFidelity} reducedMotion={reducedMotion} />
+
+      {/* Real grounding under the whole workstation. Captures chair, plant,
+       *  monitor stalks, mug, etc., onto the floor. Cheaper than baking
+       *  shadow maps and reads as proper contact. */}
+      <ContactShadows
+        position={[0, -0.905, 0]}
+        scale={10}
+        blur={2}
+        far={2}
+        opacity={0.45}
+        frames={lowFidelity ? 1 : 20}
+        resolution={lowFidelity ? 256 : 384}
+      />
+
+      <Desk lowFidelity={lowFidelity} reducedMotion={reducedMotion} />
       <Keyboard reducedMotion={reducedMotion} />
       <Trackpad />
       <Mug reducedMotion={reducedMotion} />
@@ -81,7 +107,7 @@ const Scene: React.FC<SceneProps> = ({
       <TechStickers />
       <RoleMarquee active={!matrixRain} />
 
-      {SECTIONS.map((cfg) => (
+      {SECTIONS.map((cfg, i) => (
         <Monitor
           key={cfg.id}
           cfg={cfg}
@@ -92,6 +118,9 @@ const Scene: React.FC<SceneProps> = ({
           onPointerOver={() => setHoveredId(cfg.id)}
           onPointerOut={() => setHoveredId(null)}
           onClick={() => onClickSection(cfg.id)}
+          a11yTabIndex={i + 1}
+          registerButton={registerMonitorButton}
+          keyboardFocused={keyboardFocusedId === cfg.id}
         />
       ))}
 
