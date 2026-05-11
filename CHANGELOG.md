@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-05-11
+
+### Added
+
+- **(landing)** Implied half-room (`Room.tsx`) — warm-grey back wall with a rectangular window cutout, four-strip wall geometry around the opening, four-bar window frame plus a horizontal mullion, an emissive vertical-gradient exterior sky tinted by `tint.rim`, ~400 instanced city-light specks twinkling via a per-point sin-seed shader, an emissive moon + halo, and an optional glass pane using `MeshPhysicalMaterial` transmission. Replaces the flat back wall that used to live in `Desk.tsx`. Glass falls back to thin `MeshBasicMaterial` on low-fidelity.
+- **(landing)** GLTF prop pipeline — `useFittedGltf` hook clones a loaded GLTF, scales it so its X-extent matches a target width, and exposes scaled Y/Z bounds so downstream components can ground the model on the floor and avoid intersections with desk geometry regardless of the GLTF's authored pivot. `AssetBoundary` error boundary renders the existing primitive build if the GLB 404s in production.
+- **(landing)** GLTF mechanical keyboard, ceramic mug, office chair, and server tower — each lives in `public/models/*.glb` (~3 MB chair, sub-MB others), preloaded via `useGLTF.preload`, with the original primitive geometry retained as a Suspense + ErrorBoundary fallback so first paint isn't blocked
+- **(landing)** Reflective desk top — `MeshReflectorMaterial` plane sits on top of the brushed-metal body so monitors, mug, plant, and keyboard cast soft reflections onto the desk. Gated `!lowFidelity && !reducedMotion` to skip the per-frame mirror RT cost
+- **(landing)** PBR brushed-concrete floor — Poly Haven CC0 albedo + normal + roughness + AO maps (`public/textures/floor-concrete/`) with `RepeatWrapping` 8×8 and anisotropy 4, replacing the flat `#0a0908` plane
+- **(landing)** Volumetric god-ray light shafts (`LightShafts.tsx`) — cone geometry with additive front-facing blending fakes scattered light from the key spotlight + ceiling wash. Cheap (two cone meshes), atmospheric, and respects the warm-evening time-of-day tint
+- **(landing)** HDR environment lighting — `public/hdri/warm-evening-1k.hdr` (1.1 MB) preloaded for IBL reflections on metals; previously the scene synthesized its env map from preset colors
+- **(landing)** LUT color grading — bakes the warm-evening look into a 32-slice `LookupTexture` via the new `scripts/generate-lut.mjs` Node script, lazy-loaded in `Postprocessing.tsx` so first paint doesn't block on PNG decode
+- **(landing)** Real depth-of-field (idle camera only) — `<DepthOfField>` mounted before `<Bloom>` in the post chain with `multisampling=0`, sidestepping the Chrome/ANGLE GL_INVALID_OPERATION conflict that originally forced `<TiltShift2>` as a stand-in. Auto-disabled when a monitor is focused so screen content stays crisp
+- **(landing)** PCSS-style soft shadows via drei `<SoftShadows size={25} focus={0.5} samples={8}>` — penumbra tightens at contact (desk-leg foot) and softens at floor distance
+- **(landing)** Grounding via drei `<ContactShadows>` — single shadow plane under the workstation that captures chair, plant, monitor stalks, and mug to the floor. Cheaper than baking per-light shadow maps and reads as proper contact
+- **(landing)** Leaf subsurface translucency — `GltfPlant` upgrades green-dominant materials on the loaded model to `MeshPhysicalMaterial` with `transmission: 0.25`, `ior: 1.4`, `side: DoubleSide` so backlight from the window shows through foliage. Disposers attached so replaced materials are released on unmount
+- **(landing)** Magnetic monitor hover — each `Monitor` springs forward + scales up + tilts 2° toward the camera on hover via a damped lerp on a hover-progress ref; reduced-motion users get a 35%-magnitude version that still reads as feedback
+- **(landing)** Camera overshoot/settle — `CameraRig` pushes the camera 4% past the focus target between dolly progress 0.85 → 1.0, then eases back, so monitor focus arrivals land instead of stopping flat
+- **(landing)** ESC clears focus dolly — pressing Escape from the workstation now exits a focused monitor and returns to the idle pose, mirroring the HUD hint. Previously ESC only worked once a section route had loaded
+- **(a11y)** Skip link in `HUD` — visually hidden until focused, jumps Tab-from-URL-bar users straight to `/#/about`
+- **(a11y)** Per-monitor invisible HTML button overlay rendered via drei `<Html>` — gives each monitor an accessible name (`Open <Section> section`), keyboard activation (Enter/Space → same handler as the 3D click), Tab order matching SECTIONS order, and a visible emissive focus ring drawn behind the bezel when focused
+- **(a11y)** Arrow-key spatial nav between monitors — `ArrowLeft/Right/Up/Down` picks the neighbour with the best directional projection minus orthogonal-drift penalty, so a "right" step doesn't jump diagonally when a same-row neighbour exists
+- **(assets)** `public/models/{keyboard,mug,chair,tower}/` — GLB files served directly from `public/` (zero JS bundle delta)
+- **(assets)** `public/hdri/warm-evening-1k.hdr`, `public/luts/warm-evening.png`, `public/textures/floor-concrete/*.jpg` — HDRI, LUT, and PBR floor textures
+- **(scripts)** `scripts/generate-lut.mjs` — Node script that bakes a warm-evening grade into a 32-slice 3D LUT PNG for `LookupTexture.from`
+
+### Fixed
+
+- **(landing)** Chair no longer intersects the desk volume — `ChairGltf` now derives its Z position from the chair model's scaled bounding box (`CHAIR_MIN_Z - worldMinZ`) so the back of the chair sits at world Z = 1.1 (0.3m clear of the desk front face at Z = 0.8) regardless of where the GLTF's authored pivot lives along the Z axis. Previously, a literal `position.z` placed the pivot — not the back edge — so an off-center pivot let the backrest poke up through the desk top
+- **(landing)** Volumetric god-ray shafts no longer dominate the frame — key beam intensity halved (0.08 → 0.04) and ceiling beam reduced (0.04 → 0.025) so the additive cone reads as warm-evening atmosphere instead of a stage spotlight. The underlying `<spotLight>` illumination on the desk is untouched
+
+### Changed
+
+- **(landing)** Chair shifted off-center to the left (X = 0 → -0.6) so the desk's center frame stays open under the keyboard / mug / plant instead of being dominated by a chair backrest. The fallback `ChairPrimitive` gets the same offset so there's no flicker on Suspense swap
+- **(landing)** Desktop DPR ceiling lowered 2.0 → 1.5 — single biggest perf win for retina full-fidelity (pixel-shaded work drops ≈ 64%) with near-invisible quality cost since geometry is still oversampled. Mobile and low-fidelity branches stay at 1.0
+- **(landing)** Shadow map size 4096 → 2048 on both key + ceiling spotlights — saves ≈ 24 MB of GPU memory and halves texel sample cost; at the desk's scale and idle camera distance, the higher resolution wasn't perceptibly sharper
+- **(landing)** SoftShadows sampling 12 → 8 (≈ 33% cheaper shadow shader) — penumbra still reads as soft PCSS
+- **(landing)** ContactShadows recompute cadence 30 → 20 frames, resolution 512² → 384² — keeps the grounding shadow tight without re-rendering the scene to a high-res RT every frame
+- **(landing)** Dust particle counts reduced — ambient `Dust` 180 → 40 with opacity 0.30 → 0.08, and `DustBeam` 320 → 160. The fewer-but-brighter ambient motes plus the more populated beam read the same at viewing distance for half the per-frame vec3 work
+- **(landing)** Light intensities rebalanced — key spotlight 2.9 → 1.8, rim point 2.0 → 1.4, ceiling wash 1.3 → 0.75. The previous values were tuned before IBL + LUT were in the pipeline and overdrove the tonemapper; current values let the HDRI and LUT contribute to surface response instead of being saturated out
+- **(landing)** Fog density 0.085 → 0.11 so the back wall and city-light specks fall off more gradually, deepening the room's perceived depth
+- **(landing)** Postprocessing pipeline switched from `multisampling=4` (MSAA) to `multisampling=0` + `<SMAA>` — necessary for `<DepthOfField>` + `<Bloom>` to share the depth/stencil attachment without GL_INVALID_OPERATION on Chrome/ANGLE; SMAA gives cleaner bezel and window-mullion edges than the MSAA it replaces
+- **(landing)** Reduced-motion users skip the idle camera B-roll drift entirely — the camera holds the idle pose instead of slowly orbiting
+
 ## [0.5.0] - 2026-05-11
 
 ### Added

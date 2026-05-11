@@ -125,6 +125,20 @@ const CameraRig: React.FC<CameraRigProps> = ({ inputs }) => {
       const e = easeInOutCubic(k);
       tmpPos.lerpVectors(dollyStartPosRef.current, inputs.focusTarget, e);
       tmpLook.lerpVectors(dollyStartLookRef.current, inputs.focusLook, e);
+
+      // Overshoot/settle: between k=0.85 and k=1, push the camera 4% past
+      // the focus target along the dolly axis, then ease back. Awwwards-tier
+      // camera moves always settle — without this the lerp lands flat.
+      if (!inputs.reducedMotion && k > 0.85) {
+        const settle = (k - 0.85) / 0.15;
+        const overshoot = Math.sin(settle * Math.PI) * 0.04;
+        const dir = inputs.focusTarget
+          .clone()
+          .sub(dollyStartPosRef.current)
+          .normalize();
+        tmpPos.addScaledVector(dir, overshoot);
+      }
+
       camera.position.copy(tmpPos);
       lookAtRef.current.copy(tmpLook);
       camera.lookAt(lookAtRef.current);
@@ -140,6 +154,7 @@ const CameraRig: React.FC<CameraRigProps> = ({ inputs }) => {
     }
 
     const idle = inputs.idleTimeRef.current;
+    // D3: reduced-motion users get the locked idle framing — no B-roll drift.
     if (idle > 30 && !inputs.reducedMotion) {
       const phase = ((idle - 30) * 0.04) % 1;
       const k = lerpKeys(B_ROLL_KEYS, phase);

@@ -67,11 +67,11 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
     if (keyRef.current) {
       const t = state.clock.elapsedTime;
       keyRef.current.intensity =
-        (2.9 * tint.intensityScale) + Math.sin(t * 0.4) * 0.12;
+        (1.8 * tint.intensityScale) + Math.sin(t * 0.4) * 0.08;
     }
     if (rimRef.current) {
       const t = state.clock.elapsedTime;
-      rimRef.current.intensity = 2.0 + Math.sin(t * 0.5 + 1.4) * 0.18;
+      rimRef.current.intensity = 1.4 + Math.sin(t * 0.5 + 1.4) * 0.12;
     }
   });
 
@@ -83,18 +83,18 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         position={[-1.4, 3.0, 1.6]}
         angle={0.95}
         penumbra={0.7}
-        intensity={2.9 * tint.intensityScale}
+        intensity={1.8 * tint.intensityScale}
         color={tint.key}
         distance={11}
         decay={1.4}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 4096}
+        shadow-mapSize={lowFidelity ? 256 : 2048}
         shadow-bias={-0.0006}
       />
       <pointLight
         ref={rimRef}
         position={[2.6, 1.4, 0.8]}
-        intensity={2.0}
+        intensity={1.4}
         color={tint.rim}
         distance={6}
         decay={2}
@@ -120,12 +120,12 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         target-position={[0.0, 0.0, 0.0]}
         angle={1.05}
         penumbra={0.85}
-        intensity={1.3 * tint.intensityScale}
+        intensity={0.75 * tint.intensityScale}
         color={tint.key}
         distance={6.5}
         decay={1.6}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 4096}
+        shadow-mapSize={lowFidelity ? 256 : 2048}
         shadow-bias={-0.0005}
       />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}

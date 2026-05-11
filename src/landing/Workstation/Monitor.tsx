@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
+import { Text, Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { SectionConfig } from "../sections.ts";
 import { createMonitorContent, createMatrixRain, TEXT_DPR } from "./MonitorContent.ts";
@@ -61,6 +61,13 @@ interface MonitorProps {
   onPointerOver: () => void;
   onPointerOut: () => void;
   onClick: () => void;
+  /** Tab index for the invisible a11y button overlay. SECTIONS index drives
+   *  spatial tab order; arrow-key navigation handled by the landing wrapper. */
+  a11yTabIndex: number;
+  /** Map-back so the wrapper can refocus a sibling via arrow keys. */
+  registerButton: (id: string, el: HTMLButtonElement | null) => void;
+  /** External keyboard-focus state (driven by document.activeElement check). */
+  keyboardFocused: boolean;
 }
 
 const Monitor: React.FC<MonitorProps> = ({
@@ -72,6 +79,9 @@ const Monitor: React.FC<MonitorProps> = ({
   onPointerOver,
   onPointerOut,
   onClick,
+  a11yTabIndex,
+  registerButton,
+  keyboardFocused,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const matRef = useRef<THREE.ShaderMaterial>(null);
@@ -95,6 +105,11 @@ const Monitor: React.FC<MonitorProps> = ({
     };
   }, [content, crtMat]);
 
+  // Magnetic hover spring — eases the group toward a forward-translated +
+  // slightly-scaled state while hovered, then settles back. Damped lerp keeps
+  // it tactile without needing react-spring as a dep.
+  const hoverProgressRef = useRef(0);
+
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (matrixRain) matrixDraw(t);
@@ -105,10 +120,22 @@ const Monitor: React.FC<MonitorProps> = ({
     crtMat.uniforms.uFlash.value = flashAmount;
     crtMat.uniforms.uMatrix.value = matrixRain ? 1 : 0;
 
-    // subtle breathing rotation (Pack A)
-    if (groupRef.current && !reducedMotion) {
-      groupRef.current.rotation.y =
-        cfg.rotation[1] + Math.sin(t * 1.6 + cfg.position[0]) * 0.005;
+    // Hover progress 0→1 with damped lerp. Reduced-motion users get a
+    // smaller magnitude (still readable as feedback, not animated).
+    const target = hovered ? 1 : 0;
+    hoverProgressRef.current +=
+      (target - hoverProgressRef.current) * (reducedMotion ? 0.25 : 0.14);
+    const h = hoverProgressRef.current;
+    const mag = reducedMotion ? 0.35 : 1.0;
+
+    if (groupRef.current) {
+      // Scale: 1 → 1.04 on hover
+      const s = 1 + 0.04 * h * mag;
+      groupRef.current.scale.set(s, s, s);
+      // Subtle breathing rotation (Pack A) + 2° tilt toward camera on hover
+      const breath = !reducedMotion ? Math.sin(t * 1.6 + cfg.position[0]) * 0.005 : 0;
+      groupRef.current.rotation.y = cfg.rotation[1] + breath;
+      groupRef.current.rotation.x = cfg.rotation[0] - (0.035 * h * mag);
     }
   });
 
@@ -202,6 +229,57 @@ const Monitor: React.FC<MonitorProps> = ({
       >
         {cfg.label.toUpperCase()}
       </Text>
+
+      {/* Focus ring — emissive outline plane that fades in when this monitor
+       *  is keyboard-focused. Sits behind the bezel face. */}
+      {keyboardFocused && (
+        <mesh position={[0, 0, -0.035]}>
+          <planeGeometry args={[cfg.size[0] + 0.12, cfg.size[1] + 0.12]} />
+          <meshBasicMaterial
+            color={ACCENT}
+            transparent
+            opacity={0.6}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
+
+      {/* Accessible button overlay — 1×1 px invisible HTML button at the
+       *  bezel face. Tab order matches SECTIONS visual order. Enter/Space
+       *  triggers the same handler as the 3D click. */}
+      <Html
+        position={[0, 0, 0.035]}
+        center
+        zIndexRange={[1, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <button
+          ref={(el) => registerButton(cfg.id, el)}
+          type="button"
+          tabIndex={a11yTabIndex}
+          aria-label={`Open ${cfg.label} section`}
+          data-section-id={cfg.id}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: 0,
+            border: "none",
+            background: "transparent",
+            color: "transparent",
+            outline: "none",
+            pointerEvents: "auto",
+            cursor: "pointer",
+          }}
+        >
+          {cfg.label}
+        </button>
+      </Html>
     </group>
   );
 };

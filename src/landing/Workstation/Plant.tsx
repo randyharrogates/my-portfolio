@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -160,14 +160,62 @@ const GltfPlant: React.FC<{ reducedMotion: boolean }> = ({ reducedMotion }) => {
 
   const cloned = useMemo(() => {
     const clone = scene.clone(true);
+    // Track materials we instantiate so they get disposed when the cloned
+    // scene is GC'd (no React unmount hook fires on Mesh.material reassign).
+    const replacedMaterials: THREE.Material[] = [];
     clone.traverse((obj) => {
       if (obj instanceof THREE.Mesh) {
         obj.castShadow = true;
         obj.receiveShadow = true;
+        // Subsurface translucency on leaves: when a mesh's material reads
+        // as foliage (green-dominant albedo or a "leaf"/"foliage" hint in
+        // the name), upgrade it to MeshPhysicalMaterial with transmission
+        // so backlight from the window shows through. Skip the upgrade
+        // when reduced-motion is requested — leaves the user with the
+        // lighter standard material and saves the transmission GPU cost.
+        if (reducedMotion) return;
+        const mat = obj.material as THREE.MeshStandardMaterial | undefined;
+        if (!mat || !("color" in mat)) return;
+        const name = (mat.name || obj.name || "").toLowerCase();
+        const c = mat.color;
+        const isGreenDominant = c.g > c.r * 1.05 && c.g > c.b * 1.05;
+        const looksLikeLeaf = /leaf|foliage|plant/.test(name) || isGreenDominant;
+        if (!looksLikeLeaf) return;
+        const physical = new THREE.MeshPhysicalMaterial({
+          color: mat.color.clone(),
+          map: mat.map,
+          normalMap: mat.normalMap,
+          roughnessMap: mat.roughnessMap,
+          roughness: mat.roughness ?? 0.55,
+          metalness: 0,
+          transmission: 0.25,
+          thickness: 0.05,
+          ior: 1.4,
+          side: THREE.DoubleSide,
+        });
+        // Dispose the cloned-scene's original leaf material before
+        // overwriting the slot — three's Object3D.clone() shares material
+        // refs with the source but useGLTF caches by URL, so disposing
+        // here only affects the clone's overwritten slot, not the cached
+        // asset.
+        mat.dispose();
+        obj.material = physical;
+        replacedMaterials.push(physical);
       }
     });
+    // Attach disposer to the clone group for cleanup on unmount.
+    (clone as unknown as { __leafMats: THREE.Material[] }).__leafMats =
+      replacedMaterials;
     return clone;
-  }, [scene]);
+  }, [scene, reducedMotion]);
+
+  useEffect(() => {
+    return () => {
+      const mats =
+        (cloned as unknown as { __leafMats?: THREE.Material[] }).__leafMats || [];
+      mats.forEach((m) => m.dispose());
+    };
+  }, [cloned]);
 
   useFrame((s) => {
     if (!ref.current || reducedMotion) return;
@@ -176,7 +224,7 @@ const GltfPlant: React.FC<{ reducedMotion: boolean }> = ({ reducedMotion }) => {
   });
 
   return (
-    <group ref={ref} scale={0.42}>
+    <group ref={ref} scale={0.63}>
       <primitive object={cloned} />
     </group>
   );

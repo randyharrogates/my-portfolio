@@ -86,6 +86,7 @@ const WorkstationLanding: React.FC = () => {
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [keyboardFocusedId, setKeyboardFocusedId] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<THREE.Vector3 | null>(null);
   const [focusLook, setFocusLook] = useState<THREE.Vector3 | null>(null);
   const [flashAmount, setFlashAmount] = useState(0);
@@ -96,6 +97,17 @@ const WorkstationLanding: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [whooshTick, setWhooshTick] = useState(0);
   const [tickTick, setTickTick] = useState(0);
+
+  // Monitor button registry — Scene.tsx populates this through Monitor's
+  // ref callback so arrow-key nav can DOM-focus the spatial neighbour.
+  const monitorButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const registerMonitorButton = useCallback(
+    (id: string, el: HTMLButtonElement | null) => {
+      if (el) monitorButtonsRef.current.set(id, el);
+      else monitorButtonsRef.current.delete(id);
+    },
+    []
+  );
 
   // High-frequency refs (mutated, not setState)
   const cursorNdcRef = useRef({ x: 0, y: 0 });
@@ -349,6 +361,74 @@ const WorkstationLanding: React.FC = () => {
     return () => cancelAnimationFrame(raf);
   }, [focusedId]);
 
+  // ESC clears the focus dolly and returns to idle. The HUD hint advertises
+  // this; previously ESC only worked once a section route had loaded.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (focusTarget || focusLook || focusedId) {
+        setFocusTarget(null);
+        setFocusLook(null);
+        setFocusedId(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focusTarget, focusLook, focusedId]);
+
+  // Track which monitor button has keyboard focus so the active monitor can
+  // render its emissive focus ring.
+  useEffect(() => {
+    const onFocus = () => {
+      const el = document.activeElement as HTMLElement | null;
+      const id = el?.getAttribute?.("data-section-id") ?? null;
+      setKeyboardFocusedId(id);
+    };
+    document.addEventListener("focusin", onFocus);
+    return () => document.removeEventListener("focusin", onFocus);
+  }, []);
+
+  // Arrow-key spatial navigation between monitors. Picks the neighbour with
+  // the smallest angle from the requested direction. The SECTIONS positions
+  // form a natural left→right (about/projects/skills) + right-side stack
+  // (blog/resume/contact) so directional steps map well.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!keyboardFocusedId) return;
+      const dirs: Record<string, [number, number]> = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, 1],
+        ArrowDown: [0, -1],
+      };
+      const dir = dirs[e.key];
+      if (!dir) return;
+      const current = SECTIONS.find((s) => s.id === keyboardFocusedId);
+      if (!current) return;
+      let best: { id: string; score: number } | null = null;
+      for (const s of SECTIONS) {
+        if (s.id === current.id) continue;
+        const dx = s.position[0] - current.position[0];
+        const dy = s.position[1] - current.position[1];
+        // Project onto requested direction; require positive component.
+        const proj = dx * dir[0] + dy * dir[1];
+        if (proj <= 0.05) continue;
+        // Penalize orthogonal drift so a "right" step doesn't jump diagonally
+        // when a same-row neighbour exists.
+        const ortho = Math.abs(dx * -dir[1] + dy * dir[0]);
+        const score = proj - ortho * 0.5;
+        if (!best || score > best.score) best = { id: s.id, score };
+      }
+      if (best) {
+        e.preventDefault();
+        const el = monitorButtonsRef.current.get(best.id);
+        el?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [keyboardFocusedId]);
+
   useEffect(() => {
     let scrubVal = 0;
     let releaseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -469,7 +549,7 @@ const WorkstationLanding: React.FC = () => {
     ? [1, 1]
     : lowFidelity
     ? [1, 1.0]
-    : [1, 2.0];
+    : [1, 1.5];
 
   const frameloop = hidden ? "never" : "always";
   const ambientActive = !lowFidelity && !reducedMotion;
@@ -516,6 +596,8 @@ const WorkstationLanding: React.FC = () => {
             avatarUrl={avatarUrl}
             lowFidelity={lowFidelity}
             ambientActive={ambientActive}
+            keyboardFocusedId={keyboardFocusedId}
+            registerMonitorButton={registerMonitorButton}
           />
         </Suspense>
         <CameraRig inputs={rigInputs} />

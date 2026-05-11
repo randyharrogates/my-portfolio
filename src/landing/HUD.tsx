@@ -81,6 +81,27 @@ const SKIP_STYLE: React.CSSProperties = {
   zIndex: 3,
 };
 
+/** Skip link — visually hidden until focused (Tab from URL bar). Provides a
+ *  fast escape hatch to the terminal route for users who don't want the
+ *  3D experience. */
+const SKIP_LINK_STYLE: React.CSSProperties = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  padding: "8px 12px",
+  background: "#0c0b0a",
+  color: "#e8632a",
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+  fontSize: 12,
+  letterSpacing: 0.4,
+  textDecoration: "none",
+  border: "1px solid #e8632a",
+  zIndex: 100,
+  // Move offscreen unless focused.
+  transform: "translateY(-150%)",
+  transition: "transform 120ms ease-out",
+};
+
 const HUD: React.FC<HUDProps> = ({
   mode,
   effectiveLow,
@@ -94,6 +115,19 @@ const HUD: React.FC<HUDProps> = ({
     mode === "auto" ? (effectiveLow ? "auto·low" : "auto·full") : mode;
   return (
     <>
+      <a
+        href="#/about"
+        style={SKIP_LINK_STYLE}
+        onFocus={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.transform = "translateY(-150%)";
+        }}
+      >
+        skip to terminal view →
+      </a>
+
       <div style={TAG_STYLE}>
         <span>
           <span style={{ color: "#e8632a" }}>●</span> randy chan · workstation
