@@ -8,10 +8,10 @@ const FIDELITY_KEY = "landing.fidelity";
 const AUDIO_KEY = "landing.audioMuted";
 
 function readMode(): FidelityMode {
-  if (typeof window === "undefined") return "auto";
+  if (typeof window === "undefined") return "low";
   const v = localStorage.getItem(FIDELITY_KEY);
   if (v === "low" || v === "full" || v === "auto") return v;
-  return "auto";
+  return "low";
 }
 
 export function detectInitialLowPerf(): boolean {
