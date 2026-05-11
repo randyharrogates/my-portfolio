@@ -58,6 +58,36 @@ visual diff.
 - **Next session priority**: 8 brass columns (highest visual-impact +
   surfaces the Phase 2 ornament-gap risk early).
 
+#### Session 2 — 2026-05-11 — 6 brass columns at hex-edge midpoints
+- **Built**: single brass column at origin — hex base (0.42m radius × 0.4m
+  tall, 0.025m angle-bevel) + tapered hex shaft (radius 0.36m → 0.28m,
+  4.4m tall, built via bmesh ring-bridge) + hex capital (0.46m radius ×
+  0.7m tall, 0.05m chamfered top). All three pieces rotated 30° around Z
+  so flat faces align with the hex floor. Total height 5.5m = `HALL_CEILING_HEIGHT`.
+- **Script**: `blender/scripts/hub/columns.py` — parameterized (base /
+  shaft / capital independently tweakable), idempotent, `selection_only=True`
+  on export so live-MCP runs don't accidentally include floor pieces.
+- **Output**: `public/models/hall/hub-column.glb` (34KB uncompressed).
+- **React side**: `Hub.tsx` — new `HubColumns` subcomponent loads the
+  glb, extracts `hub-column-{base,shaft,capital}` geometries, instantiates
+  6 `<group position={...}>` at hex-edge midpoints (radius
+  `HALL_HUB_RADIUS * cos(π/6) ≈ 2.598m`, angles 30°/90°/150°/210°/270°/330°
+  in three.js so each column sits between two adjacent alcoves rather
+  than blocking either arch). Replaced the 8-column primitive placeholder.
+- **Decision**: columns at hex-EDGE midpoints (between alcoves) rather
+  than hex-VERTICES (at alcove rays). Vertex placement would point a
+  column directly at each alcove arch and block the view from inside
+  the hub.
+- **Verification**: live `/hall` renders the 6 columns framing the
+  alcove arches; 60 fps; 0 console errors; build + tests pass.
+- **Honest read**: intentionally austere placeholder — clean structural
+  supports, no carved capitals or fluting yet. Asset 2.3 (carved-capital
+  ornament) is the separate ornament-density question and the real
+  Phase 2 decision-point driver.
+- **Time spent**: ~45 min.
+- **Next session priority**: dome ceiling (Asset 2.4) — biggest single
+  visual-impact piece; the Wakandan-futuristic identity payoff.
+
 #### Pending references for Phase 2 decision point
 - `phase-2-hub-wide.png` — match to `refs/hozl-01-hub-wide.png`
 - `phase-2-column-detail.png` — match to `refs/hozl-02-column-detail.png`

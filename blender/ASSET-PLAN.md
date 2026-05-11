@@ -32,7 +32,7 @@ side-by-side against `refs/hozl-*.png` and score for the
 | # | Asset | Script | Notes | Status |
 |---|---|---|---|---|
 | 2.1 | Hexagonal floor slab + inlay | `hub/floor.py` | radius 3m, 6 sides, 0.10m thick, 0.04m bevel; inlay disk 2.4m radius at z+0.001 | ✅ 2026-05-11 |
-| 2.2 | 6 brass columns (between alcoves) | `hub/columns.py` | base + tapered fluted shaft + capital; positioned at hex edge midpoints (between alcoves, not blocking arches); height = `HALL_CEILING_HEIGHT` | ⬜ session 2 |
+| 2.2 | 6 brass columns (between alcoves) | `hub/columns.py` | base + tapered shaft + capital; one glb at origin, instantiated 6× in React at hex-edge midpoints (angles 30°/90°/150°/210°/270°/330°); height = `HALL_CEILING_HEIGHT` | ✅ 2026-05-11 |
 | 2.3 | Column capitals (carved ornament) | `hub/capital.py` | The ornament-density risk piece. Procedural extrusion + array + bevel + boolean cuts. If <6/10 vs reference, this is where paid kit pays off. | 🔒 (after 2.2) |
 | 2.4 | Dome ceiling | `hub/dome.py` | Geometry-node hex tessellation at radius ~5m; backface visible from inside; emissive lattice slats | ⬜ session 3 |
 | 2.5 | Wall panels between columns | `hub/walls.py` | Six panels filling between adjacent columns; triangle-tracery motif via geometry nodes (`common/motif.py`) | ⬜ session 4 |
