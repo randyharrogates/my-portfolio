@@ -28,3 +28,20 @@ resume.log
 
 # gated diagram plaintext — stays local; only the encrypted JSON is committed
 /secrets/
+
+# Blender working files — full rules in blender/.gitignore
+/blender/scenes/*.blend
+/blender/refs/
+/blender/renders/working/
+/blender/.cache/
+*.blend1
+*.blend2
+*.blend.bak
+
+# Debug screenshots staged in repo root during browser-verification — not committed
+/hall-*.png
+/hall-*.jpeg
+
+# Playwright MCP artifacts (page snapshots, console logs)
+/.playwright-mcp/
+

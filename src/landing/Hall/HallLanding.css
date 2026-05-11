@@ -1,0 +1,27 @@
+/* Hall scene host — full-bleed Canvas + 2D HUD overlay. */
+
+.hall-scene {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #06090b;
+  overflow: hidden;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.hall-scene canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* The HUDOverlay component owns positioning of its children; this only
+   provides a stacking context so the canvas can't escape underneath. */
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-scene {
+    /* Render the scene but disable smooth motions throughout; the
+       reduced-motion flag is consumed inside React for shader/animation
+       gating, so no further CSS work is required here. */
+  }
+}

@@ -154,8 +154,8 @@ const HUD: React.FC<HUDProps> = ({
         >
           {audioMuted ? "♪ muted" : "♪ on"}
         </button>
-        <Link to="/about" style={BTN} title="switch to terminal view">
-          terminal →
+        <Link to="/hall" style={BTN} title="enter the hall of zero limits">
+          hall →
         </Link>
       </div>
 

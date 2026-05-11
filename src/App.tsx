@@ -24,14 +24,21 @@ const AmbientCanvas = React.lazy(
 const WorkstationLanding = React.lazy(
   () => import("./landing/WorkstationLanding.tsx")
 );
+const HallLanding = React.lazy(
+  () => import("./landing/Hall/HallLanding.tsx")
+);
 
 const TerminalApp: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isHallPath = location.pathname === "/hall" || location.pathname.startsWith("/hall/");
+
   // Global ESC → home. Inner pages have no internal nav; the 3D workstation
-  // is the only entry point to sections.
+  // is the only entry point to sections. The Hall manages its own ESC
+  // handler (close map → fly to hub → leave Hall), so opt out there.
   React.useEffect(() => {
+    if (isHallPath) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && location.pathname !== "/") {
         navigate("/");
@@ -39,13 +46,24 @@ const TerminalApp: React.FC = () => {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [location.pathname, navigate]);
+  }, [isHallPath, location.pathname, navigate]);
 
   // Landing route: render the 3D Workstation full-bleed without terminal chrome.
   if (location.pathname === "/") {
     return (
       <Suspense fallback={<div style={{ background: "#0c0b0a", height: "100vh" }} />}>
         <WorkstationLanding />
+      </Suspense>
+    );
+  }
+
+  // Hall (experimental, opt-in via /#/hall) — also full-bleed, no terminal chrome.
+  // Matches /hall and any deep-linked /hall/<alcove>. URL-flag-gated through
+  // Phase 7; becomes the default landing at Phase 8.
+  if (isHallPath) {
+    return (
+      <Suspense fallback={<div style={{ background: "#0a0d10", height: "100vh" }} />}>
+        <HallLanding />
       </Suspense>
     );
   }
