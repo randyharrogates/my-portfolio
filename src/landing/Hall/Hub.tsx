@@ -1,7 +1,7 @@
 /** @format */
 
 import React, { useMemo } from "react";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { HALL_HUB_RADIUS, HALL_CEILING_HEIGHT } from "../sections.ts";
 
@@ -16,24 +16,79 @@ useGLTF.preload(DOME_GLB);
 useGLTF.preload(WALL_GLB);
 useGLTF.preload(SKYLIGHT_GLB);
 
-const COLUMN_BASE_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#8a6328",
-  metalness: 0.85,
-  roughness: 0.32,
-});
-const COLUMN_SHAFT_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#b8862a",
-  metalness: 0.9,
-  roughness: 0.22,
-});
-const COLUMN_CAPITAL_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#e8b45a",
-  metalness: 0.92,
-  roughness: 0.2,
-  emissive: new THREE.Color("#e8b45a"),
-  emissiveIntensity: 0.1,
-});
+const BRASS_TEX = {
+  map: `${process.env.PUBLIC_URL}/textures/hall/brass/brass-diffuse.jpg`,
+  normalMap: `${process.env.PUBLIC_URL}/textures/hall/brass/brass-normal.jpg`,
+  roughnessMap: `${process.env.PUBLIC_URL}/textures/hall/brass/brass-roughness.jpg`,
+};
+const FLOOR_TEX = {
+  map: `${process.env.PUBLIC_URL}/textures/hall/floor/floor-diffuse.jpg`,
+  normalMap: `${process.env.PUBLIC_URL}/textures/hall/floor/floor-normal.jpg`,
+  roughnessMap: `${process.env.PUBLIC_URL}/textures/hall/floor/floor-roughness.jpg`,
+};
 
+/** Build a brass PBR material from the PolyHaven `metal_plate_02` map set
+ *  tinted to brass via the `color` property (the texture's diffuse is a
+ *  neutral metal grey — Principled BSDF multiplies it by `color` to give
+ *  warm brass). Repeat is cloned per-material so different surfaces can
+ *  tile the texture independently without stepping on each other. AO map
+ *  intentionally omitted — three.js needs a uv2 attribute for it and the
+ *  Blender export only writes uv1. */
+function useBrassMaterial(
+  repeat: readonly [number, number],
+  emissiveIntensity = 0.08,
+): THREE.MeshStandardMaterial {
+  const maps = useTexture(BRASS_TEX);
+  return useMemo(() => {
+    const cloned = {
+      map: maps.map.clone(),
+      normalMap: maps.normalMap.clone(),
+      roughnessMap: maps.roughnessMap.clone(),
+    };
+    Object.values(cloned).forEach((t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(repeat[0], repeat[1]);
+      t.needsUpdate = true;
+    });
+    cloned.map.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({
+      ...cloned,
+      color: "#b8862a",
+      metalness: 1.0,
+      roughness: 0.45,
+      emissive: new THREE.Color("#e8b45a"),
+      emissiveIntensity,
+    });
+  }, [maps, repeat, emissiveIntensity]);
+}
+
+/** Build a dark-concrete PBR material for the hex floor slab. */
+function useFloorMaterial(
+  repeat: readonly [number, number],
+): THREE.MeshStandardMaterial {
+  const maps = useTexture(FLOOR_TEX);
+  return useMemo(() => {
+    const cloned = {
+      map: maps.map.clone(),
+      normalMap: maps.normalMap.clone(),
+      roughnessMap: maps.roughnessMap.clone(),
+    };
+    Object.values(cloned).forEach((t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(repeat[0], repeat[1]);
+      t.needsUpdate = true;
+    });
+    cloned.map.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({
+      ...cloned,
+      color: "#3a4a4e",
+      metalness: 0.1,
+      roughness: 0.85,
+    });
+  }, [maps, repeat]);
+}
+
+// Non-PBR materials — kept as solid colours.
 const DOME_SHELL_MATERIAL = new THREE.MeshStandardMaterial({
   color: "#0e1e22",
   metalness: 0.4,
@@ -41,14 +96,6 @@ const DOME_SHELL_MATERIAL = new THREE.MeshStandardMaterial({
   side: THREE.BackSide,
   emissive: new THREE.Color("#16383c"),
   emissiveIntensity: 0.18,
-});
-const DOME_LATTICE_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#8a6328",
-  metalness: 0.92,
-  roughness: 0.28,
-  emissive: new THREE.Color("#e8b45a"),
-  emissiveIntensity: 0.35,
-  side: THREE.DoubleSide,
 });
 
 const WALL_SLAB_MATERIAL = new THREE.MeshStandardMaterial({
@@ -58,41 +105,12 @@ const WALL_SLAB_MATERIAL = new THREE.MeshStandardMaterial({
   emissive: new THREE.Color("#0e1416"),
   emissiveIntensity: 0.35,
 });
-const WALL_FRAME_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#b8862a",
-  metalness: 0.92,
-  roughness: 0.22,
-  emissive: new THREE.Color("#e8b45a"),
-  emissiveIntensity: 0.4,
-});
 
-const SKYLIGHT_RING_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#b8862a",
-  metalness: 0.92,
-  roughness: 0.22,
-  emissive: new THREE.Color("#e8b45a"),
-  emissiveIntensity: 0.5,
-});
 const SKYLIGHT_DISC_MATERIAL = new THREE.MeshBasicMaterial({
   color: "#f4d8a8",
   transparent: true,
   opacity: 0.92,
   side: THREE.DoubleSide,
-});
-
-const SLAB_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#2a3a3e",
-  metalness: 0.25,
-  roughness: 0.5,
-  emissive: new THREE.Color("#142126"),
-  emissiveIntensity: 0.6,
-});
-const INLAY_MATERIAL = new THREE.MeshStandardMaterial({
-  color: "#3a2a14",
-  metalness: 0.7,
-  roughness: 0.35,
-  emissive: new THREE.Color("#3a2a14"),
-  emissiveIntensity: 0.18,
 });
 
 /** Hub geometry — hexagonal floor from `blender/scripts/hub/floor.py`, plus
@@ -111,6 +129,7 @@ const INLAY_MATERIAL = new THREE.MeshStandardMaterial({
  *  in `Atmosphere.tsx` so the ray reads as emerging from this point. */
 const HubSkylight: React.FC = () => {
   const { scene } = useGLTF(SKYLIGHT_GLB);
+  const ringMaterial = useBrassMaterial([1, 1], 0.5);
   const { ringGeom, discGeom } = useMemo(() => {
     let ringGeom: THREE.BufferGeometry | null = null;
     let discGeom: THREE.BufferGeometry | null = null;
@@ -126,7 +145,7 @@ const HubSkylight: React.FC = () => {
   if (!ringGeom || !discGeom) return null;
   return (
     <group position={[0, HALL_CEILING_HEIGHT + 0.05, 0]}>
-      <mesh geometry={ringGeom} material={SKYLIGHT_RING_MATERIAL} />
+      <mesh geometry={ringGeom} material={ringMaterial} />
       <mesh geometry={discGeom} material={SKYLIGHT_DISC_MATERIAL} />
     </group>
   );
@@ -138,6 +157,7 @@ const HubSkylight: React.FC = () => {
  *  separately so the brass border reads against the dark slab. */
 const HubWalls: React.FC = () => {
   const { scene } = useGLTF(WALL_GLB);
+  const frameMaterial = useBrassMaterial([4, 1], 0.4);
   const { slabGeom, frameGeom } = useMemo(() => {
     let slabGeom: THREE.BufferGeometry | null = null;
     let frameGeom: THREE.BufferGeometry | null = null;
@@ -178,7 +198,7 @@ const HubWalls: React.FC = () => {
       {placements.map((p, i) => (
         <group key={i} position={p.pos} rotation={[0, p.rotY, 0]}>
           <mesh geometry={slabGeom} material={WALL_SLAB_MATERIAL} receiveShadow />
-          <mesh geometry={frameGeom} material={WALL_FRAME_MATERIAL} />
+          <mesh geometry={frameGeom} material={frameMaterial} />
         </group>
       ))}
     </group>
@@ -191,6 +211,7 @@ const HubWalls: React.FC = () => {
  *  already encode the z=HALL_CEILING_HEIGHT base. */
 const HubDome: React.FC = () => {
   const { scene } = useGLTF(DOME_GLB);
+  const latticeMaterial = useBrassMaterial([4, 1], 0.35);
   const { shellGeom, latticeGeom } = useMemo(() => {
     let shellGeom: THREE.BufferGeometry | null = null;
     let latticeGeom: THREE.BufferGeometry | null = null;
@@ -207,7 +228,7 @@ const HubDome: React.FC = () => {
   return (
     <group>
       <mesh geometry={shellGeom} material={DOME_SHELL_MATERIAL} />
-      <mesh geometry={latticeGeom} material={DOME_LATTICE_MATERIAL} />
+      <mesh geometry={latticeGeom} material={latticeMaterial} />
     </group>
   );
 };
@@ -218,6 +239,9 @@ const HubDome: React.FC = () => {
  *  from the loaded glTF the same way `HubFloor` does it. */
 const HubColumns: React.FC = () => {
   const { scene } = useGLTF(COLUMN_GLB);
+  const baseMaterial = useBrassMaterial([2, 1], 0.08);
+  const shaftMaterial = useBrassMaterial([1, 4], 0.05);
+  const capitalMaterial = useBrassMaterial([2, 1], 0.12);
   const { baseGeom, shaftGeom, capitalGeom } = useMemo(() => {
     let baseGeom: THREE.BufferGeometry | null = null;
     let shaftGeom: THREE.BufferGeometry | null = null;
@@ -252,15 +276,11 @@ const HubColumns: React.FC = () => {
     <group>
       {positions.map((p, i) => (
         <group key={i} position={p}>
-          <mesh geometry={baseGeom} material={COLUMN_BASE_MATERIAL} castShadow />
-          <mesh
-            geometry={shaftGeom}
-            material={COLUMN_SHAFT_MATERIAL}
-            castShadow
-          />
+          <mesh geometry={baseGeom} material={baseMaterial} castShadow />
+          <mesh geometry={shaftGeom} material={shaftMaterial} castShadow />
           <mesh
             geometry={capitalGeom}
-            material={COLUMN_CAPITAL_MATERIAL}
+            material={capitalMaterial}
             castShadow
           />
         </group>
@@ -271,6 +291,8 @@ const HubColumns: React.FC = () => {
 
 const HubFloor: React.FC = () => {
   const { scene } = useGLTF(FLOOR_GLB);
+  const slabMaterial = useFloorMaterial([4, 4]);
+  const inlayMaterial = useBrassMaterial([3, 3], 0.15);
   const { slabGeom, inlayGeom } = useMemo(() => {
     let slabGeom: THREE.BufferGeometry | null = null;
     let inlayGeom: THREE.BufferGeometry | null = null;
@@ -286,14 +308,14 @@ const HubFloor: React.FC = () => {
   return (
     <group>
       {slabGeom && (
-        <mesh geometry={slabGeom} receiveShadow material={SLAB_MATERIAL} />
+        <mesh geometry={slabGeom} receiveShadow material={slabMaterial} />
       )}
       {inlayGeom && (
         <mesh
           geometry={inlayGeom}
           position={[0, 0.001, 0]}
           receiveShadow
-          material={INLAY_MATERIAL}
+          material={inlayMaterial}
         />
       )}
     </group>

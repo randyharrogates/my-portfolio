@@ -211,6 +211,52 @@ visual diff.
   first real PBR pass. Replaces every placeholder colour with proper
   brass + marble textures.
 
+#### Session 7 + 8 — 2026-05-11 — PolyHaven PBR materials (assets 2.7 + 2.8)
+- **Downloaded via MCP**: PolyHaven `metal_plate_02` (brass surrogate)
+  + `concrete_floor_02` (dark floor). 1k resolution JPGs. Three maps each
+  kept (diffuse, GL-normal, roughness); Metal/Bump/Spec/Displacement/ARM
+  variants discarded.
+- **Asset path**: `public/textures/hall/brass/{brass-diffuse,brass-normal,brass-roughness}.jpg`
+  and `public/textures/hall/floor/{floor-diffuse,floor-normal,floor-roughness}.jpg`.
+  Total ~1.5MB committed.
+- **Architecture pivot**: instead of round-tripping PolyHaven materials
+  through Blender → glb (which would have embedded textures into every
+  glb and made geometry/material updates coupled), we save the texture
+  maps to `public/textures/hall/` and apply them React-side via drei's
+  `useTexture`. Decouples the asset pipeline: Blender ships GEOMETRY
+  glbs, React handles all materials. Mirrors the existing
+  `public/textures/floor-concrete/` pattern from the Workstation route.
+- **React side**: `src/landing/Hall/Hub.tsx` — added `useBrassMaterial`
+  + `useFloorMaterial` hooks. Each clones the loaded textures, sets
+  `wrapS/wrapT = RepeatWrapping` plus a per-element repeat so different
+  surfaces (4.4m column shaft vs 3m wall frame vs 0.7m capital) can
+  tile the same source maps independently. Color tint applied via
+  `MeshStandardMaterial.color` because the source `metal_plate_02`
+  diffuse is neutral metal grey — Principled BSDF multiplies by `color`
+  to give brass.
+- **AO map deferred**: three.js's `MeshStandardMaterial` needs a `uv2`
+  attribute for `aoMap`, but the Blender export only writes uv1. AO
+  textures are saved to disk (`brass-ao.jpg`, `floor-ao.jpg`) but not
+  yet wired. Wiring would mean either generating uv2 in Blender via
+  `bpy.ops.uv.smart_project()` (then re-exporting all glbs) or copying
+  `uv → uv2` in React via `geometry.setAttribute('uv2', ...)`. Skipped
+  for now — diffuse+normal+roughness gives 80% of the PBR read.
+- **Verification**: live `/hall` renders with the new PBR materials;
+  60 fps; 0 console errors; build + tests pass.
+- **Honest read**: visual delta is subtle at the idle-orbit camera
+  distance — the textures' surface detail (scratches, micro-roughness)
+  doesn't pop until you fly to an alcove or zoom in. But the underlying
+  pipeline is now correct: it earns its keep at close camera ranges
+  and gives the lighting bake (assets 2.9 + 2.10) something real to
+  bake against.
+- **Time spent**: ~50 min (including the bug where I matched
+  `metal_plate_02_X.jpg` filenames by substring "metal" and overwrote
+  three files into `brass-metal.jpg` — fixed by suffix-based parsing).
+- **Next session priority**: Cycles light + AO bake (assets 2.9 + 2.10)
+  → KTX2 lightmap textures. This bakes the actual lighting into the
+  hub geometry so Phase 2 looks closer to final-render quality without
+  needing realtime shadow maps + ambient occlusion.
+
 #### Pending references for Phase 2 decision point
 - `phase-2-hub-wide.png` — match to `refs/hozl-01-hub-wide.png`
 - `phase-2-column-detail.png` — match to `refs/hozl-02-column-detail.png`
