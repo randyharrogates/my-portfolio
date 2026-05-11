@@ -126,6 +126,7 @@ const LightShafts: React.FC<LightShaftsProps> = ({ keyColor }) => {
         halfAngle={0.42}
         length={4.5}
         color={keyColor}
+        intensity={0.04}
       />
       <Shaft
         apex={[0.0, 3.2, 0.4]}
@@ -133,7 +134,7 @@ const LightShafts: React.FC<LightShaftsProps> = ({ keyColor }) => {
         halfAngle={0.35}
         length={3.5}
         color={keyColor}
-        intensity={0.10}
+        intensity={0.025}
       />
     </>
   );
