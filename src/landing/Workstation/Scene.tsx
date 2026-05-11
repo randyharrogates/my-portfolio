@@ -36,6 +36,7 @@ interface SceneProps {
   konami: boolean;
   avatarUrl?: string | null;
   lowFidelity: boolean;
+  mobileLowFi: boolean;
   ambientActive: boolean;
   keyboardFocusedId: string | null;
   registerMonitorButton: (id: string, el: HTMLButtonElement | null) => void;
@@ -51,6 +52,7 @@ const Scene: React.FC<SceneProps> = ({
   konami,
   avatarUrl,
   lowFidelity,
+  mobileLowFi,
   ambientActive,
   keyboardFocusedId,
   registerMonitorButton,
@@ -124,7 +126,9 @@ const Scene: React.FC<SceneProps> = ({
         />
       ))}
 
-      <Dust active={ambientActive} reducedMotion={reducedMotion} />
+      {!mobileLowFi && (
+        <Dust active={ambientActive} reducedMotion={reducedMotion} />
+      )}
       {!lowFidelity && (
         <DustBeam active={ambientActive} reducedMotion={reducedMotion} />
       )}
