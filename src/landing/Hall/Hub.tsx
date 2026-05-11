@@ -9,10 +9,12 @@ const FLOOR_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-floor.glb`;
 const COLUMN_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-column.glb`;
 const DOME_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-dome.glb`;
 const WALL_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-wall.glb`;
+const SKYLIGHT_GLB = `${process.env.PUBLIC_URL}/models/hall/hub-skylight.glb`;
 useGLTF.preload(FLOOR_GLB);
 useGLTF.preload(COLUMN_GLB);
 useGLTF.preload(DOME_GLB);
 useGLTF.preload(WALL_GLB);
+useGLTF.preload(SKYLIGHT_GLB);
 
 const COLUMN_BASE_MATERIAL = new THREE.MeshStandardMaterial({
   color: "#8a6328",
@@ -64,6 +66,20 @@ const WALL_FRAME_MATERIAL = new THREE.MeshStandardMaterial({
   emissiveIntensity: 0.4,
 });
 
+const SKYLIGHT_RING_MATERIAL = new THREE.MeshStandardMaterial({
+  color: "#b8862a",
+  metalness: 0.92,
+  roughness: 0.22,
+  emissive: new THREE.Color("#e8b45a"),
+  emissiveIntensity: 0.5,
+});
+const SKYLIGHT_DISC_MATERIAL = new THREE.MeshBasicMaterial({
+  color: "#f4d8a8",
+  transparent: true,
+  opacity: 0.92,
+  side: THREE.DoubleSide,
+});
+
 const SLAB_MATERIAL = new THREE.MeshStandardMaterial({
   color: "#2a3a3e",
   metalness: 0.25,
@@ -90,6 +106,32 @@ const INLAY_MATERIAL = new THREE.MeshStandardMaterial({
  *  with explicit materials — `<primitive object={scene} />` ignores material
  *  overrides on un-cloned glTF nodes here.
  */
+/** Hex skylight aperture — brass ring + bright emissive disc — mounted
+ *  at the dome-base level. Same position as the volumetric god-ray cone
+ *  in `Atmosphere.tsx` so the ray reads as emerging from this point. */
+const HubSkylight: React.FC = () => {
+  const { scene } = useGLTF(SKYLIGHT_GLB);
+  const { ringGeom, discGeom } = useMemo(() => {
+    let ringGeom: THREE.BufferGeometry | null = null;
+    let discGeom: THREE.BufferGeometry | null = null;
+    scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      if (o.name === "hub-skylight-ring") ringGeom = m.geometry;
+      else if (o.name === "hub-skylight-disc") discGeom = m.geometry;
+    });
+    return { ringGeom, discGeom };
+  }, [scene]);
+
+  if (!ringGeom || !discGeom) return null;
+  return (
+    <group position={[0, HALL_CEILING_HEIGHT + 0.05, 0]}>
+      <mesh geometry={ringGeom} material={SKYLIGHT_RING_MATERIAL} />
+      <mesh geometry={discGeom} material={SKYLIGHT_DISC_MATERIAL} />
+    </group>
+  );
+};
+
 /** Six parapet wall panels at hex-edge midpoints (same angles as the
  *  columns) running column-to-column. Each panel is rotated to face the
  *  hub centre. Two named meshes per glb (slab + frame) materialled
@@ -284,15 +326,7 @@ const Hub: React.FC = () => {
 
       <HubDome />
 
-      {/* Skylight aperture — small bright disc at dome apex, drives the
-       *  god-ray spawn point. */}
-      <mesh
-        position={[0, HALL_CEILING_HEIGHT + 0.05, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
-        <ringGeometry args={[0.4, 0.7, 32]} />
-        <meshBasicMaterial color="#f4d8a8" transparent opacity={0.85} />
-      </mesh>
+      <HubSkylight />
     </group>
   );
 };
