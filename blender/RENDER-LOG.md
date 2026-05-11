@@ -119,6 +119,38 @@ visual diff.
 - **Next session priority**: dome ceiling (Asset 2.4) — biggest single
   visual-impact piece; the Wakandan-futuristic identity payoff.
 
+#### Session 4 — 2026-05-11 — dome ceiling (asset 2.4)
+- **Built**: faceted geodesic half-dome from a subdivided icosphere (subdivision
+  2 → 42 verts, top-half-only after culling = 26 verts / 40 flat-shaded
+  triangles). Y-scaled 0.65 → 2.93m dome height above z = 5.5m. Radius
+  4.5m so the dome spans wider than the column ring (2.598m) but stays
+  inside the alcove envelope (7m).
+- **Two named meshes per glb**:
+  - `hub-dome-shell` — flat-shaded interior, rendered with `THREE.BackSide`
+    so the camera inside the hub sees the dark vault.
+  - `hub-dome-lattice` — duplicate of the shell with a Wireframe modifier
+    (thickness 0.04m, `use_replace=True`), rendered DoubleSide as
+    brass-emissive ribs.
+- **Script**: `blender/scripts/hub/dome.py` — bmesh-based bottom-half cull,
+  scale-apply, flat-shade, modifier-driven lattice. Parameterized for
+  radius, subdivisions, z-base, scale_z, and lattice thickness.
+- **Output**: `public/models/hall/hub-dome.glb` (39KB uncompressed).
+- **React side**: `Hub.tsx` — new `HubDome` subcomponent extracts both
+  named meshes from the glb. Replaced the placeholder smooth-half-sphere
+  + emissive-teal material; new shell uses the same dark colour but the
+  faceted geometry + visible lattice does the heavy lifting now.
+- **Verification**: live `/hall` renders the faceted dome with visible
+  brass-lattice ribs at the top of frame; 60 fps; 0 console errors;
+  build + tests pass.
+- **Honest read**: clearly more "Wakandan-coded" than the smooth sphere —
+  geodesic facets + brass ribs match the angular sci-fi vocabulary. Still
+  obviously procedural compared to the reference's organic carved dome
+  panels, but a meaningful visual upgrade.
+- **Time spent**: ~25 min.
+- **Next session priority**: wall panels between columns (asset 2.5) —
+  triangle-tracery motif via geometry nodes, locks in the wall vocabulary
+  for the rest of Phase 2.
+
 #### Pending references for Phase 2 decision point
 - `phase-2-hub-wide.png` — match to `refs/hozl-01-hub-wide.png`
 - `phase-2-column-detail.png` — match to `refs/hozl-02-column-detail.png`
