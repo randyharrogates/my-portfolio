@@ -77,7 +77,13 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
 
   return (
     <>
-      <hemisphereLight args={[tint.hemi[0], tint.hemi[1], 0.55]} />
+      <hemisphereLight
+        args={[
+          tint.hemi[0],
+          lowFidelity ? "#2a2018" : tint.hemi[1],
+          lowFidelity ? 0.95 : 0.55,
+        ]}
+      />
       <spotLight
         ref={keyRef}
         position={[-1.4, 3.0, 1.6]}
@@ -88,7 +94,7 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         distance={11}
         decay={1.4}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 2048}
+        shadow-mapSize={lowFidelity ? 256 : 1024}
         shadow-bias={-0.0006}
       />
       <pointLight
@@ -101,11 +107,20 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
       />
       <pointLight
         position={[-2.2, 0.7, 1.6]}
-        intensity={1.2}
+        intensity={lowFidelity ? 1.6 : 1.2}
         color={tint.fill}
-        distance={6}
+        distance={lowFidelity ? 8 : 6}
         decay={2}
       />
+      {lowFidelity && (
+        <pointLight
+          position={[0, 1.6, 2.4]}
+          intensity={0.9}
+          color={tint.fill}
+          distance={7}
+          decay={2}
+        />
+      )}
       {/* Avatar fill — small, localized to the desk photo frame */}
       <pointLight
         position={[-0.78, 0.6, 0.28]}
@@ -125,11 +140,11 @@ const Lighting: React.FC<LightingProps> = ({ hourOverride, lowFidelity }) => {
         distance={6.5}
         decay={1.6}
         castShadow={!lowFidelity}
-        shadow-mapSize={lowFidelity ? 256 : 2048}
+        shadow-mapSize={lowFidelity ? 256 : 1024}
         shadow-bias={-0.0005}
       />
       {/* Bounce-fill ambient so the scene reads even off the key beam */}
-      <ambientLight intensity={0.22} color="#3a2e22" />
+      <ambientLight intensity={lowFidelity ? 0.5 : 0.22} color="#3a2e22" />
     </>
   );
 };
