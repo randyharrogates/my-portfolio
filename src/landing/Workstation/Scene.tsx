@@ -1,7 +1,7 @@
 /** @format */
 
 import React, { useMemo } from "react";
-import { Environment, ContactShadows, SoftShadows } from "@react-three/drei";
+import { ContactShadows } from "@react-three/drei";
 import Lighting, { tintForHour } from "./Lighting.tsx";
 import Desk from "./Desk.tsx";
 import Monitor from "./Monitor.tsx";
@@ -16,8 +16,7 @@ import {
   Chair,
 } from "./Props.tsx";
 import Plant from "./Plant.tsx";
-import Dust, { DustBeam } from "./Particles.tsx";
-import LightShafts from "./LightShafts.tsx";
+import Dust from "./Particles.tsx";
 import { SECTIONS } from "../sections.ts";
 import {
   Nameplate,
@@ -35,7 +34,6 @@ interface SceneProps {
   reducedMotion: boolean;
   konami: boolean;
   avatarUrl?: string | null;
-  lowFidelity: boolean;
   ambientActive: boolean;
   keyboardFocusedId: string | null;
   registerMonitorButton: (id: string, el: HTMLButtonElement | null) => void;
@@ -50,7 +48,6 @@ const Scene: React.FC<SceneProps> = ({
   reducedMotion,
   konami,
   avatarUrl,
-  lowFidelity,
   ambientActive,
   keyboardFocusedId,
   registerMonitorButton,
@@ -61,38 +58,23 @@ const Scene: React.FC<SceneProps> = ({
       <color attach="background" args={["#1a120a"]} />
       <fogExp2 attach="fog" args={["#241608", 0.11]} />
 
-      {!lowFidelity && (
-        <Environment
-          files={`${process.env.PUBLIC_URL}/hdri/warm-evening-1k.hdr`}
-          background={false}
-          environmentIntensity={1.15}
-        />
-      )}
+      <Lighting />
 
-      {/* PCSS-style soft shadows: contact-distance penumbra (tight at the
-       *  foot of a desk leg, soft at the floor). Mutates the shadow shader
-       *  globally so all shadow-casting lights pick it up. Gated to non-
-       *  lowFidelity since the extra sampling has a per-frame cost. */}
-      {!lowFidelity && <SoftShadows size={25} focus={0.5} samples={8} />}
-
-      <Lighting lowFidelity={lowFidelity} />
-
-      <Room tint={tint} lowFidelity={lowFidelity} reducedMotion={reducedMotion} />
+      <Room tint={tint} reducedMotion={reducedMotion} />
 
       {/* Real grounding under the whole workstation. Captures chair, plant,
-       *  monitor stalks, mug, etc., onto the floor. Cheaper than baking
-       *  shadow maps and reads as proper contact. */}
+       *  monitor stalks, mug, etc., onto the floor. */}
       <ContactShadows
         position={[0, -0.905, 0]}
         scale={10}
         blur={2}
         far={2}
         opacity={0.45}
-        frames={lowFidelity ? 1 : 20}
-        resolution={lowFidelity ? 256 : 384}
+        frames={1}
+        resolution={256}
       />
 
-      <Desk lowFidelity={lowFidelity} reducedMotion={reducedMotion} />
+      <Desk />
       <Keyboard reducedMotion={reducedMotion} />
       <Trackpad />
       <Mug reducedMotion={reducedMotion} />
@@ -100,7 +82,7 @@ const Scene: React.FC<SceneProps> = ({
       <ServerTower reducedMotion={reducedMotion} konami={konami} />
       <ServerRackPanel />
       <Chair reducedMotion={reducedMotion} konami={konami} />
-      <Plant reducedMotion={reducedMotion} lowFidelity={lowFidelity} />
+      <Plant reducedMotion={reducedMotion} />
 
       <Nameplate />
       <FramedPhoto avatarUrl={avatarUrl} />
@@ -125,10 +107,6 @@ const Scene: React.FC<SceneProps> = ({
       ))}
 
       <Dust active={ambientActive} reducedMotion={reducedMotion} />
-      {!lowFidelity && (
-        <DustBeam active={ambientActive} reducedMotion={reducedMotion} />
-      )}
-      {!lowFidelity && <LightShafts keyColor={tint.key} />}
     </>
   );
 };
