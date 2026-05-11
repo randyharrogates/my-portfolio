@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { AdaptiveDpr } from "@react-three/drei";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
@@ -33,7 +33,7 @@ import {
   useReducedMotion,
   useDocumentHidden,
   useViewportAspect,
-  isMobileViewport,
+  useIsMobileViewport,
 } from "./use-low-power.ts";
 import { portfolioData } from "../data/portfolio.ts";
 
@@ -75,13 +75,28 @@ const CursorTracker: React.FC<CursorTrackerProps> = ({ ndcRef }) => {
   return null;
 };
 
+/** When the parent Canvas is in `frameloop="demand"`, the scene only renders
+ *  after a call to `invalidate()`. This drives the loop at ~30Hz so animated
+ *  rigs (camera bob, monitor scanlines, particles) still tick, just at half
+ *  the rate. Used only on mobile + lowFidelity. */
+const DemandTicker: React.FC<{ intervalMs: number }> = ({ intervalMs }) => {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    const id = window.setInterval(() => invalidate(), intervalMs);
+    return () => window.clearInterval(id);
+  }, [invalidate, intervalMs]);
+  return null;
+};
+
 const WorkstationLanding: React.FC = () => {
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
   const hidden = useDocumentHidden();
   const aspect = useViewportAspect();
   const isPortrait = aspect < 1;
+  const isMobile = useIsMobileViewport();
   const { mode, setMode, lowFidelity, reportFps } = useFidelityMode();
+  const mobileLowFi = isMobile && lowFidelity;
   const { muted: audioMuted, toggle: toggleAudio } = useAudioMutedToggle();
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -545,13 +560,19 @@ const WorkstationLanding: React.FC = () => {
     [focusTarget, focusLook, booting, scrollScrub, reducedMotion, dragRadiusRef, idlePosRef, idleLookRef, fovRef]
   );
 
-  const dpr: [number, number] = isMobileViewport()
-    ? [1, 1]
+  const dpr: [number, number] = isMobile
+    ? mobileLowFi
+      ? [0.6, 0.75]
+      : [1, 1]
     : lowFidelity
     ? [1, 1.0]
     : [1, 1.5];
 
-  const frameloop = hidden ? "never" : "always";
+  const frameloop: "never" | "always" | "demand" = hidden
+    ? "never"
+    : mobileLowFi
+    ? "demand"
+    : "always";
   const ambientActive = !lowFidelity && !reducedMotion;
 
   return (
@@ -567,7 +588,7 @@ const WorkstationLanding: React.FC = () => {
           powerPreference: lowFidelity ? "low-power" : "high-performance",
           alpha: false,
         }}
-        shadows
+        shadows={!mobileLowFi}
         onCreated={({ gl }) => {
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
           gl.outputColorSpace = THREE.SRGBColorSpace;
@@ -584,6 +605,7 @@ const WorkstationLanding: React.FC = () => {
         <AdaptiveDpr pixelated />
         <FpsSampler onSample={reportFps} />
         <CursorTracker ndcRef={cursorNdcRef} />
+        {mobileLowFi && <DemandTicker intervalMs={33} />}
         <Suspense fallback={null}>
           <Scene
             hoveredId={hoveredId}
@@ -595,6 +617,7 @@ const WorkstationLanding: React.FC = () => {
             konami={konami}
             avatarUrl={avatarUrl}
             lowFidelity={lowFidelity}
+            mobileLowFi={mobileLowFi}
             ambientActive={ambientActive}
             keyboardFocusedId={keyboardFocusedId}
             registerMonitorButton={registerMonitorButton}
