@@ -8,10 +8,10 @@ const FIDELITY_KEY = "landing.fidelity";
 const AUDIO_KEY = "landing.audioMuted";
 
 function readMode(): FidelityMode {
-  if (typeof window === "undefined") return "low";
+  if (typeof window === "undefined") return "auto";
   const v = localStorage.getItem(FIDELITY_KEY);
   if (v === "low" || v === "full" || v === "auto") return v;
-  return "low";
+  return "auto";
 }
 
 export function detectInitialLowPerf(): boolean {
@@ -109,21 +109,6 @@ export function useDocumentHidden(): boolean {
 export function isMobileViewport(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(max-width: 800px)").matches;
-}
-
-/** Reactive variant of `isMobileViewport` that re-renders the consumer when the
- *  viewport crosses the 800px breakpoint (orientation change, tablet split-view,
- *  desktop window resize). Use this from components that need to gate render
- *  paths on mobile vs. desktop. */
-export function useIsMobileViewport(): boolean {
-  const [mobile, setMobile] = useState<boolean>(() => isMobileViewport());
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 800px)");
-    const onChange = () => setMobile(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return mobile;
 }
 
 /** Tracks the viewport aspect ratio (width / height) and re-renders on

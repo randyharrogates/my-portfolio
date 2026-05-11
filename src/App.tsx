@@ -3,8 +3,6 @@
 import React, { Suspense } from "react";
 import {
   HashRouter as Router,
-  Link,
-  Navigate,
   Route,
   Routes,
   useLocation,
@@ -18,8 +16,6 @@ import Skills from "./pages/Skills.tsx";
 import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
 import Resume from "./pages/Resume.tsx";
-import { SECTIONS } from "./landing/sections.ts";
-import { useIsMobileViewport } from "./landing/use-low-power.ts";
 
 // Lazy-load the canvases so R3F doesn't bloat the main bundle.
 const AmbientCanvas = React.lazy(
@@ -29,54 +25,24 @@ const WorkstationLanding = React.lazy(
   () => import("./landing/WorkstationLanding.tsx")
 );
 
-const TABS: { label: string; path: string }[] = SECTIONS.map((s) => ({
-  label: s.label,
-  path: s.route,
-}));
-
 const TerminalApp: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useIsMobileViewport();
 
+  // Global ESC → home. Inner pages have no internal nav; the 3D workstation
+  // is the only entry point to sections.
   React.useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (location.pathname === "/") return;
-
-      if (e.key === "Escape") {
-        if (!isMobile) navigate("/");
-        return;
+      if (e.key === "Escape" && location.pathname !== "/") {
+        navigate("/");
       }
-
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (
-          tag === "INPUT" ||
-          tag === "TEXTAREA" ||
-          tag === "SELECT" ||
-          target.isContentEditable
-        ) {
-          return;
-        }
-      }
-      const currentIdx = TABS.findIndex(
-        (t) =>
-          location.pathname === t.path ||
-          (t.path === "/projects" && location.pathname.startsWith("/projects/"))
-      );
-      if (currentIdx === -1) return;
-      const delta = e.key === "ArrowRight" ? 1 : -1;
-      const next = (currentIdx + delta + TABS.length) % TABS.length;
-      navigate(TABS[next].path);
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [location.pathname, navigate, isMobile]);
+  }, [location.pathname, navigate]);
 
+  // Landing route: render the 3D Workstation full-bleed without terminal chrome.
   if (location.pathname === "/") {
-    if (isMobile) return <Navigate to="/about" replace />;
     return (
       <Suspense fallback={<div style={{ background: "#0c0b0a", height: "100vh" }} />}>
         <WorkstationLanding />
@@ -104,41 +70,16 @@ const TerminalApp: React.FC = () => {
           <span className="terminal-title">
             terminal — <span className="title-name">Randy Chan</span> · GenAI Solutions Portfolio
           </span>
-          {!isMobile ? (
-            <button
-              type="button"
-              className="titlebar-back"
-              onClick={() => navigate("/")}
-              aria-label="back to workstation"
-              title="back to workstation (esc)"
-            >
-              ← workstation
-            </button>
-          ) : (
-            <span />
-          )}
+          <button
+            type="button"
+            className="titlebar-back"
+            onClick={() => navigate("/")}
+            aria-label="back to workstation"
+            title="back to workstation (esc)"
+          >
+            ← workstation
+          </button>
         </div>
-
-        <nav className="terminal-tabs" aria-label="sections">
-          {TABS.map((t, i) => {
-            const active =
-              location.pathname === t.path ||
-              (t.path === "/projects" &&
-                location.pathname.startsWith("/projects/"));
-            return (
-              <Link
-                key={t.path}
-                to={t.path}
-                className={`tab-item${active ? " tab-active" : ""}`}
-                aria-current={active ? "page" : undefined}
-              >
-                <span className="tab-num">{i + 1}</span>
-                <span>{t.label}</span>
-                {active && <span className="tab-indicator">●</span>}
-              </Link>
-            );
-          })}
-        </nav>
 
         {/* Page Content */}
         <main className="terminal-content">
