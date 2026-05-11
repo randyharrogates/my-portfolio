@@ -151,6 +151,38 @@ visual diff.
   triangle-tracery motif via geometry nodes, locks in the wall vocabulary
   for the rest of Phase 2.
 
+#### Session 5 — 2026-05-11 — wall panels between columns (asset 2.5)
+- **Built**: short parapet wall panel at origin — dark teal slab
+  (3m × 1m × 0.08m, 8 verts / 6 faces) + brass frame (5 bars joined:
+  top, bottom, left, right + decorative mid-slat, 40 verts / 30 faces).
+  The +Y face is the inner-facing surface; the brass bars sit slightly
+  proud of the slab so they read as raised metal on the hub interior.
+- **Script**: `blender/scripts/hub/walls.py` — `_make_box` + `_join_pieces`
+  helpers; `build_wall()` parameterized for width / height / thickness /
+  frame dimensions.
+- **Output**: `public/models/hall/hub-wall.glb` (small, plain glb).
+- **React side**: `Hub.tsx` — new `HubWalls` subcomponent loads the glb,
+  extracts both named meshes, and instantiates 6 panels at the column
+  positions (hex-edge midpoints, three.js angles 30°/90°/150°/210°/270°/330°
+  at radius `HALL_HUB_RADIUS * cos(π/6) ≈ 2.598m`) with `rotation.y = π - θ`
+  so each panel's +Y inner face points at the hub centre.
+- **Architectural read**: the six panels meet at hex vertices (alcove ray
+  directions), forming a continuous hex parapet ring with brass framing.
+  Walls are intentionally short (1m tall) so the alcove arches and
+  holograms read clearly *above* the parapet — closed at floor level,
+  open at sight level.
+- **Verification**: live `/hall` renders a hex-ringed parapet with
+  bright brass framing; 60 fps; 0 console errors; build + tests pass.
+- **Honest read**: biggest single-session visual upgrade so far. The
+  brass frames + slat give the hub real architectural identity instead
+  of just "columns floating in space." Tracery motif (triangles, geom
+  nodes) deferred — a row of frame bars carries enough of the visual
+  load for placeholder.
+- **Time spent**: ~30 min.
+- **Next session priority**: skylight aperture (asset 2.6) — small hex
+  ring at the dome apex, drives the god-ray spawn point. Then
+  PolyHaven materials (2.7, 2.8) for the first real PBR pass.
+
 #### Pending references for Phase 2 decision point
 - `phase-2-hub-wide.png` — match to `refs/hozl-01-hub-wide.png`
 - `phase-2-column-detail.png` — match to `refs/hozl-02-column-detail.png`
