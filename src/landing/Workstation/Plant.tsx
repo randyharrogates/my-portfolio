@@ -1,13 +1,11 @@
 /** @format */
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 interface PlantProps {
   reducedMotion: boolean;
-  lowFidelity: boolean;
 }
 
 interface LeafSpec {
@@ -23,10 +21,7 @@ const PARENT_Y = 0.04;
 const STEM_BASE_Y = 0.1;
 const MAX_LEAF_TIP_Y = 0.7;
 
-const PLANT_GLTF_URL = `${process.env.PUBLIC_URL}/models/potted_plant_04/potted_plant_04_1k.gltf`;
-
-/** Tear-drop leaf shape, extruded for sub-mm thickness — used by the
- * primitive fallback when `lowFidelity` skips the GLTF path. */
+/** Tear-drop leaf shape, extruded for sub-mm thickness. */
 function makeLeafGeometry(): THREE.ExtrudeGeometry {
   const shape = new THREE.Shape();
   shape.moveTo(0, 0);
@@ -47,12 +42,9 @@ function makeLeafGeometry(): THREE.ExtrudeGeometry {
   return geo;
 }
 
-/** Stylized desk plant — primitives only. Used when GLTF is unwanted (low
- * fidelity / reduced motion path) so the scene still has a plant silhouette
- * without the ~2 MB asset hit. */
-const PrimitivePlant: React.FC<{ reducedMotion: boolean }> = ({
-  reducedMotion,
-}) => {
+/** Stylized desk plant — primitives only. Pot + soil + 12 tear-drop leaves
+ *  with gentle rotation animation. */
+const Plant: React.FC<PlantProps> = ({ reducedMotion }) => {
   const ref = useRef<THREE.Group>(null);
 
   const leafGeo = useMemo(makeLeafGeometry, []);
@@ -93,7 +85,7 @@ const PrimitivePlant: React.FC<{ reducedMotion: boolean }> = ({
   });
 
   return (
-    <>
+    <group position={[1.05, PARENT_Y, 0.1]}>
       {/* Pot — light stone */}
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[0.13, 0.1, 0.18, 32]} />
@@ -145,103 +137,8 @@ const PrimitivePlant: React.FC<{ reducedMotion: boolean }> = ({
           );
         })}
       </group>
-    </>
-  );
-};
-
-/** Detailed potted plant from Poly Haven (CC0). Loaded via drei's useGLTF
- * helper which suspends until the asset + textures resolve. The source GLTF
- * is real-world scale (~0.6 m tall); we scale to roughly match the previous
- * primitive plant footprint and let the parent group's spotlight shadow
- * grounding hide any mismatch. */
-const GltfPlant: React.FC<{ reducedMotion: boolean }> = ({ reducedMotion }) => {
-  const { scene } = useGLTF(PLANT_GLTF_URL);
-  const ref = useRef<THREE.Group>(null);
-
-  const cloned = useMemo(() => {
-    const clone = scene.clone(true);
-    // Track materials we instantiate so they get disposed when the cloned
-    // scene is GC'd (no React unmount hook fires on Mesh.material reassign).
-    const replacedMaterials: THREE.Material[] = [];
-    clone.traverse((obj) => {
-      if (obj instanceof THREE.Mesh) {
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-        // Subsurface translucency on leaves: when a mesh's material reads
-        // as foliage (green-dominant albedo or a "leaf"/"foliage" hint in
-        // the name), upgrade it to MeshPhysicalMaterial with transmission
-        // so backlight from the window shows through. Skip the upgrade
-        // when reduced-motion is requested — leaves the user with the
-        // lighter standard material and saves the transmission GPU cost.
-        if (reducedMotion) return;
-        const mat = obj.material as THREE.MeshStandardMaterial | undefined;
-        if (!mat || !("color" in mat)) return;
-        const name = (mat.name || obj.name || "").toLowerCase();
-        const c = mat.color;
-        const isGreenDominant = c.g > c.r * 1.05 && c.g > c.b * 1.05;
-        const looksLikeLeaf = /leaf|foliage|plant/.test(name) || isGreenDominant;
-        if (!looksLikeLeaf) return;
-        const physical = new THREE.MeshPhysicalMaterial({
-          color: mat.color.clone(),
-          map: mat.map,
-          normalMap: mat.normalMap,
-          roughnessMap: mat.roughnessMap,
-          roughness: mat.roughness ?? 0.55,
-          metalness: 0,
-          transmission: 0.25,
-          thickness: 0.05,
-          ior: 1.4,
-          side: THREE.DoubleSide,
-        });
-        // Dispose the cloned-scene's original leaf material before
-        // overwriting the slot — three's Object3D.clone() shares material
-        // refs with the source but useGLTF caches by URL, so disposing
-        // here only affects the clone's overwritten slot, not the cached
-        // asset.
-        mat.dispose();
-        obj.material = physical;
-        replacedMaterials.push(physical);
-      }
-    });
-    // Attach disposer to the clone group for cleanup on unmount.
-    (clone as unknown as { __leafMats: THREE.Material[] }).__leafMats =
-      replacedMaterials;
-    return clone;
-  }, [scene, reducedMotion]);
-
-  useEffect(() => {
-    return () => {
-      const mats =
-        (cloned as unknown as { __leafMats?: THREE.Material[] }).__leafMats || [];
-      mats.forEach((m) => m.dispose());
-    };
-  }, [cloned]);
-
-  useFrame((s) => {
-    if (!ref.current || reducedMotion) return;
-    const t = s.clock.elapsedTime;
-    ref.current.rotation.y = Math.sin(t * 0.3) * 0.03;
-  });
-
-  return (
-    <group ref={ref} scale={0.63}>
-      <primitive object={cloned} />
     </group>
   );
 };
-
-const Plant: React.FC<PlantProps> = ({ reducedMotion, lowFidelity }) => {
-  return (
-    <group position={[1.05, PARENT_Y, 0.1]}>
-      {lowFidelity ? (
-        <PrimitivePlant reducedMotion={reducedMotion} />
-      ) : (
-        <GltfPlant reducedMotion={reducedMotion} />
-      )}
-    </group>
-  );
-};
-
-useGLTF.preload(PLANT_GLTF_URL);
 
 export default Plant;
