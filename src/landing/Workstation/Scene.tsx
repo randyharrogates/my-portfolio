@@ -60,8 +60,11 @@ const Scene: React.FC<SceneProps> = ({
   const tint = useMemo(() => tintForHour(new Date().getHours()), []);
   return (
     <>
-      <color attach="background" args={["#1a120a"]} />
-      <fogExp2 attach="fog" args={["#241608", 0.11]} />
+      <color attach="background" args={[lowFidelity ? "#2a1c12" : "#1a120a"]} />
+      <fogExp2
+        attach="fog"
+        args={[lowFidelity ? "#3a2418" : "#241608", lowFidelity ? 0.06 : 0.11]}
+      />
 
       {!lowFidelity && (
         <Environment

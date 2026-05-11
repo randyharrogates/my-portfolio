@@ -71,10 +71,10 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
        *  MSAA we forfeited for DOF compatibility. */}
       <SMAA />
       <N8AO
-        aoRadius={0.4}
+        aoRadius={0.3}
         intensity={2.5}
         distanceFalloff={0.8}
-        quality="medium"
+        quality="low"
       />
       {/* DOF only in idle / B-roll framing. When focused, the camera is
        *  already 0.85 units from the monitor — applying DOF would soften
@@ -85,7 +85,7 @@ const Postprocessing: React.FC<PostprocessingProps> = ({
           worldFocusRange={4.0}
           bokehScale={1.4}
           focalLength={0.04}
-          height={480}
+          height={320}
         />
       )}
       <Bloom
