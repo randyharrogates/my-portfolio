@@ -183,6 +183,34 @@ visual diff.
   ring at the dome apex, drives the god-ray spawn point. Then
   PolyHaven materials (2.7, 2.8) for the first real PBR pass.
 
+#### Session 6 — 2026-05-11 — skylight aperture (asset 2.6)
+- **Built**: hex donut (24 verts / 24 faces) via bmesh — outer + inner
+  6-vert rings bridged with top/bottom annulus quads + outer/inner
+  sidewalls. Inner hex emissive disc (6 verts / 1 face) nested just
+  below the ring's top face. Both rotated 30° around Z to match the
+  hub motif.
+- **Script**: `blender/scripts/hub/skylight.py` — `_build_hex_ring`
+  helper plus `build_skylight()`. Parameterized for outer/inner radius
+  and thickness.
+- **Output**: `public/models/hall/hub-skylight.glb`.
+- **React side**: `Hub.tsx` — new `HubSkylight` subcomponent loads the
+  glb, extracts the named meshes, mounts both at
+  `y = HALL_CEILING_HEIGHT + 0.05` (same position as the god-ray cone
+  spawn in `Atmosphere.tsx`). Replaces the inline `ringGeometry` +
+  `meshBasicMaterial` placeholder. Disc uses `MeshBasicMaterial` so it
+  glows without depending on lighting; ring uses `MeshStandardMaterial`
+  with brass emissive.
+- **Verification**: live `/hall` renders the new hex aperture; 60 fps;
+  0 console errors; build + tests pass. God-ray cone continues to emit
+  from the same point.
+- **Honest read**: small piece, big consistency win — the aperture now
+  matches the hex motif used by floor / dome / walls / column rotations
+  instead of being a 32-segment circle.
+- **Time spent**: ~15 min.
+- **Next session priority**: PolyHaven materials (assets 2.7 + 2.8) —
+  first real PBR pass. Replaces every placeholder colour with proper
+  brass + marble textures.
+
 #### Pending references for Phase 2 decision point
 - `phase-2-hub-wide.png` — match to `refs/hozl-01-hub-wide.png`
 - `phase-2-column-detail.png` — match to `refs/hozl-02-column-detail.png`
