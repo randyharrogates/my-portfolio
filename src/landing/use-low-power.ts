@@ -111,6 +111,21 @@ export function isMobileViewport(): boolean {
   return window.matchMedia("(max-width: 800px)").matches;
 }
 
+/** Reactive variant of `isMobileViewport` that re-renders the consumer when the
+ *  viewport crosses the 800px breakpoint (orientation change, tablet split-view,
+ *  desktop window resize). Use this from components that need to gate render
+ *  paths on mobile vs. desktop. */
+export function useIsMobileViewport(): boolean {
+  const [mobile, setMobile] = useState<boolean>(() => isMobileViewport());
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 800px)");
+    const onChange = () => setMobile(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return mobile;
+}
+
 /** Tracks the viewport aspect ratio (width / height) and re-renders on
  *  resize / orientationchange. Used to swap the 3D camera pose between
  *  landscape and portrait framings. */
