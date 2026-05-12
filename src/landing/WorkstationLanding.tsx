@@ -8,14 +8,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { AdaptiveDpr } from "@react-three/drei";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import HUD from "./HUD.tsx";
 import Scene from "./Workstation/Scene.tsx";
 import CameraRig, { type CameraRigInputs } from "./Workstation/CameraRig.tsx";
-import Postprocessing from "./Workstation/Postprocessing.tsx";
 import Audio from "./Workstation/Audio.tsx";
 import EasterEgg from "./Workstation/EasterEgg.tsx";
 import {
@@ -28,12 +27,10 @@ import {
   IDLE_CAMERA_FOV_PORTRAIT,
 } from "./sections.ts";
 import {
-  useFidelityMode,
   useAudioMutedToggle,
   useReducedMotion,
   useDocumentHidden,
   useViewportAspect,
-  isMobileViewport,
 } from "./use-low-power.ts";
 import { portfolioData } from "../data/portfolio.ts";
 
@@ -41,21 +38,6 @@ const PAPER = "#0c0b0a";
 const ACCENT = "#e8632a";
 
 const BOOT_KEY = "landing.bootSeen";
-
-interface FpsSamplerProps {
-  onSample: (fps: number) => void;
-}
-
-const FpsSampler: React.FC<FpsSamplerProps> = ({ onSample }) => {
-  const lastRef = useRef(performance.now());
-  useFrame(() => {
-    const now = performance.now();
-    const dt = now - lastRef.current;
-    lastRef.current = now;
-    if (dt > 0) onSample(1000 / dt);
-  });
-  return null;
-};
 
 interface CursorTrackerProps {
   ndcRef: React.MutableRefObject<{ x: number; y: number }>;
@@ -81,7 +63,6 @@ const WorkstationLanding: React.FC = () => {
   const hidden = useDocumentHidden();
   const aspect = useViewportAspect();
   const isPortrait = aspect < 1;
-  const { mode, setMode, lowFidelity, reportFps } = useFidelityMode();
   const { muted: audioMuted, toggle: toggleAudio } = useAudioMutedToggle();
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -511,11 +492,6 @@ const WorkstationLanding: React.FC = () => {
     [navigate]
   );
 
-  const handleCycleMode = useCallback(() => {
-    const next = mode === "auto" ? "low" : mode === "low" ? "full" : "auto";
-    setMode(next);
-  }, [mode, setMode]);
-
   const handleKonami = useCallback(() => {
     setKonami(true);
     setMatrixRain(true);
@@ -545,14 +521,10 @@ const WorkstationLanding: React.FC = () => {
     [focusTarget, focusLook, booting, scrollScrub, reducedMotion, dragRadiusRef, idlePosRef, idleLookRef, fovRef]
   );
 
-  const dpr: [number, number] = isMobileViewport()
-    ? [1, 1]
-    : lowFidelity
-    ? [1, 1.0]
-    : [1, 1.5];
+  const dpr: [number, number] = [1, 1];
 
   const frameloop = hidden ? "never" : "always";
-  const ambientActive = !lowFidelity && !reducedMotion;
+  const ambientActive = !reducedMotion;
 
   return (
     <div
@@ -563,13 +535,11 @@ const WorkstationLanding: React.FC = () => {
       <Canvas
         dpr={dpr}
         gl={{
-          antialias: !lowFidelity,
-          powerPreference: lowFidelity ? "low-power" : "high-performance",
+          antialias: false,
+          powerPreference: "low-power",
           alpha: false,
         }}
-        shadows
         onCreated={({ gl }) => {
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
           gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
         camera={{
@@ -582,7 +552,6 @@ const WorkstationLanding: React.FC = () => {
         style={{ background: PAPER, position: "absolute", inset: 0 }}
       >
         <AdaptiveDpr pixelated />
-        <FpsSampler onSample={reportFps} />
         <CursorTracker ndcRef={cursorNdcRef} />
         <Suspense fallback={null}>
           <Scene
@@ -594,17 +563,12 @@ const WorkstationLanding: React.FC = () => {
             reducedMotion={reducedMotion}
             konami={konami}
             avatarUrl={avatarUrl}
-            lowFidelity={lowFidelity}
             ambientActive={ambientActive}
             keyboardFocusedId={keyboardFocusedId}
             registerMonitorButton={registerMonitorButton}
           />
         </Suspense>
         <CameraRig inputs={rigInputs} />
-        <Postprocessing
-          enabled={!lowFidelity && !reducedMotion}
-          focused={focusedId !== null}
-        />
         <Audio
           muted={audioMuted}
           triggerWhoosh={whooshTick}
@@ -615,9 +579,6 @@ const WorkstationLanding: React.FC = () => {
       <EasterEgg onTrigger={handleKonami} />
 
       <HUD
-        mode={mode}
-        effectiveLow={lowFidelity}
-        onCycleMode={handleCycleMode}
         audioMuted={audioMuted}
         onToggleAudio={toggleAudio}
         bootSkippable={booting}

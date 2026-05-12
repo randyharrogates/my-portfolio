@@ -1,7 +1,7 @@
 /** @format */
 
 import React, { useMemo } from "react";
-import { useTexture, MeshReflectorMaterial } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
 const FLOOR_TEX_BASE = `${process.env.PUBLIC_URL}/textures/floor-concrete`;
@@ -92,59 +92,15 @@ function useFloorTextures() {
   return { albedo, normal, roughness, ao };
 }
 
-interface DeskProps {
-  lowFidelity?: boolean;
-  reducedMotion?: boolean;
-}
-
-const Desk: React.FC<DeskProps> = ({
-  lowFidelity = false,
-  reducedMotion = false,
-}) => {
+const Desk: React.FC = () => {
   const deskMat = useMemo(() => createDeskMaterial(), []);
   const floor = useFloorTextures();
-  // Reflector continually re-renders to its mirror RT each frame; skip it
-  // for users with prefers-reduced-motion (and on the low-fidelity tier)
-  // to save the per-frame GPU cost. They get the procedural brushed-metal
-  // shader instead — still readable as a polished desk surface.
-  const useReflector = !lowFidelity && !reducedMotion;
   return (
     <group>
-      {/* Desk surface — high-fidelity path renders the top via
-       *  MeshReflectorMaterial so monitors, plant, mug etc. reflect onto
-       *  the desk. Low-fidelity (or reduced-motion) falls back to the
-       *  procedural brushed-metal shader. */}
-      {!useReflector ? (
-        <mesh position={[0, 0, 0]} receiveShadow castShadow material={deskMat}>
-          <boxGeometry args={[3.2, 0.08, 1.6]} />
-        </mesh>
-      ) : (
-        <>
-          {/* Body (sides/bottom) keep the procedural brushed look. */}
-          <mesh position={[0, -0.005, 0]} receiveShadow castShadow material={deskMat}>
-            <boxGeometry args={[3.2, 0.07, 1.6]} />
-          </mesh>
-          {/* Top face: thin plane on top of the body, with reflective
-           *  material. Separate plane so we only pay reflection cost on
-           *  the visible top surface, not all 6 box faces. */}
-          <mesh position={[0, 0.041, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-            <planeGeometry args={[3.2, 1.6]} />
-            <MeshReflectorMaterial
-              blur={[400, 100]}
-              resolution={512}
-              mixBlur={1}
-              mixStrength={0.35}
-              roughness={0.55}
-              depthScale={0.4}
-              minDepthThreshold={0.85}
-              maxDepthThreshold={1}
-              color="#3a3531"
-              metalness={0.55}
-              mirror={0.6}
-            />
-          </mesh>
-        </>
-      )}
+      {/* Desk surface — procedural brushed-metal shader. */}
+      <mesh position={[0, 0, 0]} receiveShadow castShadow material={deskMat}>
+        <boxGeometry args={[3.2, 0.08, 1.6]} />
+      </mesh>
       {/* Underside trim (darker edge band) */}
       <mesh position={[0, -0.05, 0]}>
         <boxGeometry args={[3.21, 0.018, 1.61]} />
