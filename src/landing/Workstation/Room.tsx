@@ -7,7 +7,6 @@ import type { TimeOfDayTint } from "./Lighting.tsx";
 
 interface RoomProps {
   tint: TimeOfDayTint;
-  lowFidelity: boolean;
   reducedMotion: boolean;
 }
 
@@ -35,8 +34,7 @@ const WALL_COLOR = "#1b1611";
 const FRAME_COLOR = "#0b0908";
 
 /** Exterior gradient + ~400 city-light specks behind the window. Gradient
- *  picks up the time-of-day tint so the view outside matches the interior
- *  warm-evening palette. */
+ *  picks up the time-of-day tint so the view outside matches the interior. */
 const ExteriorSky: React.FC<{ tint: TimeOfDayTint; reducedMotion: boolean }> = ({
   tint,
   reducedMotion,
@@ -196,7 +194,7 @@ const ExteriorSky: React.FC<{ tint: TimeOfDayTint; reducedMotion: boolean }> = (
   );
 };
 
-const Room: React.FC<RoomProps> = ({ tint, lowFidelity, reducedMotion }) => {
+const Room: React.FC<RoomProps> = ({ tint, reducedMotion }) => {
   const wallMat = useMemo(() => {
     const mat = new THREE.MeshPhysicalMaterial({
       color: WALL_COLOR,
@@ -218,26 +216,14 @@ const Room: React.FC<RoomProps> = ({ tint, lowFidelity, reducedMotion }) => {
     []
   );
 
-  // Glass is expensive — skip transmission on low-fidelity tier.
   const glassMat = useMemo(
     () =>
-      lowFidelity
-        ? new THREE.MeshBasicMaterial({
-            color: "#ffffff",
-            transparent: true,
-            opacity: 0.04,
-          })
-        : new THREE.MeshPhysicalMaterial({
-            color: "#ffffff",
-            roughness: 0.05,
-            metalness: 0,
-            transmission: 0.95,
-            thickness: 0.04,
-            ior: 1.45,
-            envMapIntensity: 1.0,
-            transparent: true,
-          }),
-    [lowFidelity]
+      new THREE.MeshBasicMaterial({
+        color: "#ffffff",
+        transparent: true,
+        opacity: 0.04,
+      }),
+    []
   );
 
   return (
