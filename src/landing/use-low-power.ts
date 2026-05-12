@@ -47,6 +47,36 @@ export function useDocumentHidden(): boolean {
   return hidden;
 }
 
+/** True when the viewport width is ≤ 800 px (the Hall's mobile camera
+ *  framing threshold). Read once at mount; the parent re-renders on
+ *  resize via `useViewportAspect` if it needs a live value. */
+export function isMobileViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth <= 800;
+}
+
+type FidelityMode = "auto" | "low" | "high";
+
+/** Master's "simplify-fx" PR locked the runtime to always-low fidelity to
+ *  avoid the perf cliff on consumer GPUs. This stub preserves the
+ *  `useFidelityMode` API the Hall consumes (lowFidelity flag + mode +
+ *  setMode + reportFps) but with the mode pinned to `"low"` so callers
+ *  unconditionally render in the cheaper path. setMode + reportFps are
+ *  intentional no-ops. */
+export function useFidelityMode(): {
+  lowFidelity: boolean;
+  mode: FidelityMode;
+  setMode: (m: FidelityMode) => void;
+  reportFps: (fps: number) => void;
+} {
+  return {
+    lowFidelity: true,
+    mode: "low",
+    setMode: () => {},
+    reportFps: () => {},
+  };
+}
+
 /** Tracks the viewport aspect ratio (width / height) and re-renders on
  *  resize / orientationchange. Used to swap the 3D camera pose between
  *  landscape and portrait framings. */
