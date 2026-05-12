@@ -38,11 +38,12 @@ HUB_COLLECTION = "Hub"
 SLAB_NAME = "hub-wall-slab"
 FRAME_NAME = "hub-wall-frame"
 
-PANEL_WIDTH = 3.0     # hex edge length — fits exactly between adjacent columns
-PANEL_HEIGHT = 1.0    # parapet height; alcove arches stay visible above
-PANEL_THICKNESS = 0.08
-FRAME_THICKNESS = 0.04  # how far brass bars protrude from the +Y face
-FRAME_WIDTH = 0.06      # cross-section of each brass bar
+PANEL_WIDTH = 14.0     # hex edge length at HALL_HUB_RADIUS=14 → 2·14·sin(π/6) = 14m
+PANEL_HEIGHT = 5.0     # parapet height — doubled with the scale; still well
+                        # below the alcove arches (18m) so openings stay visible
+PANEL_THICKNESS = 0.36
+FRAME_THICKNESS = 0.16  # how far brass bars protrude from the +Y face
+FRAME_WIDTH = 0.28      # cross-section of each brass bar
 
 
 def _get_or_create_collection(name: str) -> bpy.types.Collection:
@@ -107,7 +108,7 @@ def build_wall(
         scale=(width, thickness, height),
     )
     bevel = slab.modifiers.new(name="EdgeBevel", type="BEVEL")
-    bevel.width = 0.015
+    bevel.width = 0.04
     bevel.segments = 2
     bevel.limit_method = "ANGLE"
     bevel.angle_limit = math.radians(30)

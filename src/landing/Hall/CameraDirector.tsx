@@ -3,7 +3,40 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import {
+  HALL_CEILING_HEIGHT,
+  HALL_OUTER_WALL_RADIUS,
+} from "../sections.ts";
 import type { HallTargetId, HallTargetPose } from "../sections.ts";
+
+// Session 20 camera containment cylinder. Camera position is clamped to:
+//   horizontal r ≤ CAMERA_MAX_R   (just inside the outer wall so the user
+//                                   can fly the full plaza but not punch
+//                                   through the enclosure)
+//   y ∈ [CAMERA_MIN_Y, CAMERA_MAX_Y]  (above the floor, below the dome)
+//
+// The clamp fires after every camera.position update, so wheel-zoom +
+// drag-orbit + idle-drift + waypoint flies all respect the same volume.
+// Phase 9: relaxed from `HALL_ALCOVE_RADIUS - 0.5` (29.5 m) to
+// `HALL_OUTER_WALL_RADIUS - 0.5` (39.5 m) so the camera can roam the
+// alcove ring + reach the new outer wall without being clamped short.
+const CAMERA_MAX_R = HALL_OUTER_WALL_RADIUS - 0.5;   // 39.5 m
+const CAMERA_MIN_Y = 0.6;                            // eye level above floor
+const CAMERA_MAX_Y = HALL_CEILING_HEIGHT - 1.0;      // 27 m (below dome interior)
+
+/** Clamp `position` to the containment cylinder in-place. */
+function clampToCylinder(position: THREE.Vector3): void {
+  const horizontalR = Math.sqrt(
+    position.x * position.x + position.z * position.z
+  );
+  if (horizontalR > CAMERA_MAX_R && horizontalR > 1e-6) {
+    const scale = CAMERA_MAX_R / horizontalR;
+    position.x *= scale;
+    position.z *= scale;
+  }
+  if (position.y < CAMERA_MIN_Y) position.y = CAMERA_MIN_Y;
+  if (position.y > CAMERA_MAX_Y) position.y = CAMERA_MAX_Y;
+}
 
 interface CameraDirectorProps {
   /** Resolved table of every named target the camera can fly to. */
@@ -33,10 +66,21 @@ const DRAG_SENS_TOUCH = 0.008;
 const DRAG_THRESHOLD_PX = 3;
 
 const DEG = Math.PI / 180;
-const HUB_PHI_MIN = Math.PI / 2 - 50 * DEG;
-const HUB_PHI_MAX = Math.PI / 2 + 15 * DEG;
+// Widened from ±50°/+15° to ±75°/+35° so the user can look nearly straight
+// up at the new 14 m dome lattice and still tilt 35° down at the floor.
+const HUB_PHI_MIN = Math.PI / 2 - 75 * DEG;
+const HUB_PHI_MAX = Math.PI / 2 + 35 * DEG;
 const ALCOVE_YAW_LIMIT = 15 * DEG;
 const ALCOVE_PITCH_LIMIT = 10 * DEG;
+
+// Wheel-zoom bounds: multiplied onto the canonical pose's spherical radius.
+// Session 20 relaxed the upper bound from 1.6 to 3.0 — the user can now
+// dolly out past the column ring to see the full plaza, while the camera
+// containment cylinder below stops escapes past the alcove ring.
+const ZOOM_MIN = 0.40;
+const ZOOM_MAX = 3.00;
+const ZOOM_SENS = 0.0015;
+const ZOOM_DAMP_RATE = 7;
 
 /** cubic ease-in-out — feels more cinematic than smoothstep at this duration. */
 function cubicInOut(t: number): number {
@@ -124,6 +168,11 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     pointerId: -1,
     pointerType: "" as "mouse" | "touch" | "pen" | "",
   });
+  // Wheel zoom — `target` is what the wheel writes to; `current` damps toward
+  // `target` each frame for a smooth in/out feel. Reset to 1.0 on every fly
+  // so jumping to a new target lands at its canonical distance, then idle
+  // frames let the user re-zoom.
+  const zoomRef = useRef({ target: 1.0, current: 1.0 });
 
   const targetPose = targets[active];
 
@@ -204,17 +253,22 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
 
     // Reset orbit offsets so the destination is the canonical pose.
     orbitRef.current = { idleYaw: 0, userYaw: 0, userPitch: 0 };
+    // Snap the wheel-zoom back to canonical on every new fly.
+    zoomRef.current = { target: 1.0, current: 1.0 };
     // Drop any in-flight drag — fly takes priority.
     dragRef.current.active = false;
     dragRef.current.moved = false;
   }, [active, hardCut, flyDuration, targets, camera, targetPose, flyWaypoints]);
 
-  // Pointer-based drag-to-orbit. Listens on the WebGL canvas, in the capture
-  // phase so a confirmed drag can suppress R3F's subsequent click event.
+  // Pointer-based drag-to-orbit + wheel-to-zoom + grab/grabbing cursor hint.
+  // Listens on the WebGL canvas, in the capture phase so a confirmed drag
+  // can suppress R3F's subsequent click event.
   useEffect(() => {
     if (!dragEnabled) return;
     const el = gl.domElement;
     const drag = dragRef.current;
+    // Cursor affordance — only for mouse pointers (touch has no cursor).
+    el.style.cursor = "grab";
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -227,11 +281,24 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
       drag.startUserPitch = orbitRef.current.userPitch;
       drag.pointerId = e.pointerId;
       drag.pointerType = e.pointerType as "mouse" | "touch" | "pen";
+      if (e.pointerType === "mouse") el.style.cursor = "grabbing";
       try {
         el.setPointerCapture(e.pointerId);
       } catch {
         /* setPointerCapture can throw if pointer is not captureable; ignore */
       }
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (animRef.current.active) return;
+      // Prevent page scroll while zooming the scene.
+      e.preventDefault();
+      const z = zoomRef.current;
+      z.target = THREE.MathUtils.clamp(
+        z.target + e.deltaY * ZOOM_SENS,
+        ZOOM_MIN,
+        ZOOM_MAX
+      );
     };
 
     const applyDrag = (e: PointerEvent) => {
@@ -278,6 +345,7 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
       drag.active = false;
       drag.moved = false;
       drag.pointerId = -1;
+      if (e.pointerType === "mouse") el.style.cursor = "grab";
       try {
         el.releasePointerCapture(e.pointerId);
       } catch {
@@ -293,11 +361,15 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     el.addEventListener("pointermove", onPointerMove, { capture: true });
     el.addEventListener("pointerup", onPointerUp, { capture: true });
     el.addEventListener("pointercancel", onPointerUp, { capture: true });
+    // `passive: false` so we can preventDefault() and stop the page scroll.
+    el.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       el.removeEventListener("pointerdown", onPointerDown, { capture: true } as EventListenerOptions);
       el.removeEventListener("pointermove", onPointerMove, { capture: true } as EventListenerOptions);
       el.removeEventListener("pointerup", onPointerUp, { capture: true } as EventListenerOptions);
       el.removeEventListener("pointercancel", onPointerUp, { capture: true } as EventListenerOptions);
+      el.removeEventListener("wheel", onWheel);
+      el.style.cursor = "";
     };
   }, [gl, dragEnabled, active, targets]);
 
@@ -356,6 +428,16 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     tmpSph.theta += orbit.idleYaw + orbit.userYaw;
     tmpSph.phi += orbit.userPitch;
 
+    // Smoothly approach the wheel-zoom target and apply it to the radius.
+    const zoom = zoomRef.current;
+    zoom.current = THREE.MathUtils.damp(
+      zoom.current,
+      zoom.target,
+      ZOOM_DAMP_RATE,
+      delta
+    );
+    tmpSph.radius *= zoom.current;
+
     if (active === "hub") {
       tmpSph.phi = THREE.MathUtils.clamp(tmpSph.phi, HUB_PHI_MIN, HUB_PHI_MAX);
     } else {
@@ -374,6 +456,16 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     tmpLook.set(pose.lookAt[0], pose.lookAt[1], pose.lookAt[2]);
     tmpA.setFromSpherical(tmpSph);
     camera.position.copy(tmpLook).add(tmpA);
+
+    // Containment cylinder — Session 20. Keeps the camera inside the
+    // outer wall + above the floor + below the dome so the user can
+    // never see outside the architectural envelope while orbiting.
+    // Skip the clamp when the canonical pose itself is outside the
+    // cylinder (intro door pose at radius 73, boot pose high above) so
+    // scripted prologue poses aren't yanked back inside the hub.
+    const poseR = Math.hypot(pose.position[0], pose.position[2]);
+    if (poseR <= CAMERA_MAX_R) clampToCylinder(camera.position);
+
     lookAtRef.current.copy(tmpLook);
     camera.lookAt(tmpLook);
   });

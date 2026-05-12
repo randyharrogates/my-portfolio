@@ -1,0 +1,42 @@
+{
+  "$schema": "boot-path-v1",
+  "generated": "2026-05-12",
+  "description": "Multi-waypoint camera path for the Hall first-load boot fly. CameraDirector.tsx walks these in order, flying via B-spline arc between each. Final waypoint blends into HALL_HUB_POSE. Phase 9 added the boot-corridor waypoint to traverse the extended 30 m entry hallway.",
+  "waypoints": [
+    {
+      "id": "boot-start",
+      "position": [0, 44, 52],
+      "lookAt": [0, 4, 0],
+      "fov": 56,
+      "dwellMs": 0
+    },
+    {
+      "id": "boot-corridor",
+      "position": [0, 6, 68],
+      "lookAt": [0, 4, 30],
+      "fov": 48,
+      "dwellMs": 1400
+    },
+    {
+      "id": "boot-descent",
+      "position": [18, 22, 34],
+      "lookAt": [-4, 6, -8],
+      "fov": 54,
+      "dwellMs": 1100
+    },
+    {
+      "id": "boot-sweep",
+      "position": [12, 10, 16],
+      "lookAt": [0, 6, 0],
+      "fov": 52,
+      "dwellMs": 900
+    },
+    {
+      "id": "boot-settle",
+      "position": [0, 8, 22],
+      "lookAt": [0, 6, 0],
+      "fov": 52,
+      "dwellMs": 0
+    }
+  ]
+}

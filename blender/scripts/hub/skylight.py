@@ -37,10 +37,10 @@ HUB_COLLECTION = "Hub"
 RING_NAME = "hub-skylight-ring"
 DISC_NAME = "hub-skylight-disc"
 
-OUTER_RADIUS = 0.72
-INNER_RADIUS = 0.52
-RING_THICKNESS = 0.06
-DISC_RADIUS = 0.48  # slightly smaller than INNER_RADIUS for clean nesting
+OUTER_RADIUS = 2.90  # Session 20: 2× re-scale (was 1.45)
+INNER_RADIUS = 2.10  # was 1.05
+RING_THICKNESS = 0.28  # was 0.14
+DISC_RADIUS = 1.90   # slightly smaller than INNER_RADIUS for clean nesting (was 0.95)
 
 
 def _get_or_create_collection(name: str) -> bpy.types.Collection:
@@ -115,7 +115,7 @@ def build_skylight(
 
     ring = _build_hex_ring(RING_NAME, outer_radius, inner_radius, thickness)
     bevel = ring.modifiers.new(name="EdgeBevel", type="BEVEL")
-    bevel.width = 0.008
+    bevel.width = 0.018
     bevel.segments = 2
     bevel.limit_method = "ANGLE"
     bevel.angle_limit = math.radians(30)

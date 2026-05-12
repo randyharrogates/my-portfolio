@@ -1,0 +1,121 @@
+/** @format */
+
+.hall-loader {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    #1a1432 0%,
+    #0a0716 55%,
+    #06040d 100%
+  );
+  color: #f4c98a;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+/* Faint hexagonal halo behind the triangles. */
+.hall-loader::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 240px;
+  height: 240px;
+  margin-top: -120px;
+  margin-left: -120px;
+  border: 1px solid rgba(244, 201, 138, 0.16);
+  border-radius: 50%;
+  box-shadow: 0 0 60px rgba(244, 201, 138, 0.08) inset;
+  animation: hall-loader-halo 4.2s ease-in-out infinite;
+}
+
+.hall-loader__ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 36px;
+  animation: hall-loader-spin 12s linear infinite;
+}
+
+.hall-loader__tri {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  margin-left: -10px;
+  margin-top: -8px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 16px solid #e8b45a;
+  transform-origin: 50% 60px;
+  filter: drop-shadow(0 0 6px rgba(232, 180, 90, 0.55));
+  animation: hall-loader-pulse 1.08s ease-in-out infinite;
+}
+
+.hall-loader__label {
+  font-size: 11px;
+  color: #c79a64;
+  opacity: 0.78;
+  animation: hall-loader-label 2.6s ease-in-out infinite;
+}
+
+@keyframes hall-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hall-loader-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    filter: drop-shadow(0 0 6px rgba(232, 180, 90, 0.35));
+  }
+  45% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(244, 201, 138, 0.95));
+  }
+}
+
+@keyframes hall-loader-halo {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes hall-loader-label {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-loader__ring,
+  .hall-loader__tri,
+  .hall-loader::before,
+  .hall-loader__label {
+    animation: none;
+  }
+  .hall-loader__tri {
+    opacity: 0.85;
+  }
+}

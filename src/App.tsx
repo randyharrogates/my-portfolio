@@ -16,6 +16,11 @@ import Skills from "./pages/Skills.tsx";
 import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
 import Resume from "./pages/Resume.tsx";
+// Eager-loaded loader (not lazy) — it's the Suspense fallback for the
+// lazy HallLanding chunk so it must already be present in the main bundle.
+// CSS module weight is ~1 KB gzipped, so this trade-off is essentially
+// free relative to the 3D bundle weight that the loader is bridging.
+import HallLoader from "./landing/Hall/HallLoader.tsx";
 
 // Lazy-load the canvases so R3F doesn't bloat the main bundle.
 const AmbientCanvas = React.lazy(
@@ -62,7 +67,7 @@ const TerminalApp: React.FC = () => {
   // Phase 7; becomes the default landing at Phase 8.
   if (isHallPath) {
     return (
-      <Suspense fallback={<div style={{ background: "#0a0d10", height: "100vh" }} />}>
+      <Suspense fallback={<HallLoader />}>
         <HallLanding />
       </Suspense>
     );
