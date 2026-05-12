@@ -112,7 +112,7 @@ const HallLanding: React.FC = () => {
   const [phase, setPhase] = useState<HallPhase>(() => {
     if (reducedMotion || mobile || isDeepLink) return "interactive";
     try {
-      return localStorage.getItem(ENTERED_KEY) === "1"
+      return sessionStorage.getItem(ENTERED_KEY) === "1"
         ? "interactive"
         : "intro";
     } catch {
@@ -120,32 +120,80 @@ const HallLanding: React.FC = () => {
     }
   });
 
-  // Boot sequence: first visit only, fly camera from BOOT_POSE to HUB. Only
-  // applies on the normal (non-intro) path — the door intro replaces the
-  // bird's-eye fly for first-time visitors.
+  // Boot sequence: first visit only, fly camera from BOOT_POSE through a
+  // multi-waypoint path → HUB. Phase 8 polish: instead of a single arc,
+  // we sequence through 4 waypoints loaded from `/data/hall-boot-path.json`
+  // so the boot fly reads as a cinematic descent rather than a snap.
+  // Only applies on the normal (non-intro) path — the door intro replaces
+  // the bird's-eye fly for first-time visitors.
   const [bootStarting, setBootStarting] = useState<boolean>(() => {
     if (reducedMotion || mobile) return false;
     if (phase !== "interactive") return false;
     try {
-      return localStorage.getItem(BOOT_KEY) !== "1";
+      return sessionStorage.getItem(BOOT_KEY) !== "1";
     } catch {
       return false;
     }
   });
+  const [bootWaypoint, setBootWaypoint] = useState<HallTargetPose | null>(null);
+  const bootPathRef = useRef<HallTargetPose[] | null>(null);
   useEffect(() => {
     if (!bootStarting) return;
     try {
-      localStorage.setItem(BOOT_KEY, "1");
+      sessionStorage.setItem(BOOT_KEY, "1");
     } catch {
       /* ignore */
     }
-    // After 250ms (Canvas has mounted + initial render), kick the fly.
-    const t = setTimeout(() => {
-      setActive((curr) => (curr === "hub" ? "hub" : curr));
-      setBootStarting(false);
-      setTransitionEpoch((x) => x + 1);
-    }, 250);
-    return () => clearTimeout(t);
+    let canceled = false;
+    const dwellsRef = { current: [] as number[] };
+
+    fetch(`${process.env.PUBLIC_URL}/data/hall-boot-path.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg: { waypoints?: Array<{ position: number[]; lookAt: number[]; fov?: number; dwellMs?: number }> } | null) => {
+        if (canceled || !cfg?.waypoints?.length) {
+          // Fallback: single fly from BOOT to HUB (the old behaviour).
+          setBootStarting(false);
+          setTransitionEpoch((x) => x + 1);
+          return;
+        }
+        const path = cfg.waypoints.map<HallTargetPose>((w) => ({
+          position: [w.position[0], w.position[1], w.position[2]],
+          lookAt: [w.lookAt[0], w.lookAt[1], w.lookAt[2]],
+          fov: w.fov,
+        }));
+        dwellsRef.current = cfg.waypoints.map((w) => w.dwellMs ?? 1000);
+        bootPathRef.current = path;
+        // Step through waypoints starting at index 1 — index 0 is the
+        // initial camera pose (BOOT_POSE), no fly needed there.
+        let i = 1;
+        const step = (): void => {
+          if (canceled) return;
+          if (i >= path.length) {
+            // Final waypoint reached. Clear boot state — the camera
+            // now rests at HALL_HUB_POSE (last waypoint matches).
+            setBootWaypoint(null);
+            setBootStarting(false);
+            setTransitionEpoch((x) => x + 1);
+            return;
+          }
+          setBootWaypoint(path[i]);
+          setTransitionEpoch((x) => x + 1);
+          const dwell = dwellsRef.current[i] ?? 1100;
+          i += 1;
+          setTimeout(step, dwell);
+        };
+        // Slight delay so Canvas + initial render complete before the
+        // first fly kicks off.
+        setTimeout(step, 250);
+      })
+      .catch(() => {
+        setBootStarting(false);
+        setTransitionEpoch((x) => x + 1);
+      });
+
+    return () => {
+      canceled = true;
+    };
   }, [bootStarting]);
 
   // Door fly waypoints — only populated while phase === "entering".
@@ -170,8 +218,8 @@ const HallLanding: React.FC = () => {
     const t = setTimeout(() => {
       setPhase("interactive");
       try {
-        localStorage.setItem(ENTERED_KEY, "1");
-        localStorage.setItem(BOOT_KEY, "1");
+        sessionStorage.setItem(ENTERED_KEY, "1");
+        sessionStorage.setItem(BOOT_KEY, "1");
       } catch {
         /* ignore */
       }
@@ -278,9 +326,15 @@ const HallLanding: React.FC = () => {
   // dropped and the camera rests at the real hub pose.
   const effectiveTargets = useMemo(() => {
     if (phase === "intro") return { ...targets, hub: HALL_DOOR_POSE };
-    if (bootStarting) return { ...targets, hub: HALL_BOOT_POSE };
+    if (bootStarting) {
+      // While the boot fly is running, point the "hub" target at the
+      // current waypoint so CameraDirector flies the camera there. The
+      // boot sequencer advances waypoints via setBootWaypoint.
+      const dest = bootWaypoint ?? HALL_BOOT_POSE;
+      return { ...targets, hub: dest };
+    }
     return targets;
-  }, [phase, bootStarting, targets]);
+  }, [phase, bootStarting, bootWaypoint, targets]);
 
   const initialCameraPosition = useMemo<[number, number, number]>(() => {
     if (phase === "intro") return HALL_DOOR_POSE.position;
@@ -292,7 +346,7 @@ const HallLanding: React.FC = () => {
     phase === "entering"
       ? INTRO_FLY_DURATION
       : bootStarting
-      ? 0
+      ? 1.0  // per-waypoint duration during the multi-step boot fly
       : 1.2;
 
   const dprCap: [number, number] = mobile ? [1, 1] : [1, 1.25];
@@ -300,7 +354,7 @@ const HallLanding: React.FC = () => {
   return (
     <div className="hall-scene" role="main">
       <Canvas
-        shadows={!lowFidelity}
+        shadows={false}
         dpr={dprCap}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         camera={{

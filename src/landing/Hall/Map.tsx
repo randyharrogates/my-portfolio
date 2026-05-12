@@ -19,8 +19,10 @@ interface MapProps {
 const MAP_SIZE = 360; // px square
 
 function projectToMap(x: number, z: number, mapSize: number): [number, number] {
-  // Scene radius covers ≈10 world units; map to [0, mapSize].
-  const sceneRadius = 9;
+  // Scene radius scaled for the Phase 2.5 cathedral hub: alcoves now sit at
+  // 15 m (was 7 m pre-rescale). Use 17 m so the alcove tiles project
+  // comfortably inside the map gutter with a small visual margin.
+  const sceneRadius = 17;
   const half = mapSize / 2;
   const px = half + (x / sceneRadius) * half * 0.85;
   // -Z in world → up in map.

@@ -33,7 +33,8 @@ BASE_NAME = "hub-column-base"
 SHAFT_NAME = "hub-column-shaft"
 CAPITAL_NAME = "hub-column-capital"
 
-CEILING_HEIGHT = 5.5  # mirrors HALL_CEILING_HEIGHT in src/landing/sections.ts
+CEILING_HEIGHT = 28.0  # mirrors HALL_CEILING_HEIGHT in src/landing/sections.ts
+                        # (Session 20 re-scale: 14 → 28 — open-plaza height)
 
 
 def _get_or_create_collection(name: str) -> bpy.types.Collection:
@@ -142,34 +143,38 @@ def _join_pieces(pieces: list[bpy.types.Object], final_name: str) -> bpy.types.O
     return joined
 
 
-# Tiered ornament profiles — five hex layers per part with alternating
-# 30°/0° rotation between layers, giving a stepped "stairstep hex" silhouette
-# that reads as carved ornament without leaving procedural-placeholder territory.
-# Tuples are: (z_offset_from_part_base, height, radius, rotation_deg).
+# Tiered ornament profiles — five layers per part with alternating
+# 30°/0° rotation between layers, giving a stepped silhouette that reads
+# as carved ornament. Tuples are (z_offset_from_part_base, height, radius,
+# rotation_deg). Phase 9 reference realignment: slimmed to match the new
+# 0.80→0.60 shaft and 8-sided cross-section. Base sum = 1.6 (matches
+# base_height); capital sum = 1.8 (matches capital_height). Max radii kept
+# to ~1.5× shaft radius so the column reads as a sentinel post, not a
+# bulky pillar.
 BASE_TIER_PROFILE: list[tuple[float, float, float, float]] = [
-    (0.00, 0.08, 0.52, 30.0),   # plinth
-    (0.08, 0.07, 0.45, 0.0),    # lower torus (alt rotation)
-    (0.15, 0.08, 0.42, 30.0),   # middle
-    (0.23, 0.07, 0.45, 0.0),    # upper torus (alt rotation)
-    (0.30, 0.10, 0.40, 30.0),   # apophyge — transition to shaft bottom
+    (0.00, 0.32, 1.20, 22.5),   # plinth — wide flat foot
+    (0.32, 0.28, 1.04, 0.0),    # lower torus (alt rotation)
+    (0.60, 0.32, 0.96, 22.5),   # middle
+    (0.92, 0.28, 1.04, 0.0),    # upper torus (alt rotation)
+    (1.20, 0.40, 0.80, 22.5),   # apophyge — transitions to shaft bottom radius
 ]
 CAPITAL_TIER_PROFILE: list[tuple[float, float, float, float]] = [
-    (0.00, 0.12, 0.36, 30.0),   # neck — transition from shaft top
-    (0.12, 0.13, 0.46, 0.0),    # lower band (alt rotation)
-    (0.25, 0.18, 0.42, 30.0),   # echinus — narrower middle
-    (0.43, 0.15, 0.50, 0.0),    # upper band (alt rotation)
-    (0.58, 0.12, 0.54, 30.0),   # abacus — top slab
+    (0.00, 0.30, 0.60, 22.5),   # neck — transitions from shaft top radius
+    (0.30, 0.32, 0.88, 0.0),    # lower band (alt rotation)
+    (0.62, 0.46, 0.78, 22.5),   # echinus — narrower middle
+    (1.08, 0.38, 0.98, 0.0),    # upper band (alt rotation)
+    (1.46, 0.34, 1.10, 22.5),   # abacus — top slab
 ]
 
 
 def build_column(
-    base_height: float = 0.4,
-    shaft_radius_bottom: float = 0.36,
-    shaft_radius_top: float = 0.28,
-    capital_height: float = 0.7,
-    ornament_bevel: float = 0.015,
+    base_height: float = 1.6,
+    shaft_radius_bottom: float = 0.80,
+    shaft_radius_top: float = 0.60,
+    capital_height: float = 1.8,
+    ornament_bevel: float = 0.08,
     ceiling_height: float = CEILING_HEIGHT,
-    sides: int = 6,
+    sides: int = 8,
 ) -> tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object]:
     """Build a single brass column at the origin: ornamented tiered base +
     tapered shaft + ornamented tiered capital.
@@ -210,7 +215,9 @@ def build_column(
         radius_bottom=shaft_radius_bottom,
         radius_top=shaft_radius_top,
         sides=sides,
-        rotation_deg=30.0,
+        # Half-face offset so the shaft aligns with the rotated base+capital
+        # tiers above and below. 6 sides → 30°; 8 sides → 22.5°.
+        rotation_deg=(360.0 / sides) / 2.0,
     )
     _move_to_collection(shaft, hub)
 

@@ -1,12 +1,19 @@
 /** @format */
 
 import React from "react";
+import { Environment } from "@react-three/drei";
 import Hub from "./Hub.tsx";
 import { Alcoves } from "./Alcove.tsx";
 import Atmosphere from "./Atmosphere.tsx";
 import Lighting from "./Lighting.tsx";
 import Entrance from "./Entrance.tsx";
 import type { SectionId } from "../sections.ts";
+
+// Session 22: custom Wakandan-dusk HDRI baked via
+// `blender/scripts/atmo/skybox-bake.py`. Deep navy zenith → warm
+// magenta horizon band → amber sun glow → dark base. Replaces the
+// previous Drakensberg mountain photo for a cinematic dusk feel.
+const VISTA_HDRI = `${process.env.PUBLIC_URL}/hdri/hall-vista.hdr`;
 
 interface SceneProps {
   hoveredId: SectionId | null;
@@ -36,8 +43,27 @@ const Scene: React.FC<SceneProps> = ({
 }) => {
   return (
     <>
-      <fog attach="fog" args={["#0a1014", 8, 28]} />
-      <color attach="background" args={["#06090b"]} />
+      {/* Session 26 daylight Drakensberg HDRI as both scene background AND
+          IBL. backgroundIntensity 0.65 keeps the daylight punchy through
+          the arched windows without blowing out the highlights;
+          environmentIntensity 0.55 keeps the interior cool + dim —
+          matching the reference's dramatic interior/exterior contrast. */}
+      {!lowFidelity && (
+        <Environment
+          files={VISTA_HDRI}
+          background
+          backgroundBlurriness={0.08}
+          backgroundIntensity={0.65}
+          environmentIntensity={0.55}
+        />
+      )}
+      {/* Fallback for low-fidelity mode where Environment is skipped — solid
+          cool grey so the dome glass doesn't render against transparent. */}
+      {lowFidelity && <color attach="background" args={["#5a6b7a"]} />}
+      {/* Cool atmospheric haze fog matching the daylight palette; far pushed
+       *  past the outer wall + 30 m corridor so they stay readable from the
+       *  boot pose. */}
+      <fog attach="fog" args={["#8090a0", 22, 90]} />
       <Lighting lowFidelity={lowFidelity} />
       <Hub />
       <Alcoves
