@@ -80,21 +80,47 @@ The `/hall` archipelago landmarks (house, satellite, waterfall, tree, garden, en
 2. For each, confirm it is part of a bake group (its material reads from a baked image texture, not a flat colour or procedural shader).
 3. If any new mesh lacks a bake, group it with peers (or bake it alone in a neutral hemisphere) before exporting. Do not export with flat-colour holes in the scene.
 
-## /hall water + river pipeline — TSL displacement, not VAT (locked 2026-05-14)
+## /hall quality bar — Witcher 2-tier for every asset (HARD RULE, locked 2026-05-14)
 
-**Rule:** every animated fluid in `/hall` (rivers, waterfalls, lava, fountains, foam) is a TSL-displaced high-poly mesh driven by FLIP-baked flow-direction + foam-mask textures. **No VAT, no pre-rendered video billboards.** The video-billboard approach was experimentally proven wrong (commit `9c0cc19` then reverted): flat panels read as ads in an orbital 3D scene. VAT was considered but rejected — at the `/hall` orbit camera distance (~30m), its only meaningful advantages (per-frame topology change, true splash chaos) are imperceptible, and the Blender→fixed-topology pipeline doesn't exist (Houdini has it, Blender doesn't), meaning 3-5 days of custom tooling for an invisible quality gain.
+**Rule:** every `/hall` asset must target **stylized-photoreal "Witcher 2-tier" quality** within WebGPU's browser ceiling. This applies to water (river, waterfall, pond), rocks, trees, foliage, soil, landmark assets, lighting, atmosphere. No stylised shortcuts that ship faster.
 
-**Authoring loop per water feature:**
-1. Author the mesh in Blender at 5-15k verts (dense enough that vertex-level displacement reads smooth).
-2. Run a **one-shot** FLIP fluid sim (resolution 48-64, doesn't need to be long — we throw away the per-frame mesh, we only want the velocity field + particle density).
-3. Bake the FLIP velocity field to a flow-direction texture (RG channels = local flow vector). Bake particle density to a foam-mask texture. Both ~2048×512 along the feature's length.
-4. Export mesh + textures as a standard GLB.
-5. In the corresponding `*.tsx`, write a TSL shader that:
-   - Samples the flow texture to find U-scroll direction at each vertex
-   - Layers 2-3 scrolling normal maps at different scales for surface detail
-   - Adds Gerstner wave perturbation in the flow direction
-   - Emits foam where the foam-mask is high
-6. For waterfall splash zones (where TSL alone reads "smudged"), supplement with TSL-instanced particle droplets — also runtime, also cheap.
+**The browser-imposed ceiling is honest:** WebGPU + Mac + Chrome can't reach Witcher 3 PS5-tier (no real volumetric fog, no SSR, no tessellation, no PCSS soft shadows, ~500 MB total texture budget). The realistic ceiling is **Witcher 2 max-settings on PC, circa 2011.** That's the bar. Anything less is wrong.
+
+User explicitly authorised 4-6 months of work for this ambition on 2026-05-14. Do not propose "stylised approximations" or "cheap variants" as primary options — they were rejected.
+
+## /hall aesthetic — Wakandan-vibranium (locked 2026-05-14)
+
+The aesthetic is **photoreal-natural ground + neon-magenta-cyan dusk sky + vibranium emissive accents on landmarks**. This is the Wakandan-futuristic frame from the original Hall pitch (`project_hall_redesign.md` in user memory), course-correcting from the recent drift into pure synthwave.
+
+- **Sky stays neon** — magenta `#ff5fa8` directional + cyan `#5feaff` rim + magenta-purple horizon gradient (the current Lighting.tsx + Skybox.tsx). Don't touch this.
+- **Ground becomes photoreal-natural** — rocks ship with full PBR texture sets (basecolor + normal + roughness + AO from Polyhaven or equivalent), water is real FLIP-baked geometry via VAT, trees use branch geometry + bark + leaf cards (not stylised cones), soil/moss reads as real surfaces.
+- **Vibranium accents** — cyan/magenta emissive veins, runes, glowing minerals, animated emissive scrolling on the landmarks (forge has cyan-glowing seams, mecha has magenta terminal screens, etc.). The neon palette becomes accent lighting on otherwise-photoreal materials, not the surface treatment itself.
+
+Reference frames that hold visual coherence: Wakanda Forever Talokan kingdom, Avatar Pandora, Annihilation's shimmer zone. NOT Cyberpunk 2077 (which is fully neon) and NOT Witcher 3 (which has no neon at all).
+
+## /hall water pipeline — VAT, not TSL displacement (REVISED 2026-05-14 evening)
+
+**The earlier TSL-only direction is partially reversed.** I told you 2026-05-14 morning that TSL displacement + procedural flow was 90% as good as VAT. User pushed back honestly when shown the gap to the Witcher 3 reference — the TSL placeholder (commit `188fb04`) delivers ~15% of the target quality.
+
+**Updated rule:** animated water surfaces (waterfall, river, pond ripples, fountains) use **VAT (vertex animation texture) from real FLIP fluid bakes**. TSL is reserved for non-fluid effects (wind on trees, scrolling emissive on lava, fresnel rim on vibranium accents).
+
+**The VAT pipeline (custom tooling — we are building this):**
+1. Author a high-tessellation base mesh in Blender (5-15k verts, the static topology that VAT animates).
+2. Run a real FLIP fluid simulation at resolution 96-128 over a 3-6s loop. This is the motion source-of-truth.
+3. Mesh-remap each FLIP frame's variable-topology surface to the fixed base mesh. Options: ray-projection (cast each base vertex along normal to hit the FLIP surface), shrinkwrap modifier per-frame, or grid-aligned mesh from `mesh_smoothen_pos`.
+4. Bake per-frame vertex positions to an RGBA16F texture. Width = padded vertex count, Height = frame count. Format = relative-to-origin positions. Final ~5-15 MB per asset.
+5. Export the static base mesh + position-texture as a GLB with a custom vertex-index attribute.
+6. TSL VAT shader on the runtime mesh: sample the position texture at `(vertexIndex/width, frame/height)`, displace, then layer foam mask + fresnel + wet shader on top.
+
+Houdini Labs `SOP_VertexAnimationTextures` is the AAA standard reference for the pipeline shape. Blender doesn't have this built-in — we are building the equivalent in Python.
+
+**Adjacent assets per water feature** (Witcher 2-tier requires more than just the VAT mesh):
+- TSL-instanced particle droplets in the splash zone
+- A planar mist mesh for haze/spray volume
+- Wet-rock shader applied to nearby static rocks (darker basecolor + lower roughness in the splash zone)
+- Multi-layered scrolling normal maps for surface micro-detail
+
+**The current TSL waterfall (commit `188fb04`) stays as a visible placeholder while the VAT pipeline is built.** It will be replaced.
 
 ## /hall master Blender file + connections.glb architecture (locked 2026-05-14)
 
