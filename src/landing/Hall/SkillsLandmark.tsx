@@ -382,6 +382,39 @@ function isRiverV2Mesh(name: string): boolean {
   return name.toLowerCase().includes("river_v2");
 }
 
+function isPoolV2Mesh(name: string): boolean {
+  return name.toLowerCase().includes("plunge_pool_v2");
+}
+
+/** Pool v2 = Cycles-baked circular plunge pool around the waterfall
+ *  foam. Static texture (no UV scroll) — the concentric ripples and
+ *  centre-foam blast are baked in, and the React-side WaterfallFoam
+ *  puffs already animate on top so the pool surface itself doesn't
+ *  need to move. */
+function buildPoolV2Material(
+  src: THREE.MeshStandardMaterial
+): MeshStandardNodeMaterial {
+  const mat = new MeshStandardNodeMaterial({
+    color: new THREE.Color(0xffffff),
+    roughness: 0.10,
+    metalness: 0.0,
+    emissive: new THREE.Color(0xffffff),
+    emissiveIntensity: 0.45,
+  });
+  if (src.map) {
+    mat.map = src.map;
+    mat.emissiveMap = src.map;
+  }
+  if (src.normalMap) {
+    mat.normalMap = src.normalMap;
+    if (src.normalScale) mat.normalScale = src.normalScale.clone();
+  }
+  if (src.roughnessMap) {
+    mat.roughnessMap = src.roughnessMap;
+  }
+  return mat;
+}
+
 function buildRiverV2Material(
   src: THREE.MeshStandardMaterial
 ): MeshStandardNodeMaterial {
@@ -454,6 +487,14 @@ function convertToNodeMaterials(root: THREE.Group) {
     // River v2: baked ribbon — UV-scrolled colour + static normal/rough.
     if (isRiverV2Mesh(mesh.name)) {
       mesh.material = buildRiverV2Material(src);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      return;
+    }
+
+    // Pool v2: baked disc around the waterfall base, static.
+    if (isPoolV2Mesh(mesh.name)) {
+      mesh.material = buildPoolV2Material(src);
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       return;
