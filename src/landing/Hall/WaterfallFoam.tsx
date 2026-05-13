@@ -37,31 +37,34 @@ interface WaterfallFoamProps {
 const WaterfallFoam: React.FC<WaterfallFoamProps> = ({ position }) => {
   const groupRef = useRef<THREE.Group>(null);
 
-  // 7 overlapping puff spheres positioned roughly in a circle at the
-  // base of the waterfall, with random sizes for the "lumpy cluster"
-  // look.
+  // 4 overlapping puff spheres positioned in a tight cluster at the
+  // base of the waterfall. Smaller + fewer than before (was 7+1) so the
+  // pool's baked centre-foam-blast reads underneath instead of being
+  // completely occluded by foam. The pool now provides the continuous
+  // foam patch via its 1024² baked colour map; these puffs are just
+  // the volumetric "impact cloud" on top.
   const puffs = useMemo(() => {
     const arr: Array<{
       pos: [number, number, number];
       radius: number;
       phaseSeed: number;
     }> = [];
-    const RING = 7;
+    const RING = 3;
     for (let i = 0; i < RING; i++) {
       const angle = (i / RING) * Math.PI * 2;
-      const ringR = 1.8 + (i % 2) * 0.4; // alternate inner/outer
+      const ringR = 0.8; // tight ring close to impact
       const x = Math.cos(angle) * ringR;
       const z = Math.sin(angle) * ringR;
-      const y = 0.1 + (i % 3) * 0.15; // varied height for organic clump
-      const radius = 1.2 + ((i * 7) % 5) * 0.15;
+      const y = 0.35 + (i % 2) * 0.18;
+      const radius = 0.65 + ((i * 7) % 4) * 0.10;
       arr.push({
         pos: [x, y, z],
         radius,
         phaseSeed: i * 0.7,
       });
     }
-    // Centre puff (sits right under the waterfall impact)
-    arr.push({ pos: [0, 0.2, 0], radius: 1.8, phaseSeed: 0.3 });
+    // Centre puff (sits right under the waterfall impact, slightly raised)
+    arr.push({ pos: [0, 0.55, 0], radius: 0.95, phaseSeed: 0.3 });
     return arr;
   }, []);
 

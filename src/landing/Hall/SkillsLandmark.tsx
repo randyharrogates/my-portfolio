@@ -386,11 +386,12 @@ function isPoolV2Mesh(name: string): boolean {
   return name.toLowerCase().includes("plunge_pool_v2");
 }
 
-/** Pool v2 = Cycles-baked circular plunge pool around the waterfall
- *  foam. Static texture (no UV scroll) — the concentric ripples and
- *  centre-foam blast are baked in, and the React-side WaterfallFoam
- *  puffs already animate on top so the pool surface itself doesn't
- *  need to move. */
+/** Pool v2 = Cycles-baked oval plunge pool spanning foam → river head
+ *  (Blender world x=-9..+3, y=-2.5..+2.5). The bake includes concentric
+ *  ripples + Voronoi caustics + a sharp centre-foam-blast peaking at
+ *  the waterfall impact point. Routed through TSL so emissiveNode kicks
+ *  the bake to ~0.65× brightness — needed to read against the dark
+ *  ground in the neon-dusk scene. */
 function buildPoolV2Material(
   src: THREE.MeshStandardMaterial
 ): MeshStandardNodeMaterial {
@@ -398,13 +399,8 @@ function buildPoolV2Material(
     color: new THREE.Color(0xffffff),
     roughness: 0.10,
     metalness: 0.0,
-    emissive: new THREE.Color(0xffffff),
-    emissiveIntensity: 0.45,
   });
-  if (src.map) {
-    mat.map = src.map;
-    mat.emissiveMap = src.map;
-  }
+
   if (src.normalMap) {
     mat.normalMap = src.normalMap;
     if (src.normalScale) mat.normalScale = src.normalScale.clone();
@@ -412,6 +408,15 @@ function buildPoolV2Material(
   if (src.roughnessMap) {
     mat.roughnessMap = src.roughnessMap;
   }
+
+  if (src.map) {
+    const colorSample = texture(src.map, uv());
+    mat.colorNode = colorSample;
+    // Emissive at 0.65 so the pool's blue + foam centre reads even when
+    // the directional rig doesn't reach the disc.
+    mat.emissiveNode = colorSample.mul(0.65);
+  }
+
   return mat;
 }
 
