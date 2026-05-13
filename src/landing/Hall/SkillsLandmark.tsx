@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
   abs,
   atan2,
@@ -25,7 +25,47 @@ import {
   uv,
   vec2,
   vec3,
+  vertexColor,
 } from "three/tsl";
+
+/** Deterministic per-vertex random colour. Same input → same output so
+ *  the same mesh always lights up the same way across reloads. Matches
+ *  AboutLandmark.tsx so the /skills bake-lit look reads the same as
+ *  /about's foliage / rocks. */
+function vertexNoiseColor(
+  seed: number,
+  amplitude: number,
+  hueDrift: number
+): THREE.Color {
+  const v = ((Math.sin(seed * 12.9898) * 43758.5453) % 1 + 1) % 1;
+  const h = ((Math.sin(seed * 7.5713) * 17439.123) % 1 + 1) % 1;
+  const value = 1.0 + (v - 0.5) * 2.0 * amplitude;
+  const drift = (h - 0.5) * 2.0 * hueDrift;
+  return new THREE.Color(value + drift, value, value - drift);
+}
+
+/** Inject per-vertex random colour into the mesh's geometry. The
+ *  material samples it via the `vertexColor()` TSL builtin and
+ *  multiplies into the base colour — single mesh, multiple shades.
+ *  Same recipe as AboutLandmark. */
+function injectVertexNoise(
+  geometry: THREE.BufferGeometry,
+  amplitude: number,
+  hueDrift: number,
+  seedOffset: number
+) {
+  const positions = geometry.getAttribute("position");
+  if (!positions) return;
+  const vertCount = positions.count;
+  const colors = new Float32Array(vertCount * 3);
+  for (let i = 0; i < vertCount; i++) {
+    const c = vertexNoiseColor(i + seedOffset, amplitude, hueDrift);
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+}
 
 const LANDMARK_GLB = `${process.env.PUBLIC_URL}/models/hall/landmarks/landmark-skills.glb`;
 useGLTF.preload(LANDMARK_GLB);
@@ -270,43 +310,73 @@ function isForgeGroupMember(name: string): boolean {
   );
 }
 
-function buildForgeMaterial(): MeshBasicNodeMaterial {
-  // Silver-grey weathered stone + patchy green moss at the base — per
-  // user 2026-05-13: terminal must read as "shades of silver and grey
-  // with green moss" not the warm-iron palette. MeshBasicNodeMaterial
-  // so the colorNode draws directly with no lighting dependency
-  // (which is what kept making the upper anvil/chimney/pedestal
-  // column read as black silhouettes against the dim scene before).
+function buildForgeMaterial(): MeshStandardNodeMaterial {
+  // Carved BLUE stone terminal with patchy green moss at the base —
+  // per user 2026-05-13. Recipe matches /about's foliage/rocks look:
+  //   - MeshStandardNodeMaterial so real scene light adds directional
+  //     shadow shading on top
+  //   - emissive baseline = colorNode × 0.40 so the surface still
+  //     reads when the dim neon-dusk lights don't reach it
+  //   - colorNode = blue palette (height gradient) + multi-octave
+  //     grain noise + moss patches
+  //   - multiplied by `vertexColor()` so the per-vertex random
+  //     noise injected in convertToNodeMaterials gives within-object
+  //     weathering variation (same trick AboutLandmark uses)
   const p = positionLocal;
 
-  // Subtle stone grain — cross-multiplied sin noise gives the silver a
-  // mottled "carved old stone" variation instead of a flat poster colour.
+  // Multi-octave grain noise: a low-freq mottle for big stone patches
+  // + a higher-freq sparkle for fine surface texture.
   const grain1 = sin(p.x.mul(4.0).add(p.z.mul(1.5)));
   const grain2 = sin(p.y.mul(3.2).add(p.x.mul(2.1)));
-  const grainRaw = grain1.add(grain2).mul(0.25).add(0.5);
-  const grainShade = grainRaw.sub(0.5).mul(0.18);
+  const grain3 = sin(p.x.mul(11.0).add(p.z.mul(7.0)).add(p.y.mul(3.0)));
+  const grainCoarse = grain1.add(grain2).mul(0.25).add(0.5);
+  const grainFine = grain3.mul(0.15).add(0.5);
+  const grainShade = grainCoarse.mul(0.7).add(grainFine.mul(0.3))
+    .sub(0.5).mul(0.30);
 
-  // Moss mask: peaks at the BASE (low local Y) and patchy via a second
-  // noise so the moss reads as clumps growing on the stone, not a
-  // uniform green stripe.
-  const heightMask = oneMinus(smoothstep(float(0.05), float(1.4), p.y));
+  // Height-based gradient: shadowed at the base, lit toward the top.
+  // Sloped over the forge's 0..3.95m local-Y span.
+  const heightT = smoothstep(float(0.0), float(3.0), p.y);
+
+  // Moss mask: low Y + patchy noise so the green clumps as growths
+  // rather than a uniform stripe.
+  const heightMaskMoss = oneMinus(smoothstep(float(0.05), float(1.4), p.y));
   const patchNoise = sin(p.x.mul(2.8).add(p.z.mul(3.1)))
     .add(sin(p.z.mul(2.3).sub(p.x.mul(1.7))))
     .mul(0.25)
     .add(0.5);
   const mossPatchMask = smoothstep(float(0.40), float(0.75), patchNoise);
-  const mossMask = heightMask.mul(mossPatchMask);
+  const mossMask = heightMaskMoss.mul(mossPatchMask);
 
-  const silverBase = vec3(0.58, 0.60, 0.62);
+  // Steel-blue palette: three stops blended along the height gradient.
+  const blueShadow = vec3(0.10, 0.18, 0.32);
+  const blueBase = vec3(0.22, 0.36, 0.55);
+  const blueLight = vec3(0.40, 0.55, 0.75);
+
+  const tier1 = mix(blueShadow, blueBase, heightT);
+  const tier2 = mix(tier1, blueLight, heightT.mul(heightT).mul(0.55));
+  const grainTinted = tier2.add(vec3(grainShade, grainShade, grainShade));
+
   const mossColor = vec3(0.20, 0.42, 0.18);
+  const stoneColored = mix(grainTinted, mossColor, mossMask.mul(0.75));
 
-  const stoneTinted = silverBase.add(
-    vec3(grainShade, grainShade, grainShade)
-  );
-  const colored = mix(stoneTinted, mossColor, mossMask.mul(0.85));
+  // Multiply by injected vertex colour for within-object weathering.
+  // vertexColor() returns vec3(1,1,1) when no per-vertex colour is
+  // present, so this is a no-op fallback if injection is skipped.
+  const colored = stoneColored.mul(vertexColor);
 
-  const mat = new MeshBasicNodeMaterial();
+  const mat = new MeshStandardNodeMaterial({
+    color: new THREE.Color(0xffffff),
+    roughness: 0.85,
+    metalness: 0.0,
+    vertexColors: true,
+  });
   mat.colorNode = colored;
+  // Self-emission at 40% of the computed colour so the upper anvil/
+  // chimney/pedestal-column areas read even when the scene's
+  // directional rig doesn't reach them.
+  mat.emissiveNode = colored.mul(0.40);
+
   return mat;
 }
 
@@ -359,10 +429,12 @@ function convertToNodeMaterials(root: THREE.Group) {
       return;
     }
 
-    // Forge platform: bake collapsed into dark stone → use TSL warm-iron
-    // material with coal-glow accent instead so it reads as visible.
+    // Forge platform: bake collapsed into dark stone → swap in the
+    // blue carved-stone TSL material + per-vertex noise so it reads
+    // with within-object weathering variation (same /about recipe).
     if (isForgeMesh(mesh.name)) {
       mesh.material = buildForgeMaterial();
+      injectVertexNoise(mesh.geometry, 0.30, 0.05, mesh.id * 31);
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       return;
