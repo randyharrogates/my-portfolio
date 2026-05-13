@@ -103,57 +103,71 @@ function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWater
 
   if (isFall) {
     // ============================================================
-    // WATERFALL: vertical streamers + foam bursts + fresnel
+    // WATERFALL: wide soft blobs flowing down + foam at base
+    // (closer to jordan-breton's painterly fluid look than thin
+    // striped streamers — fewer, wider, softer)
     // ============================================================
-    const N_STREAMERS = 18;
-    // Per-streamer index (which vertical stripe a fragment belongs to)
-    const streamerIdx = floor(u.mul(N_STREAMERS));
-    // Per-streamer hash for randomised phase & frequency offset
-    const streamerHash = hash(streamerIdx);
+    const N_BLOBS = 6;  // was 18 — fewer, much wider blobs
+    const blobIdx = floor(u.mul(N_BLOBS));
+    const blobHash = hash(blobIdx);
 
-    // Soft stripe envelope: cos around band centre, sharpened. Most
-    // surface ≈ dim base; ~30% becomes bright streamer columns.
-    const bandPhase = u.mul(N_STREAMERS).mul(Math.PI * 2);
-    const stripeRaw = cos(bandPhase).mul(0.5).add(0.5);
-    const streamerMask = pow(stripeRaw, float(2.5));
+    // Soft blob envelope around the cylinder. cos centres each blob in
+    // its band; smoothstep gives soft fades at the edges (no sharp
+    // pow() crisping — that's what made the previous look stripey).
+    const bandPhase = u.mul(N_BLOBS).mul(Math.PI * 2);
+    const blobRaw = cos(bandPhase).mul(0.5).add(0.5);
+    // Soft falloff: smoothstep widens the blob centres + fades edges
+    const blobMask = smoothstep(float(0.15), float(0.85), blobRaw);
 
-    // Streamer pulse: scrolling sine moving down fast, with per-streamer
-    // phase offset so they're not in sync.
-    const fallSpeed = float(3.2);
-    const scrolledV = v.add(t.mul(fallSpeed)).add(streamerHash.mul(2.0));
-    const streamerWave = sin(scrolledV.mul(30)).mul(0.5).add(0.5);
-    const streamerWaveFast = sin(scrolledV.mul(70).add(t.mul(2))).mul(0.5).add(0.5);
-    const streamerPulse = streamerWave.mul(0.7).add(streamerWaveFast.mul(0.3));
+    // Each blob has its own random vertical phase + speed scale
+    const fallSpeed = float(2.0);
+    const blobSpeedJitter = blobHash.mul(0.6).add(0.7); // 0.7-1.3 speed range
+    const scrolledV = v.add(t.mul(fallSpeed).mul(blobSpeedJitter)).add(blobHash.mul(3.0));
 
-    // Combined streamer intensity
-    const streamer = streamerMask.mul(streamerPulse);
+    // Two octaves for the blob's vertical brightness pulse:
+    //  - low freq (5): big slow on/off cycle
+    //  - mid freq (12): wider "patch" inside the blob
+    const slow = sin(scrolledV.mul(5)).mul(0.5).add(0.5);
+    const med = sin(scrolledV.mul(12).add(t.mul(1.5))).mul(0.5).add(0.5);
+    const blobPulse = slow.mul(0.6).add(med.mul(0.4));
 
-    // === Foam bursts: hash-random bright spots that pop ===
-    const foamSeedU = floor(u.mul(60));
-    const foamSeedV = floor(v.mul(40).sub(t.mul(2.5)));
-    const foamSeed = foamSeedU.add(foamSeedV.mul(60));
+    // Combined blob intensity — soft edges + smooth pulse
+    const blob = blobMask.mul(blobPulse);
+
+    // === Wider foam patches (not pixel-sparse bursts) ===
+    const foamSeedU = floor(u.mul(15));
+    const foamSeedV = floor(v.mul(8).sub(t.mul(1.2)));
+    const foamSeed = foamSeedU.add(foamSeedV.mul(15));
     const foamRand = hash(foamSeed);
-    const foamBurst = smoothstep(float(0.92), float(1.0), foamRand);
+    const foamPatch = smoothstep(float(0.70), float(0.95), foamRand);
+    // Modulate foam by blob mask so foam appears mostly on/near blobs
+    const foam = foamPatch.mul(blobMask.add(0.3));
 
-    // === Colour mix ===
-    const baseBlue = vec3(0.05, 0.18, 0.50);     // deep translucent blue
-    const streamColor = vec3(0.55, 0.85, 1.15);   // bright cyan streamer
-    const foamColor = vec3(0.95, 1.00, 1.05);     // pure white foam
+    // === Bottom-glow accent: brighten the base of the waterfall
+    // where the water hits the pool, mimicking the foam cluster ===
+    const bottomGlow = smoothstep(float(0.15), float(0.0), v);
 
-    let color = mix(baseBlue, streamColor, streamer.mul(0.85));
-    color = mix(color, foamColor, foamBurst.mul(0.75));
-    // Fresnel brightens edges (more visible streamer cores at silhouette)
-    color = mix(color, streamColor.mul(1.4), fresnel.mul(0.45));
+    // === Colour mix (3-stop palette) ===
+    const baseBlue = vec3(0.10, 0.30, 0.65);      // semi-transparent base
+    const blobBlue = vec3(0.55, 0.80, 1.10);      // bright cyan
+    const foamColor = vec3(1.00, 1.05, 1.10);     // white foam
 
-    // === Opacity: see-through between streamers, opaque on bright bits ===
+    let color = mix(baseBlue, blobBlue, blob.mul(0.85));
+    color = mix(color, foamColor, foam.mul(0.7));
+    // Fresnel rim: brighter at silhouette so the blob shapes pop
+    color = mix(color, blobBlue.mul(1.3), fresnel.mul(0.40));
+    // Bottom glow — extra white at the impact point
+    color = mix(color, foamColor, bottomGlow.mul(0.6));
+
+    // === Opacity: see-through between blobs, opaque on blob cores ===
     const alphaMix = clamp(
-      streamerMask.mul(0.55).add(foamBurst.mul(0.35)).add(fresnel.mul(0.45)),
+      blobMask.mul(0.55).add(foam.mul(0.35)).add(fresnel.mul(0.40)).add(bottomGlow.mul(0.5)),
       float(0), float(1)
     );
-    const alpha = mix(float(0.35), float(0.95), alphaMix);
+    const alpha = mix(float(0.45), float(0.98), alphaMix);
 
     mat.colorNode = color;
-    mat.emissiveNode = color.mul(0.75);
+    mat.emissiveNode = color.mul(0.6);
     mat.opacityNode = alpha;
     mat.transparent = true;
     mat.depthWrite = false;

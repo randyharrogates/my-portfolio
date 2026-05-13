@@ -13,6 +13,7 @@ import ProjectsLandmark from "./ProjectsLandmark.tsx";
 import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
+import WaterfallFoam from "./WaterfallFoam.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
@@ -126,6 +127,19 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][0] + 8.0,
           3.0,
           HALL_POI_POSITIONS[2][2] - 2.5,
+        ]}
+      />
+      {/* Waterfall foam cluster — soft white puffy cloud at the base
+          of the waterfall column. Procedurally built in React (7 + 1
+          overlapping spheres with TSL-animated semi-transparent
+          material) so we can iterate without re-baking the GLB. The
+          waterfall column lands at world (POI[2].x - 3, ~0, POI[2].z)
+          = (-33, 0, -6); foam centres at the pool surface (y=0.2). */}
+      <WaterfallFoam
+        position={[
+          HALL_POI_POSITIONS[2][0] - 3.0,
+          0.2,
+          HALL_POI_POSITIONS[2][2],
         ]}
       />
       {/* Skills signboard — same hand-painted plank style. Planted on

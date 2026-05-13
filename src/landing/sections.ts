@@ -235,9 +235,12 @@ const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, FocalOverride>> = {
   // intentionally per user.
   skills: {
     kind: "fixed",
-    cameraOffset: [15.0, 5.5, 3.0],
-    lookAtOffset: [-4.0, 4.0, -1.0],
-    fov: 52,
+    // Pulled back to 24m from PoI (was 15) + raised camera (5.5 → 8)
+    // so the whole scene reads: sign + forge + plunge pool + bottom
+    // 2/3 of the waterfall column all in the same frame.
+    cameraOffset: [24.0, 8.0, 5.0],
+    lookAtOffset: [-5.0, 5.5, -1.0],
+    fov: 50,
   },
 };
 
