@@ -14,6 +14,7 @@ import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import SkillsGreenery from "./SkillsGreenery.tsx";
+import SkillsRiver from "./SkillsRiver.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
@@ -156,6 +157,20 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           user wants them unified with the GLB. Mount at POI[2] so
           each prop's authored offset is "island-local." */}
       <SkillsGreenery
+        position={[
+          HALL_POI_POSITIONS[2][0],
+          0,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+      />
+      {/* Procedural river ribbon — flows from the waterfall base
+          (west of POI) eastward across the island and exits the rim,
+          curving north of the relocated forge so they don't overlap.
+          The GLB ships its own creek/fork/cascade meshes but they
+          have no UVs and sit below the y=0 ground plane (authored
+          y=-0.21..-0.03), so they never rendered; this React ribbon
+          replaces them. */}
+      <SkillsRiver
         position={[
           HALL_POI_POSITIONS[2][0],
           0,
