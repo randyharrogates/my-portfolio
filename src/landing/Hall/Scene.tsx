@@ -122,17 +122,17 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           Blender (x, y, z) → Three (x, z, -y), so the screen lands at
           world (POI[2].x + 8.0, 1.78, POI[2].z - 2.5). Orb sits ~1.2 m
           above. */}
-      {/* SkillsForgeOrb now includes its own contrasting podium (stone
-          cylinder + brass trim + emissive lime screen + floating orb)
-          rendered procedurally in React. We position the BASE of the
-          podium at ground level — the orb floats 2m above. World pos
-          (-22, 0, -8.5) places it just east of the plunge pool,
-          clearly visible from the focal camera at PoI+(24, 8, 5) and
-          where the SKILLS signboard's plank is centred. */}
+      {/* SkillsForgeOrb is now just the lime navigational orb — per
+          user, the React-rendered podium (stone cylinder + brass trim
+          + lime screen disc) was removed so every static asset is a
+          Blender bake. The orb hovers above the existing GLB pedestal
+          column (part of `skl_forge_merged`) + screen (`skl_pedestal_
+          screen` lime disc) at world (-22, 1.78, -8.5). We mount it at
+          world Y=3 so it floats ~1.2m above the pedestal screen. */}
       <SkillsForgeOrb
         position={[
           HALL_POI_POSITIONS[2][0] + 8.0,
-          0,
+          3.0,
           HALL_POI_POSITIONS[2][2] - 2.5,
         ]}
       />
@@ -149,24 +149,21 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2],
         ]}
       />
-      {/* Skills signboard — same hand-painted plank style. Planted on
-          the bank, camera-LEFT of the forge+orb cluster. RotationY
-          chosen so the local-+X arrow points at the orb+forge (both
-          now sit at world (-22, 0, -8.5) after the forge relocation
-          in SkillsLandmark.tsx). Sign is at (-24.5, 0, -11), target
-          delta (+2.5, 0, +2.5) is NE → arrow direction (0.707, 0,
-          0.707). Three.js maps local-+X under rotationY=θ to
-          (cos θ, 0, -sin θ); solving for that NE vector gives
-          θ = -π/4 ≈ -0.785. (Plank no longer faces the camera
-          head-on — trade-off the user asked for: arrow alignment
-          beats face-on framing.) Scale 1.5 per user. */}
+      {/* Skills signboard — planted camera-LEFT of the forge+pedestal
+          cluster. The user re-prioritized plank-faces-camera over
+          arrow-points-at-target (the prior θ = -π/4 made the plank
+          turn nearly edge-on to the focal camera). RotationY chosen so
+          the plank's local-+Z normal aligns with the sign → camera
+          vector. Camera lives at PoI + (31, 10.5, 6.5) = (1, 12.1, 0.5);
+          sign is at (-24.5, 0, -11); planar sign→cam = (+25.5, +11.5);
+          rotationY = atan2(25.5, 11.5) ≈ 1.15 rad. Scale 1.5 per user. */}
       <Signboard
         position={[
           HALL_POI_POSITIONS[2][0] + 5.5,
           0,
           HALL_POI_POSITIONS[2][2] - 5.0,
         ]}
-        rotationY={-Math.PI / 4}
+        rotationY={1.15}
         text="SKILLS"
         scale={1.5}
       />

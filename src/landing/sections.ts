@@ -235,10 +235,11 @@ const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, FocalOverride>> = {
   // intentionally per user.
   skills: {
     kind: "fixed",
-    // Pulled back to 24m from PoI (was 15) + raised camera (5.5 → 8)
-    // so the whole scene reads: sign + forge + plunge pool + bottom
-    // 2/3 of the waterfall column all in the same frame.
-    cameraOffset: [24.0, 8.0, 5.0],
+    // Pulled back another 30% (24 → 31, 8 → 10.5, 5 → 6.5) per user —
+    // gives extra headroom so sign + forge + pedestal screen + orb +
+    // plunge pool all read in a single comfortable frame without the
+    // waterfall column dominating.
+    cameraOffset: [31.0, 10.5, 6.5],
     lookAtOffset: [-5.0, 5.5, -1.0],
     fov: 50,
   },
