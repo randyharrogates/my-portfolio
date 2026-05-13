@@ -83,15 +83,20 @@ function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWater
   const waveB = sin(scrolled.y.mul(freqB).add(timerLocal().mul(speedB))).mul(0.5).add(0.5);
   const noise = waveA.mul(waveB);
 
-  const baseBlue = vec3(0.10, 0.35, 0.85);
-  const brightBlue = vec3(0.45, 0.75, 1.25);
+  // Darker, deeper blue palette — previous (0.10, 0.35, 0.85 / bright
+  // 0.45, 0.75, 1.25) was reading too white-blown-out against the
+  // magenta skybox + bloom. New palette stays in saturated deep blue
+  // even at the bright caustic peaks.
+  const baseBlue = vec3(0.03, 0.10, 0.32);
+  const brightBlue = vec3(0.10, 0.30, 0.70);
 
   const animatedColor = mix(baseBlue, brightBlue, noise);
 
   mat.colorNode = animatedColor;
-  // Strong self-emission so the water reads as bright glowing blue
-  // against the dark archipelago palette without depending on lights.
-  mat.emissiveNode = animatedColor.mul(2.0);
+  // Toned-down self-emission (was 2.0×, now 1.0×) so the water reads
+  // as glowing deep blue without blowing out to white. The TSL noise
+  // animation still drives the highlight movement visibly.
+  mat.emissiveNode = animatedColor.mul(1.0);
 
   // Spray + trough are slightly translucent so they don't read as
   // solid sheets when overlapping.
