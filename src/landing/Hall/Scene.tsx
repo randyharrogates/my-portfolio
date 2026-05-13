@@ -14,6 +14,7 @@ import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
+import WaterfallVideo from "./WaterfallVideo.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
@@ -136,12 +137,23 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2] - 7.0,
         ]}
       />
+      {/* Waterfall video — Cycles-rendered FLIP fluid sim (72 frames,
+          720×1280 portrait) played as a video texture on a Y-billboard
+          plane. Replaces the runtime TSL `skl_waterfall_main` cylinder.
+          Plane centre sits at the cliff midpoint (y=11, spanning y=0..22). */}
+      <WaterfallVideo
+        position={[
+          HALL_POI_POSITIONS[2][0] - 3.0,
+          11.0,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+        width={12}
+        height={22}
+      />
       {/* Waterfall foam cluster — soft white puffy cloud at the base
-          of the waterfall column. Procedurally built in React (7 + 1
-          overlapping spheres with TSL-animated semi-transparent
-          material) so we can iterate without re-baking the GLB. The
-          waterfall column lands at world (POI[2].x - 3, ~0, POI[2].z)
-          = (-33, 0, -6); foam centres at the pool surface (y=0.2). */}
+          of the video plane (the FLIP sim has its own splashes baked
+          into the video but the React puffs add a hint of volumetric
+          cloud above the pool surface). */}
       <WaterfallFoam
         position={[
           HALL_POI_POSITIONS[2][0] - 3.0,

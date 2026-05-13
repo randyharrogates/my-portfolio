@@ -13,8 +13,16 @@ refs/
 # Working renders (only commit final preview screenshots in renders/).
 renders/working/
 
+# Per-frame PNG sequences from animation renders — only the encoded
+# .webm/.mp4 output ships in public/models/hall/landmarks/.
+renders/waterfall/
+
 # Asset cache (PolyHaven downloads etc.)
 .cache/
+
+# FLIP fluid sim caches — multi-MB per-frame .bobj.gz / .uni files,
+# rebuildable by re-running the sim bake.
+cache/
 
 # Bake intermediates — PNGs from Cycles bake. The compressed .ktx2 outputs
 # land in public/textures/hall/baked/ and ship; these PNGs are only for
