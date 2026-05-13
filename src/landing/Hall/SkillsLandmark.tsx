@@ -233,6 +233,116 @@ function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWater
   return mat;
 }
 
+// ============================================================
+// FORGE PLATFORM — warm-iron + coal-glow material override
+// ============================================================
+// The forge platform's Cycles bake collapsed into the dark carved-stone
+// island palette and read as a near-black silhouette on the frontend.
+// We detect those meshes by name and swap in a TSL material that gives
+// them their own warm iron-brown base + a pulsing orange coal glow at
+// the base — so the forge reads as the thematic anchor it's supposed
+// to be, not a black hole.
+function isForgeMesh(name: string): boolean {
+  const lower = name.toLowerCase();
+  return (
+    lower.includes("forge") ||
+    lower.includes("anvil") ||
+    lower.includes("hammer") ||
+    lower.includes("rack") ||
+    lower.includes("chimney") ||
+    lower.includes("sword") ||
+    lower.includes("ember") ||
+    lower.includes("coal") ||
+    lower.includes("tools")
+  );
+}
+
+function buildForgeMaterial(): MeshStandardNodeMaterial {
+  const mat = new MeshStandardNodeMaterial({
+    color: new THREE.Color(0.45, 0.35, 0.28),
+    roughness: 0.72,
+    metalness: 0.30,
+  });
+
+  const t = timerLocal();
+  const p = positionLocal;
+
+  // Surface grain: cross-multiplied sin noise gives the iron a
+  // stone-and-soot variation across the surface — fixes the "uniform
+  // flat colour" read that flat Principled BSDF would give.
+  const grain1 = sin(p.x.mul(4.0).add(p.z.mul(1.5)));
+  const grain2 = sin(p.y.mul(3.2).add(p.x.mul(2.1)));
+  const grainRaw = grain1.add(grain2).mul(0.25).add(0.5);
+  const grainShade = grainRaw.sub(0.5).mul(0.40);
+
+  // Coal-glow accent: peaks at the BASE (low local Y), gently pulsing.
+  // Drives both the colour mix (warm orange seeping up from the coals)
+  // and a moderate emissive contribution so the forge actually emits.
+  const coalMask = oneMinus(smoothstep(float(0.05), float(0.55), p.y));
+  const coalPulse = sin(t.mul(1.6)).mul(0.20).add(0.80);
+  const coalIntensity = coalMask.mul(coalPulse);
+
+  const ironBase = vec3(0.45, 0.35, 0.28);
+  const coalColor = vec3(1.0, 0.42, 0.10);
+
+  const tintedBase = ironBase.add(
+    vec3(grainShade, grainShade.mul(0.85), grainShade.mul(0.70))
+  );
+  const colored = mix(tintedBase, coalColor.mul(0.8), coalIntensity.mul(0.50));
+
+  mat.colorNode = colored;
+  mat.emissiveNode = coalColor.mul(coalIntensity).mul(0.55);
+
+  return mat;
+}
+
+// Where the forge centroid should land, in landmark-local frame. The
+// landmark is mounted at world POI[2] = (-30, _, -6); the orb sits at
+// world (-22, 0, -8.5) → local (+8, 0, -2.5). We park the forge a
+// touch SW of the orb at local (+7, 0, -3.5) → world (-23, 0, -9.5) so:
+//  (1) The forge acts as the visual backdrop and the orb hovers in
+//      front of it from the focal camera at PoI+(24, 8, 5).
+//  (2) Both sit on the same NE ray from the signboard at world
+//      (-24.5, 0, -11), so the sign's local-+X arrow (rotationY =
+//      -π/4 in Scene.tsx) lands on the forge first, then the orb —
+//      reading as one target group rather than two.
+const FORGE_TARGET_LOCAL_X = 7.0;
+const FORGE_TARGET_LOCAL_Z = -3.5;
+
+function relocateForgeMeshes(root: THREE.Group) {
+  const forgeMeshes: THREE.Mesh[] = [];
+  root.traverse((obj) => {
+    const m = obj as THREE.Mesh;
+    if ((m as unknown as { isMesh?: boolean }).isMesh && isForgeMesh(m.name)) {
+      forgeMeshes.push(m);
+    }
+  });
+  if (forgeMeshes.length === 0) return;
+
+  // Centroid (XZ only) approximated as mesh.position + geometry centre.
+  // The cloned scene's matrices haven't been updated yet so we don't
+  // walk worldMatrix — Blender → glTF flat exports put meshes as direct
+  // children of the root with identity parents, making this exact.
+  let cx = 0;
+  let cz = 0;
+  forgeMeshes.forEach((m) => {
+    m.geometry.computeBoundingBox();
+    const center = m.geometry.boundingBox!.getCenter(new THREE.Vector3());
+    cx += m.position.x + center.x;
+    cz += m.position.z + center.z;
+  });
+  cx /= forgeMeshes.length;
+  cz /= forgeMeshes.length;
+
+  const dx = FORGE_TARGET_LOCAL_X - cx;
+  const dz = FORGE_TARGET_LOCAL_Z - cz;
+
+  forgeMeshes.forEach((m) => {
+    m.position.x += dx;
+    m.position.z += dz;
+  });
+}
+
 /** Same three-tier emission strategy as AboutLandmark / ProjectsLandmark
  *  for non-water meshes (baked diffuse → emissive map at 0.55, plain
  *  colour → 0.45× self-emission, authored emissive → 5× hard or 2×
@@ -251,6 +361,15 @@ function convertToNodeMaterials(root: THREE.Group) {
     const waterKind = getWaterKind(mesh.name);
     if (waterKind) {
       mesh.material = buildAnimatedWaterMaterial(waterKind);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      return;
+    }
+
+    // Forge platform: bake collapsed into dark stone → use TSL warm-iron
+    // material with coal-glow accent instead so it reads as visible.
+    if (isForgeMesh(mesh.name)) {
+      mesh.material = buildForgeMaterial();
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       return;
@@ -337,6 +456,7 @@ const SkillsLandmark: React.FC<SkillsLandmarkProps> = ({ position }) => {
   const landmark = useMemo(() => {
     const r = gltf.scene.clone(true);
     convertToNodeMaterials(r);
+    relocateForgeMeshes(r);
     return r;
   }, [gltf.scene]);
 

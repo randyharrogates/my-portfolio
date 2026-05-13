@@ -150,22 +150,23 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         ]}
       />
       {/* Skills signboard — same hand-painted plank style. Planted on
-          the bank, camera-LEFT of the forge pedestal. Arrow rotation
-          calculated to point the local +X direction at the orb (orb
-          at +2.5x, -2.5z relative to sign → arrow angle π/4 → rotationY
-          = -π/4 because three.js Y rotation maps local +X to
-          (cos θ, 0, -sin θ)). */}
-      {/* Skills signboard — rotated to face the focal camera at
-          PoI+(24,8,5) so the plank surface (local +Z) aligns with the
-          sign→camera vector. atan2(camΔx=18.5, camΔz=10) ≈ 1.075 rad.
-          Scale 1.5 (was 1.0) per user. */}
+          the bank, camera-LEFT of the forge+orb cluster. RotationY
+          chosen so the local-+X arrow points at the orb+forge (both
+          now sit at world (-22, 0, -8.5) after the forge relocation
+          in SkillsLandmark.tsx). Sign is at (-24.5, 0, -11), target
+          delta (+2.5, 0, +2.5) is NE → arrow direction (0.707, 0,
+          0.707). Three.js maps local-+X under rotationY=θ to
+          (cos θ, 0, -sin θ); solving for that NE vector gives
+          θ = -π/4 ≈ -0.785. (Plank no longer faces the camera
+          head-on — trade-off the user asked for: arrow alignment
+          beats face-on framing.) Scale 1.5 per user. */}
       <Signboard
         position={[
           HALL_POI_POSITIONS[2][0] + 5.5,
           0,
           HALL_POI_POSITIONS[2][2] - 5.0,
         ]}
-        rotationY={1.07}
+        rotationY={-Math.PI / 4}
         text="SKILLS"
         scale={1.5}
       />
