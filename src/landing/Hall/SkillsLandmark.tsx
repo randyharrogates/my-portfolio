@@ -21,6 +21,7 @@ import {
   pow,
   sin,
   smoothstep,
+  texture,
   timerLocal,
   uv,
   vec2,
@@ -73,17 +74,15 @@ useGLTF.preload(LANDMARK_GLB);
 /** Identify water meshes by name (handles Blender's `.001` suffix +
  *  glTF's `_001` rename). Returns a categorical "kind" string we use
  *  to pick the animation pattern. */
-function getWaterKind(meshName: string): "waterfall" | "spray" | "pool" | "creek" | "trough" | null {
+function getWaterKind(meshName: string): "waterfall" | "spray" | "pool" | "trough" | null {
   const lower = meshName.toLowerCase();
   if (lower.includes("waterfall_spray")) return "spray";
   if (lower.includes("waterfall_main")) return "waterfall";
   if (lower.includes("plunge_pool")) return "pool";
-  // Creek, river fork branches, and the small cascade at the river's
-  // far end all flow east-ish → use the creek's east-scrolling pattern
-  if (lower.includes("creek_surface") ||
-      lower.includes("river_fork") ||
-      lower.includes("river_cascade")) return "creek";
   if (lower.includes("water_trough_surface")) return "trough";
+  // skl_creek_surface / skl_river_fork / skl_river_cascade were
+  // removed from the GLB on 2026-05-13 — replaced by the Cycles-baked
+  // skl_river_v2 mesh handled in buildRiverV2Material below.
   return null;
 }
 
@@ -216,25 +215,6 @@ function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWater
     mat.transparent = true;
     mat.depthWrite = false;
     mat.side = THREE.DoubleSide;
-  } else if (kind === "creek") {
-    // ============================================================
-    // CREEK: gentle east-flowing surface with caustic glints
-    // ============================================================
-    const scroll = vec2(t.mul(0.35), float(0));
-    const scrolledU = u.add(scroll.x);
-    const wave1 = sin(scrolledU.mul(20).add(v.mul(8)).add(t.mul(1.5))).mul(0.5).add(0.5);
-    const wave2 = sin(scrolledU.mul(50).add(t.mul(2.2))).mul(0.5).add(0.5);
-    const causticMask = pow(wave1.mul(wave2), float(2.5));
-
-    const baseBlue = vec3(0.04, 0.16, 0.45);
-    const causticColor = vec3(0.65, 0.90, 1.20);
-    const color = mix(baseBlue, causticColor, causticMask);
-
-    mat.colorNode = color;
-    mat.emissiveNode = color.mul(0.7);
-    mat.opacityNode = mix(float(0.7), float(1.0), causticMask);
-    mat.transparent = true;
-    mat.depthWrite = false;
   } else {
     // ============================================================
     // PLUNGE POOL + TROUGH: concentric ripples from centre + caustics
@@ -393,6 +373,58 @@ function buildForgeMaterial(): MeshStandardNodeMaterial {
 const FORGE_DELTA_X = 2.5;
 const FORGE_DELTA_Z = -4.5;
 
+/** River v2 = Cycles-baked ribbon authored in Blender on 2026-05-13.
+ *  Carries baseColor + normal + roughness textures from the bake. We
+ *  scroll U on the COLOR sample at runtime (flow animation) but keep
+ *  the normal + roughness static — surface relief stays anchored,
+ *  caustics drift downstream. */
+function isRiverV2Mesh(name: string): boolean {
+  return name.toLowerCase().includes("river_v2");
+}
+
+function buildRiverV2Material(
+  src: THREE.MeshStandardMaterial
+): MeshStandardNodeMaterial {
+  const mat = new MeshStandardNodeMaterial({
+    color: new THREE.Color(0xffffff),
+    roughness: 0.10,
+    metalness: 0.0,
+  });
+
+  // Carry baked normal + roughness so real PBR shading kicks in.
+  if (src.normalMap) {
+    mat.normalMap = src.normalMap;
+    if (src.normalScale) mat.normalScale = src.normalScale.clone();
+  }
+  if (src.roughnessMap) {
+    mat.roughnessMap = src.roughnessMap;
+  }
+
+  if (src.map) {
+    // U-axis tiling so the scroll loops; V stays clamped (the bake
+    // isn't tileable on V — that's the river width). The Voronoi
+    // caustic pattern is chaotic enough that the U=1→U=0 seam reads
+    // as just another cell-edge.
+    src.map.wrapS = THREE.RepeatWrapping;
+    src.map.wrapT = THREE.ClampToEdgeWrapping;
+    src.map.needsUpdate = true;
+
+    const t = timerLocal();
+    const baseUv = uv();
+    // Scroll speed: 0.08 / sec. Slow enough that the seam isn't
+    // jarring; fast enough that the river clearly reads as moving.
+    const scrolledUv = vec2(baseUv.x.sub(t.mul(0.08)), baseUv.y);
+    const colorSample = texture(src.map, scrolledUv);
+
+    mat.colorNode = colorSample;
+    // Emissive baseline so the river still reads in the dim neon-dusk
+    // scene even when the directional rig doesn't reach the ribbon.
+    mat.emissiveNode = colorSample.mul(0.50);
+  }
+
+  return mat;
+}
+
 function relocateForgeGroup(root: THREE.Group) {
   root.traverse((obj) => {
     const m = obj as THREE.Mesh;
@@ -418,6 +450,14 @@ function convertToNodeMaterials(root: THREE.Group) {
     if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
     const src = mesh.material as THREE.MeshStandardMaterial;
     if (!src) return;
+
+    // River v2: baked ribbon — UV-scrolled colour + static normal/rough.
+    if (isRiverV2Mesh(mesh.name)) {
+      mesh.material = buildRiverV2Material(src);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      return;
+    }
 
     // Water meshes get the TSL-animated material — bypass standard
     // emission strategy.
