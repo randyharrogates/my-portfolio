@@ -505,12 +505,15 @@ function convertToNodeMaterials(root: THREE.Group) {
       return;
     }
 
+    // Hide the original waterfall_main cylinder — replaced by the
+    // higher-poly Cycles-authored mesh in WaterfallTSL.tsx.
+    if (mesh.name.toLowerCase().includes("waterfall_main")) {
+      mesh.visible = false;
+      return;
+    }
+
     // Water meshes get the TSL-animated material — bypass standard
     // emission strategy.
-    // (skl_waterfall_main visibility restored 2026-05-14 after the
-    // WaterfallVideo billboard experiment was ruled out. The TSL-
-    // displaced mesh + FLIP-baked flow replacement is the next concrete
-    // step; until then the runtime TSL cylinder renders.)
     const waterKind = getWaterKind(mesh.name);
     if (waterKind) {
       mesh.material = buildAnimatedWaterMaterial(waterKind);
