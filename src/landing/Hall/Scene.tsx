@@ -13,7 +13,6 @@ import ProjectsLandmark from "./ProjectsLandmark.tsx";
 import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
-import SkillsGreenery from "./SkillsGreenery.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
@@ -150,18 +149,12 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2],
         ]}
       />
-      {/* Stylized greenery (fir cones / capsule bushes / octahedron
-          rocks) scattered around the island. Authored in React for
-          quick iteration — can be re-baked in Blender later if the
-          user wants them unified with the GLB. Mount at POI[2] so
-          each prop's authored offset is "island-local." */}
-      <SkillsGreenery
-        position={[
-          HALL_POI_POSITIONS[2][0],
-          0,
-          HALL_POI_POSITIONS[2][2],
-        ]}
-      />
+      {/* Greenery (trees + bushes + rocks) is now Cycles-baked in the
+          GLB as three merged meshes: skl_greenery_trees, _bushes,
+          _rocks. Each ships its own baseColor + tangent-space normal
+          texture; the standard hasBaseTexture branch in convert
+          ToNodeMaterials() pipes the bake through emissive at 0.30
+          intensity so the props read in the dim scene. */}
       {/* River is now `skl_river_v2` inside landmark-skills.glb —
           Cycles-baked ribbon authored in Blender on 2026-05-13 with
           Voronoi caustic baseColor + tangent-space normal +
