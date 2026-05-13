@@ -505,16 +505,12 @@ function convertToNodeMaterials(root: THREE.Group) {
       return;
     }
 
-    // Waterfall main column is now replaced by WaterfallVideo (Cycles-
-    // rendered FLIP fluid sim played as a video texture). Hide the GLB
-    // mesh so it doesn't fight with the video plane for the same depth.
-    if (mesh.name.toLowerCase().includes("waterfall_main")) {
-      mesh.visible = false;
-      return;
-    }
-
     // Water meshes get the TSL-animated material — bypass standard
     // emission strategy.
+    // (skl_waterfall_main visibility restored 2026-05-14 after the
+    // WaterfallVideo billboard experiment was ruled out. The TSL-
+    // displaced mesh + FLIP-baked flow replacement is the next concrete
+    // step; until then the runtime TSL cylinder renders.)
     const waterKind = getWaterKind(mesh.name);
     if (waterKind) {
       mesh.material = buildAnimatedWaterMaterial(waterKind);

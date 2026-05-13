@@ -14,7 +14,11 @@ import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
-import WaterfallVideo from "./WaterfallVideo.tsx";
+// WaterfallVideo (commit 9c0cc19) was an experimental Cycles-render-as-
+// video-billboard. Disabled 2026-05-14 in favour of the new pipeline:
+// TSL-displaced mesh + FLIP-baked flow maps. Component file kept in
+// source for shader/pattern reference.
+// import WaterfallVideo from "./WaterfallVideo.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
@@ -137,19 +141,12 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2] - 7.0,
         ]}
       />
-      {/* Waterfall video — Cycles-rendered FLIP fluid sim (72 frames,
-          720×1280 portrait) played as a video texture on a Y-billboard
-          plane. Replaces the runtime TSL `skl_waterfall_main` cylinder.
-          Plane centre sits at the cliff midpoint (y=11, spanning y=0..22). */}
-      <WaterfallVideo
-        position={[
-          HALL_POI_POSITIONS[2][0] - 3.0,
-          11.0,
-          HALL_POI_POSITIONS[2][2],
-        ]}
-        width={12}
-        height={22}
-      />
+      {/* Waterfall video was the wrong abstraction — a flat panel
+          inside an orbital 3D scene reads as a billboard ad. Removed
+          2026-05-14. Will be replaced by a TSL-displaced high-poly mesh
+          with FLIP-baked flow + foam textures (see task #59). For now,
+          the runtime TSL waterfall on skl_waterfall_main is back in
+          place (SkillsLandmark.tsx visibility restored). */}
       {/* Waterfall foam cluster — soft white puffy cloud at the base
           of the video plane (the FLIP sim has its own splashes baked
           into the video but the React puffs add a hint of volumetric

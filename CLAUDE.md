@@ -80,6 +80,46 @@ The `/hall` archipelago landmarks (house, satellite, waterfall, tree, garden, en
 2. For each, confirm it is part of a bake group (its material reads from a baked image texture, not a flat colour or procedural shader).
 3. If any new mesh lacks a bake, group it with peers (or bake it alone in a neutral hemisphere) before exporting. Do not export with flat-colour holes in the scene.
 
+## /hall water + river pipeline — TSL displacement, not VAT (locked 2026-05-14)
+
+**Rule:** every animated fluid in `/hall` (rivers, waterfalls, lava, fountains, foam) is a TSL-displaced high-poly mesh driven by FLIP-baked flow-direction + foam-mask textures. **No VAT, no pre-rendered video billboards.** The video-billboard approach was experimentally proven wrong (commit `9c0cc19` then reverted): flat panels read as ads in an orbital 3D scene. VAT was considered but rejected — at the `/hall` orbit camera distance (~30m), its only meaningful advantages (per-frame topology change, true splash chaos) are imperceptible, and the Blender→fixed-topology pipeline doesn't exist (Houdini has it, Blender doesn't), meaning 3-5 days of custom tooling for an invisible quality gain.
+
+**Authoring loop per water feature:**
+1. Author the mesh in Blender at 5-15k verts (dense enough that vertex-level displacement reads smooth).
+2. Run a **one-shot** FLIP fluid sim (resolution 48-64, doesn't need to be long — we throw away the per-frame mesh, we only want the velocity field + particle density).
+3. Bake the FLIP velocity field to a flow-direction texture (RG channels = local flow vector). Bake particle density to a foam-mask texture. Both ~2048×512 along the feature's length.
+4. Export mesh + textures as a standard GLB.
+5. In the corresponding `*.tsx`, write a TSL shader that:
+   - Samples the flow texture to find U-scroll direction at each vertex
+   - Layers 2-3 scrolling normal maps at different scales for surface detail
+   - Adds Gerstner wave perturbation in the flow direction
+   - Emits foam where the foam-mask is high
+6. For waterfall splash zones (where TSL alone reads "smudged"), supplement with TSL-instanced particle droplets — also runtime, also cheap.
+
+## /hall master Blender file + connections.glb architecture (locked 2026-05-14)
+
+Cross-landmark assets — currently the river-of-life (skills → projects → about), bridges and paths in future — live in **`blender/hall-master.blend`** + **`connections.glb`**, separate from per-landmark assets.
+
+- **`blender/hall-master.blend`** is the planning + cross-landmark authoring source. Imports all per-landmark GLBs at their world POI positions (`HALL_POI_POSITIONS` in `src/landing/sections.ts`) so cross-landmark features can be authored against the actual geometry of all neighbouring landmarks.
+- **Per-landmark GLBs** (`landmark-{about,projects,skills}.glb`) stay self-contained for features that are visually local to one landmark. They are NOT edited inside the master file — they live in their own `.blend` files and the master imports them read-only.
+- **`connections.glb`** is the new shared asset. Holds the cross-landmark river (riverbed + water surface mesh + baked flow + foam textures) and any future spanning features. Mounted at world origin in `Scene.tsx`, not at any POI offset.
+
+When adding visually-local features, edit the per-landmark `.blend` + re-export its GLB; the master re-imports it. When adding cross-landmark features, edit `hall-master.blend`, author against the world geometry, export only the new asset selection to `connections.glb`.
+
+## /hall river-of-life (locked 2026-05-14)
+
+Single winding river (Philosophy B), chevron path through the 3 built landmarks:
+
+- **Source:** Skills cliff pool at POI[2] = (-30, _, -6). The existing Cycles-baked plunge pool is the headwater.
+- **First leg:** Arcs NE to Projects POI[1] = (+32, _, +18). ~50m.
+- **Projects detour:** River loops AROUND the mecha wreck (existing pedestal becomes an island in the loop). Wreck stays on dry ground — crashed-satellite-in-a-lake reads as too aquarium-like.
+- **Return leg:** Arcs SW down to About POI[0] = (4, _, -8). ~50m.
+- **Terminus:** About's existing static decorative pond becomes the river basin. Pond stops being a separate water feature.
+
+Blog, Resume, Contact landmarks (POI 3-5) do NOT get river touchpoints — only the 3 currently-built scenes are connected.
+
+Wherever the river meets a landmark with an existing pedestal, **pedestal becomes an island in the river**; the hovering orb above stays at its current world position.
+
 ## Ambient 3D Background
 
 A subtle slow-drifting agent graph sits behind every page (`AmbientCanvas` mounted in `App.tsx`). Lazy-loaded via `React.lazy` so the R3F core ships as a separate chunk and doesn't block first paint. The graph is `pointer-events: none` and decorative only — it doesn't intercept clicks and isn't interactive. On mobile the terminal window covers most of the viewport, so the canvas is largely hidden behind it; that is accepted.
