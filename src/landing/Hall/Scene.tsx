@@ -148,15 +148,19 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           at +2.5x, -2.5z relative to sign → arrow angle π/4 → rotationY
           = -π/4 because three.js Y rotation maps local +X to
           (cos θ, 0, -sin θ)). */}
+      {/* Skills signboard — rotated to face the focal camera at
+          PoI+(24,8,5) so the plank surface (local +Z) aligns with the
+          sign→camera vector. atan2(camΔx=18.5, camΔz=10) ≈ 1.075 rad.
+          Scale 1.5 (was 1.0) per user. */}
       <Signboard
         position={[
           HALL_POI_POSITIONS[2][0] + 5.5,
           0,
           HALL_POI_POSITIONS[2][2] - 5.0,
         ]}
-        rotationY={-0.78}
+        rotationY={1.07}
         text="SKILLS"
-        scale={1.0}
+        scale={1.5}
       />
       <PoiMarkers />
       <Atmosphere lowFidelity={lowFidelity} staticMode={staticMode} />

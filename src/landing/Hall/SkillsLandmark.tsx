@@ -38,7 +38,11 @@ function getWaterKind(meshName: string): "waterfall" | "spray" | "pool" | "creek
   if (lower.includes("waterfall_spray")) return "spray";
   if (lower.includes("waterfall_main")) return "waterfall";
   if (lower.includes("plunge_pool")) return "pool";
-  if (lower.includes("creek_surface")) return "creek";
+  // Creek, river fork branches, and the small cascade at the river's
+  // far end all flow east-ish → use the creek's east-scrolling pattern
+  if (lower.includes("creek_surface") ||
+      lower.includes("river_fork") ||
+      lower.includes("river_cascade")) return "creek";
   if (lower.includes("water_trough_surface")) return "trough";
   return null;
 }
