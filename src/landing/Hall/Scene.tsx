@@ -13,6 +13,7 @@ import ProjectsLandmark from "./ProjectsLandmark.tsx";
 import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
+import SkillsGreenery from "./SkillsGreenery.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
@@ -122,18 +123,18 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           Blender (x, y, z) → Three (x, z, -y), so the screen lands at
           world (POI[2].x + 8.0, 1.78, POI[2].z - 2.5). Orb sits ~1.2 m
           above. */}
-      {/* SkillsForgeOrb is now just the lime navigational orb — per
-          user, the React-rendered podium (stone cylinder + brass trim
-          + lime screen disc) was removed so every static asset is a
-          Blender bake. The orb hovers above the existing GLB pedestal
-          column (part of `skl_forge_merged`) + screen (`skl_pedestal_
-          screen` lime disc) at world (-22, 1.78, -8.5). We mount it at
-          world Y=3 so it floats ~1.2m above the pedestal screen. */}
+      {/* SkillsForgeOrb is just the lime navigational orb. It floats
+          ~1.2m above the (relocated) Blender pedestal screen, which
+          moved with the rest of the forge group by Δ=(+2.5, 0, -4.5)
+          inside SkillsLandmark.tsx so that the entire terminal lands
+          where the SKILLS signboard's arrow points. New screen world
+          position = POI[2] + (10.5, 1.78, -7) = (-19.5, 1.78, -13);
+          orb sits world-Y=3 above that → world (-19.5, 3.0, -13). */}
       <SkillsForgeOrb
         position={[
-          HALL_POI_POSITIONS[2][0] + 8.0,
+          HALL_POI_POSITIONS[2][0] + 10.5,
           3.0,
-          HALL_POI_POSITIONS[2][2] - 2.5,
+          HALL_POI_POSITIONS[2][2] - 7.0,
         ]}
       />
       {/* Waterfall foam cluster — soft white puffy cloud at the base
@@ -149,21 +150,31 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2],
         ]}
       />
-      {/* Skills signboard — planted camera-LEFT of the forge+pedestal
-          cluster. The user re-prioritized plank-faces-camera over
-          arrow-points-at-target (the prior θ = -π/4 made the plank
-          turn nearly edge-on to the focal camera). RotationY chosen so
-          the plank's local-+Z normal aligns with the sign → camera
-          vector. Camera lives at PoI + (31, 10.5, 6.5) = (1, 12.1, 0.5);
-          sign is at (-24.5, 0, -11); planar sign→cam = (+25.5, +11.5);
-          rotationY = atan2(25.5, 11.5) ≈ 1.15 rad. Scale 1.5 per user. */}
+      {/* Stylized greenery (fir cones / capsule bushes / octahedron
+          rocks) scattered around the island. Authored in React for
+          quick iteration — can be re-baked in Blender later if the
+          user wants them unified with the GLB. Mount at POI[2] so
+          each prop's authored offset is "island-local." */}
+      <SkillsGreenery
+        position={[
+          HALL_POI_POSITIONS[2][0],
+          0,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+      />
+      {/* Skills signboard — planted camera-LEFT of the relocated
+          terminal. Plank faces the focal camera; arrow on the plank
+          (local +X) is the visual cue for where to look. Camera now
+          at PoI + (36, 12, 7.5) = (6, 13.6, 1.5); sign at (-24.5, 0,
+          -11); planar sign→cam = (+30.5, +12.5); rotationY =
+          atan2(30.5, 12.5) ≈ 1.18 rad. Scale 1.5 per user. */}
       <Signboard
         position={[
           HALL_POI_POSITIONS[2][0] + 5.5,
           0,
           HALL_POI_POSITIONS[2][2] - 5.0,
         ]}
-        rotationY={1.15}
+        rotationY={1.18}
         text="SKILLS"
         scale={1.5}
       />

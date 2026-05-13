@@ -235,11 +235,11 @@ const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, FocalOverride>> = {
   // intentionally per user.
   skills: {
     kind: "fixed",
-    // Pulled back another 30% (24 → 31, 8 → 10.5, 5 → 6.5) per user —
-    // gives extra headroom so sign + forge + pedestal screen + orb +
-    // plunge pool all read in a single comfortable frame without the
-    // waterfall column dominating.
-    cameraOffset: [31.0, 10.5, 6.5],
+    // Pulled back again per user (31/10.5/6.5 → 36/12/7.5). Same
+    // lookAt; just more headroom so the whole tool-armory scene
+    // (sign + relocated terminal + orb + greenery + waterfall +
+    // plunge pool) lives in one frame without anything crowding.
+    cameraOffset: [36.0, 12.0, 7.5],
     lookAtOffset: [-5.0, 5.5, -1.0],
     fov: 50,
   },

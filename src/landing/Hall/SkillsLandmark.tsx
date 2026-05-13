@@ -243,6 +243,17 @@ function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWater
 // the base — so the forge reads as the thematic anchor it's supposed
 // to be, not a black hole.
 function isForgeMesh(name: string): boolean {
+  // Material override target: just the merged carved-stone platform.
+  // (Embers, sword, pedestal screen all have their own authored
+  // emissive materials that we want to keep — don't repaint them.)
+  const lower = name.toLowerCase();
+  return lower.includes("forge_merged") || lower.includes("forge_platform");
+}
+
+function isForgeGroupMember(name: string): boolean {
+  // Relocation target: every mesh attached to the forge platform so
+  // they translate as one rigid block. Includes the platform itself
+  // plus the embers/sword/pedestal/quenching-trough props sitting on it.
   const lower = name.toLowerCase();
   return (
     lower.includes("forge") ||
@@ -253,47 +264,76 @@ function isForgeMesh(name: string): boolean {
     lower.includes("sword") ||
     lower.includes("ember") ||
     lower.includes("coal") ||
-    lower.includes("tools")
+    lower.includes("tools") ||
+    lower.includes("pedestal") ||
+    lower.includes("water_trough")
   );
 }
 
 function buildForgeMaterial(): MeshBasicNodeMaterial {
-  // MeshBasicNodeMaterial (not Standard): the previous Standard version
-  // only emitted at the coal base (y<0.55) and depended on scene
-  // lights for the rest of the platform — anvil/chimney/pedestal
-  // column above y=0.55 had zero emission, no env map for the
-  // metalness=0.30 reflection, and rendered as black silhouettes
-  // against the dim neon-dusk lighting (what the user kept seeing).
-  // Basic material outputs the colorNode directly with no lighting
-  // dependency, so the whole forge platform reads as warm iron at all
-  // heights with a hotter coal-glow accent at the base.
-  const t = timerLocal();
+  // Silver-grey weathered stone + patchy green moss at the base — per
+  // user 2026-05-13: terminal must read as "shades of silver and grey
+  // with green moss" not the warm-iron palette. MeshBasicNodeMaterial
+  // so the colorNode draws directly with no lighting dependency
+  // (which is what kept making the upper anvil/chimney/pedestal
+  // column read as black silhouettes against the dim scene before).
   const p = positionLocal;
 
+  // Subtle stone grain — cross-multiplied sin noise gives the silver a
+  // mottled "carved old stone" variation instead of a flat poster colour.
   const grain1 = sin(p.x.mul(4.0).add(p.z.mul(1.5)));
   const grain2 = sin(p.y.mul(3.2).add(p.x.mul(2.1)));
   const grainRaw = grain1.add(grain2).mul(0.25).add(0.5);
-  const grainShade = grainRaw.sub(0.5).mul(0.35);
+  const grainShade = grainRaw.sub(0.5).mul(0.18);
 
-  // Coal-glow mask: peaks at the BASE, pulses gently. Blends the iron
-  // base toward orange + lifts brightness so the coals visually pop.
-  const coalMask = oneMinus(smoothstep(float(0.05), float(0.55), p.y));
-  const coalPulse = sin(t.mul(1.6)).mul(0.20).add(0.80);
-  const coalIntensity = coalMask.mul(coalPulse);
+  // Moss mask: peaks at the BASE (low local Y) and patchy via a second
+  // noise so the moss reads as clumps growing on the stone, not a
+  // uniform green stripe.
+  const heightMask = oneMinus(smoothstep(float(0.05), float(1.4), p.y));
+  const patchNoise = sin(p.x.mul(2.8).add(p.z.mul(3.1)))
+    .add(sin(p.z.mul(2.3).sub(p.x.mul(1.7))))
+    .mul(0.25)
+    .add(0.5);
+  const mossPatchMask = smoothstep(float(0.40), float(0.75), patchNoise);
+  const mossMask = heightMask.mul(mossPatchMask);
 
-  // Brighter iron base than before (0.45 → 0.58 red) so the upper
-  // anvil/chimney/pedestal-column areas read as warm metal, not muddy.
-  const ironBase = vec3(0.58, 0.45, 0.34);
-  const coalColor = vec3(1.10, 0.50, 0.14);
+  const silverBase = vec3(0.58, 0.60, 0.62);
+  const mossColor = vec3(0.20, 0.42, 0.18);
 
-  const tintedBase = ironBase.add(
-    vec3(grainShade, grainShade.mul(0.85), grainShade.mul(0.70))
+  const stoneTinted = silverBase.add(
+    vec3(grainShade, grainShade, grainShade)
   );
-  const colored = mix(tintedBase, coalColor, coalIntensity.mul(0.70));
+  const colored = mix(stoneTinted, mossColor, mossMask.mul(0.85));
 
   const mat = new MeshBasicNodeMaterial();
   mat.colorNode = colored;
   return mat;
+}
+
+// Relocation: shift the entire forge group (platform + embers + sword +
+// pedestal screen + water trough) to land where the SKILLS signboard's
+// arrow points. Sign is at world (-24.5, 0, -11) with rotationY=1.18;
+// arrow direction (cos 1.18, 0, -sin 1.18) ≈ (0.381, 0, -0.925). At 6m
+// along that ray the target lands at world (-22.21, 0, -16.55) → local
+// (+7.79, 0, -10.55). The existing skl_forge_merged centroid sits at
+// local (+5.52, _, -5.98), giving a delta of (+2.27, 0, -4.57). Rounded
+// to (+2.5, 0, -4.5) and applied uniformly to every mesh in the group
+// so their relative layout (pedestal column under screen, anvil on
+// platform, etc.) is preserved.
+const FORGE_DELTA_X = 2.5;
+const FORGE_DELTA_Z = -4.5;
+
+function relocateForgeGroup(root: THREE.Group) {
+  root.traverse((obj) => {
+    const m = obj as THREE.Mesh;
+    if (
+      (m as unknown as { isMesh?: boolean }).isMesh &&
+      isForgeGroupMember(m.name)
+    ) {
+      m.position.x += FORGE_DELTA_X;
+      m.position.z += FORGE_DELTA_Z;
+    }
+  });
 }
 
 /** Same three-tier emission strategy as AboutLandmark / ProjectsLandmark
@@ -409,6 +449,7 @@ const SkillsLandmark: React.FC<SkillsLandmarkProps> = ({ position }) => {
   const landmark = useMemo(() => {
     const r = gltf.scene.clone(true);
     convertToNodeMaterials(r);
+    relocateForgeGroup(r);
     return r;
   }, [gltf.scene]);
 
