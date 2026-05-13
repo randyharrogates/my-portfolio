@@ -363,7 +363,7 @@ function buildForgeMaterial(): MeshStandardNodeMaterial {
   // Multiply by injected vertex colour for within-object weathering.
   // vertexColor() returns vec3(1,1,1) when no per-vertex colour is
   // present, so this is a no-op fallback if injection is skipped.
-  const colored = stoneColored.mul(vertexColor);
+  const colored = stoneColored.mul(vertexColor());
 
   const mat = new MeshStandardNodeMaterial({
     color: new THREE.Color(0xffffff),

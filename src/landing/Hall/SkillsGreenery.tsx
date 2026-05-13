@@ -112,7 +112,7 @@ function buildGradientMaterial(opts: {
   const light = vec3(...opts.light);
   const tier1 = mix(shadow, mid, heightT);
   const tier2 = mix(tier1, light, heightT.mul(heightT).mul(0.55));
-  const colored = tier2.mul(vertexColor);
+  const colored = tier2.mul(vertexColor());
 
   const mat = new MeshStandardNodeMaterial({
     color: new THREE.Color(0xffffff),
