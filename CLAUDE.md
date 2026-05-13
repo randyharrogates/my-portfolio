@@ -98,29 +98,28 @@ The aesthetic is **photoreal-natural ground + neon-magenta-cyan dusk sky + vibra
 
 Reference frames that hold visual coherence: Wakanda Forever Talokan kingdom, Avatar Pandora, Annihilation's shimmer zone. NOT Cyberpunk 2077 (which is fully neon) and NOT Witcher 3 (which has no neon at all).
 
-## /hall water pipeline — VAT, not TSL displacement (REVISED 2026-05-14 evening)
+## /hall water pipeline — full AAA stack, not VAT (REVISED 2026-05-14 evening — 3rd revision)
 
-**The earlier TSL-only direction is partially reversed.** I told you 2026-05-14 morning that TSL displacement + procedural flow was 90% as good as VAT. User pushed back honestly when shown the gap to the Witcher 3 reference — the TSL placeholder (commit `188fb04`) delivers ~15% of the target quality.
+**Iteration history (so we don't drift again):**
+- 2026-05-13: pre-rendered Cycles → video billboard → wrong: flat in 3D orbital scene
+- 2026-05-14 AM: TSL-displaced mesh + procedural flow → 15% of reference quality
+- 2026-05-14 PM: proposed VAT pipeline → wrong, AAA games don't use VAT for water
+- 2026-05-14 PM (current): **full AAA stack with TSL as mesh-displacement layer**
 
-**Updated rule:** animated water surfaces (waterfall, river, pond ripples, fountains) use **VAT (vertex animation texture) from real FLIP fluid bakes**. TSL is reserved for non-fluid effects (wind on trees, scrolling emissive on lava, fresnel rim on vibranium accents).
+**Locked rule:** animated water surfaces (waterfall, river, pond ripples, fountains) ship as the AAA standard stack — exactly what Witcher 3, RDR2, Horizon, Sea of Thieves use:
 
-**The VAT pipeline (custom tooling — we are building this):**
-1. Author a high-tessellation base mesh in Blender (5-15k verts, the static topology that VAT animates).
-2. Run a real FLIP fluid simulation at resolution 96-128 over a 3-6s loop. This is the motion source-of-truth.
-3. Mesh-remap each FLIP frame's variable-topology surface to the fixed base mesh. Options: ray-projection (cast each base vertex along normal to hit the FLIP surface), shrinkwrap modifier per-frame, or grid-aligned mesh from `mesh_smoothen_pos`.
-4. Bake per-frame vertex positions to an RGBA16F texture. Width = padded vertex count, Height = frame count. Format = relative-to-origin positions. Final ~5-15 MB per asset.
-5. Export the static base mesh + position-texture as a GLB with a custom vertex-index attribute.
-6. TSL VAT shader on the runtime mesh: sample the position texture at `(vertexIndex/width, frame/height)`, displace, then layer foam mask + fresnel + wet shader on top.
+1. **Static high-poly mesh** authored in Blender at 5-15k verts. Shape matches average flow path.
+2. **TSL shader** with multiple layers: 3-4 scrolling normal maps at different scales + flow-direction texture (RG, baked from a single-frame FLIP) + Gerstner wave perturbation + foam mask + fresnel rim + Beckmann specular.
+3. **TSL-instanced particle spray system** at every splash zone (~2000-5000 GPU-instanced droplets, physics-curved trajectories, all shader-side).
+4. **Planar mist mesh** at splash zones (stacked semi-transparent planes — substituting for real volumetric fog which WebGPU doesn't support).
+5. **Wet-rock shader** on neighbouring stones within ~5m of splash zones (darker basecolor + lower roughness + higher specular).
+6. **Custom-shaped cliff/riverbed geometry** that channels the flow naturally (multi-stream cascade, not single column).
 
-Houdini Labs `SOP_VertexAnimationTextures` is the AAA standard reference for the pipeline shape. Blender doesn't have this built-in — we are building the equivalent in Python.
+VAT (vertex animation textures) was considered + rejected: AAA games **don't** use VAT for waterfalls/rivers (it's a Houdini/cinematic technique used for cloth, debris, crowd anim, NOT real-time water). The chaos in a waterfall is at the **droplet scale**, not the mesh-sheet scale — VAT can't capture droplets (they're disconnected geometry), but particle systems can.
 
-**Adjacent assets per water feature** (Witcher 2-tier requires more than just the VAT mesh):
-- TSL-instanced particle droplets in the splash zone
-- A planar mist mesh for haze/spray volume
-- Wet-rock shader applied to nearby static rocks (darker basecolor + lower roughness in the splash zone)
-- Multi-layered scrolling normal maps for surface micro-detail
+**The 15% gap is NOT from TSL being weak.** It's from missing the surrounding stack. Build the stack, not a fancier displacement.
 
-**The current TSL waterfall (commit `188fb04`) stays as a visible placeholder while the VAT pipeline is built.** It will be replaced.
+**The current TSL waterfall (commit `188fb04`)** is the *starting* mesh + shader. The full stack is added around/on top of it incrementally.
 
 ## /hall master Blender file + connections.glb architecture (locked 2026-05-14)
 
