@@ -66,12 +66,11 @@ const DRAG_SENS_TOUCH = 0.008;
 const DRAG_THRESHOLD_PX = 3;
 
 const DEG = Math.PI / 180;
-// Widened from ±50°/+15° to ±75°/+35° so the user can look nearly straight
-// up at the new 14 m dome lattice and still tilt 35° down at the floor.
-const HUB_PHI_MIN = Math.PI / 2 - 75 * DEG;
-const HUB_PHI_MAX = Math.PI / 2 + 35 * DEG;
-const ALCOVE_YAW_LIMIT = 15 * DEG;
-const ALCOVE_PITCH_LIMIT = 10 * DEG;
+// Pitch clamps apply to every target: 75° up of horizontal, 35° down.
+// Yaw is free 360° on every target so the user can orbit a landmark
+// the same way they orbit the hub island.
+const ORBIT_PHI_MIN = Math.PI / 2 - 75 * DEG;
+const ORBIT_PHI_MAX = Math.PI / 2 + 35 * DEG;
 
 // Wheel-zoom bounds: multiplied onto the canonical pose's spherical radius.
 // Session 20 relaxed the upper bound from 1.6 to 3.0 — the user can now
@@ -260,15 +259,19 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     dragRef.current.moved = false;
   }, [active, hardCut, flyDuration, targets, camera, targetPose, flyWaypoints]);
 
-  // Pointer-based drag-to-orbit + wheel-to-zoom + grab/grabbing cursor hint.
-  // Listens on the WebGL canvas, in the capture phase so a confirmed drag
-  // can suppress R3F's subsequent click event.
+  // Pointer-based drag-to-orbit + wheel-to-zoom. Listens on the WebGL
+  // canvas in the capture phase so a confirmed drag can suppress R3F's
+  // subsequent click event.
+  //
+  // Cursor policy: this hook does NOT touch the canvas cursor. The
+  // default arrow stays on at rest so the canvas doesn't look
+  // perpetually grabbable. Clickable meshes (house, PoI orbs, doorway
+  // orb) set `cursor: pointer` on hover via their own onPointerOver
+  // handlers and clear it on onPointerOut.
   useEffect(() => {
     if (!dragEnabled) return;
     const el = gl.domElement;
     const drag = dragRef.current;
-    // Cursor affordance — only for mouse pointers (touch has no cursor).
-    el.style.cursor = "grab";
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -281,7 +284,6 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
       drag.startUserPitch = orbitRef.current.userPitch;
       drag.pointerId = e.pointerId;
       drag.pointerType = e.pointerType as "mouse" | "touch" | "pen";
-      if (e.pointerType === "mouse") el.style.cursor = "grabbing";
       try {
         el.setPointerCapture(e.pointerId);
       } catch {
@@ -313,19 +315,15 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
       let yaw = drag.startUserYaw + dx * sens;
       let pitch = drag.startUserPitch + dy * sens;
 
-      if (active === "hub") {
-        // Yaw free 360°. Pitch absolute-clamped relative to canonical phi.
-        const canonical = new THREE.Spherical();
-        poseOffsetSpherical(targets[active], canonical);
-        pitch = THREE.MathUtils.clamp(
-          pitch,
-          HUB_PHI_MIN - canonical.phi,
-          HUB_PHI_MAX - canonical.phi
-        );
-      } else {
-        yaw = THREE.MathUtils.clamp(yaw, -ALCOVE_YAW_LIMIT, ALCOVE_YAW_LIMIT);
-        pitch = THREE.MathUtils.clamp(pitch, -ALCOVE_PITCH_LIMIT, ALCOVE_PITCH_LIMIT);
-      }
+      // Yaw is free on every target; pitch is absolute-clamped relative
+      // to the canonical phi for the current pose.
+      const canonical = new THREE.Spherical();
+      poseOffsetSpherical(targets[active], canonical);
+      pitch = THREE.MathUtils.clamp(
+        pitch,
+        ORBIT_PHI_MIN - canonical.phi,
+        ORBIT_PHI_MAX - canonical.phi
+      );
       orbitRef.current.userYaw = yaw;
       orbitRef.current.userPitch = pitch;
     };
@@ -345,7 +343,6 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
       drag.active = false;
       drag.moved = false;
       drag.pointerId = -1;
-      if (e.pointerType === "mouse") el.style.cursor = "grab";
       try {
         el.releasePointerCapture(e.pointerId);
       } catch {
@@ -369,7 +366,6 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
       el.removeEventListener("pointerup", onPointerUp, { capture: true } as EventListenerOptions);
       el.removeEventListener("pointercancel", onPointerUp, { capture: true } as EventListenerOptions);
       el.removeEventListener("wheel", onWheel);
-      el.style.cursor = "";
     };
   }, [gl, dragEnabled, active, targets]);
 
@@ -438,20 +434,9 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     );
     tmpSph.radius *= zoom.current;
 
-    if (active === "hub") {
-      tmpSph.phi = THREE.MathUtils.clamp(tmpSph.phi, HUB_PHI_MIN, HUB_PHI_MAX);
-    } else {
-      tmpSph.phi = THREE.MathUtils.clamp(
-        tmpSph.phi,
-        tmpCanonical.phi - ALCOVE_PITCH_LIMIT,
-        tmpCanonical.phi + ALCOVE_PITCH_LIMIT
-      );
-      let dTheta = tmpSph.theta - tmpCanonical.theta;
-      // Wrap to [-pi, pi] before clamping so wrap-around doesn't blow out the limit.
-      dTheta = ((dTheta + Math.PI) % (Math.PI * 2)) - Math.PI;
-      dTheta = THREE.MathUtils.clamp(dTheta, -ALCOVE_YAW_LIMIT, ALCOVE_YAW_LIMIT);
-      tmpSph.theta = tmpCanonical.theta + dTheta;
-    }
+    // Pitch is absolute-clamped to the orbit window on every target; yaw
+    // is free 360° so the user can spin around any landmark.
+    tmpSph.phi = THREE.MathUtils.clamp(tmpSph.phi, ORBIT_PHI_MIN, ORBIT_PHI_MAX);
 
     tmpLook.set(pose.lookAt[0], pose.lookAt[1], pose.lookAt[2]);
     tmpA.setFromSpherical(tmpSph);

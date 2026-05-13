@@ -13,16 +13,17 @@ import { AdaptiveDpr } from "@react-three/drei";
 import { useLocation, useNavigate } from "react-router-dom";
 import Scene from "./Scene.tsx";
 import CameraDirector from "./CameraDirector.tsx";
-import Postprocessing from "./Postprocessing.tsx";
+// Postprocessing currently disabled — see comment near the
+// `<Canvas>` JSX below. Re-import when the TSL bloom pipeline is
+// re-tuned. The file still exists in src/landing/Hall/ as a stub
+// for that future work.
+// import Postprocessing from "./Postprocessing.tsx";
 import HUDOverlay from "./HUDOverlay.tsx";
 import Map from "./Map.tsx";
 import HallAudio from "./HallAudio.tsx";
 import {
   HALL_ALCOVE_ORDER,
   HALL_BOOT_POSE,
-  HALL_DOOR_POSE,
-  HALL_DOORWAY_POSE,
-  HALL_HALLWAY_WAYPOINT,
   buildHallTargetPoses,
 } from "../sections.ts";
 import type { HallTargetId, HallTargetPose, SectionId } from "../sections.ts";
@@ -32,14 +33,11 @@ import {
   useReducedMotion,
   useDocumentHidden,
   isMobileViewport,
+  useWebGPUAvailable,
 } from "../use-low-power.ts";
 import "./HallLanding.css";
 
 const BOOT_KEY = "landing.hall.bootSeen";
-const ENTERED_KEY = "landing.hall.entered";
-const INTRO_FLY_DURATION = 2.4;
-
-type HallPhase = "intro" | "entering" | "interactive";
 
 interface FpsSamplerProps {
   onSample: (fps: number) => void;
@@ -62,7 +60,9 @@ const FpsSampler: React.FC<FpsSamplerProps> = ({ onSample }) => {
 };
 
 /** Resolve the deep-link target from the URL hash. `/hall` → hub. `/hall/projects`
- *  → projects. Unknown → hub. */
+ *  → projects. Unknown → hub. Section targets are mapped onto the hub pose
+ *  until Phase 6 lands the satellite islands; deep links still route, they
+ *  just don't fly anywhere distinct yet. */
 function deriveTargetFromPath(pathname: string): HallTargetId {
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length < 2 || parts[0] !== "hall") return "hub";
@@ -71,12 +71,12 @@ function deriveTargetFromPath(pathname: string): HallTargetId {
   return "hub";
 }
 
-/** The Hall — multi-room cinematic landing. Mounted at `/hall` during
- *  Phases 0-7; will become `/` at Phase 8 default-landing swap.
+/** The Hall — archipelago exterior landing. Mounted at `/hall`.
  *
- *  Geometry is placeholder primitive R3F today; each piece is structured
- *  so that swapping in a `useGLTF` load from `public/models/hall/*.glb` is
- *  a one-import change.
+ *  Cathedral interior (Hub, Alcoves, Entrance, outer wall) was unmounted
+ *  on 2026-05-12 in favour of the pure archipelago direction. The only
+ *  rendered element today is the hub island (a floating rock platter);
+ *  Phase 6 will add six satellite islands for the section routes.
  */
 const HallLanding: React.FC = () => {
   const navigate = useNavigate();
@@ -84,51 +84,80 @@ const HallLanding: React.FC = () => {
 
   const reducedMotion = useReducedMotion();
   const hidden = useDocumentHidden();
+
+  // Phase 4.5 Stage 3 (2026-05-12): WebGPU is the only supported renderer
+  // path for /hall. The async probe runs first (resolves to "available"
+  // when navigator.gpu + adapter both succeed); any "unavailable" result
+  // redirects back to the workstation since the scene's materials are
+  // all NodeMaterial and won't compile under the legacy WebGL renderer.
+  const webgpuState = useWebGPUAvailable();
+  useEffect(() => {
+    if (webgpuState === "unavailable") {
+      navigate("/", { replace: true });
+    }
+  }, [webgpuState, navigate]);
+  const useWebGPU = webgpuState === "available";
+  const probingRenderer = webgpuState === "probing";
+  const glFactory = useMemo(() => {
+    if (!useWebGPU) return undefined;
+    // R3F v9 passes the gl factory a props object containing the canvas
+    // plus render props (`{ canvas, powerPreference, antialias, alpha }`),
+    // NOT the canvas element directly. Unwrap it so WebGPURenderer sees
+    // an actual HTMLCanvasElement as its dom element.
+    return async (
+      props: HTMLCanvasElement | { canvas: HTMLCanvasElement }
+    ) => {
+      const canvas =
+        props instanceof HTMLCanvasElement ? props : props.canvas;
+      const [{ WebGPURenderer }, three] = await Promise.all([
+        import("three/webgpu"),
+        import("three"),
+      ]);
+      const renderer = new WebGPURenderer({
+        canvas,
+        antialias: true,
+        powerPreference: "high-performance",
+      });
+      // `PostProcessing.outputColorTransform` reads
+      // `renderer.toneMapping`. ACES (what the WebGL stack used)
+      // crushes the neon palette: saturated magenta horizon
+      // desaturates to red, and the dark rock material falls below
+      // the shadow toe → pure black silhouette. NeutralToneMapping
+      // preserves chroma in highlights, and a small exposure bump
+      // lifts the lightmap rim above the toe so the spire reads.
+      renderer.toneMapping = three.NeutralToneMapping;
+      renderer.toneMappingExposure = 2.2;
+      renderer.outputColorSpace = three.SRGBColorSpace;
+      await renderer.init();
+      return renderer as unknown as import("three").WebGLRenderer;
+    };
+  }, [useWebGPU]);
   const { lowFidelity, reportFps, mode: fidMode, setMode: setFidMode } =
     useFidelityMode();
   const { muted, toggle: toggleMuted } = useAudioMutedToggle();
 
   const mobile = useMemo(() => isMobileViewport(), []);
 
-  const targets = useMemo(() => buildHallTargetPoses(), []);
+  const targets = useMemo(() => {
+    // Phase 6 (2026-05-13): each section flies the camera to its PoI
+    // marker on the hub island top. Hub remains the wide orbital pose.
+    return buildHallTargetPoses();
+  }, []);
 
   const initialTarget = useMemo(
     () => deriveTargetFromPath(location.pathname),
     [location.pathname]
   );
-  const isDeepLink = useMemo(
-    () => initialTarget !== "hub",
-    [initialTarget]
-  );
   const [active, setActive] = useState<HallTargetId>(initialTarget);
-  const [hoveredId, setHoveredId] = useState<SectionId | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [fps, setFps] = useState(0);
   const [transitionEpoch, setTransitionEpoch] = useState(0);
 
-  // Phase machine — drives the door+hallway intro. `intro` shows the door
-  // and parks the camera at HALL_DOOR_POSE; `entering` plays the fly through
-  // the corridor; `interactive` is the normal hub experience.
-  const [phase, setPhase] = useState<HallPhase>(() => {
-    if (reducedMotion || mobile || isDeepLink) return "interactive";
-    try {
-      return sessionStorage.getItem(ENTERED_KEY) === "1"
-        ? "interactive"
-        : "intro";
-    } catch {
-      return "interactive";
-    }
-  });
-
-  // Boot sequence: first visit only, fly camera from BOOT_POSE through a
-  // multi-waypoint path → HUB. Phase 8 polish: instead of a single arc,
-  // we sequence through 4 waypoints loaded from `/data/hall-boot-path.json`
-  // so the boot fly reads as a cinematic descent rather than a snap.
-  // Only applies on the normal (non-intro) path — the door intro replaces
-  // the bird's-eye fly for first-time visitors.
+  // Boot sequence: first visit only, fly camera through a multi-waypoint
+  // path loaded from `/data/hall-boot-path.json`. Now an exterior orbital
+  // reveal of the floating hub island.
   const [bootStarting, setBootStarting] = useState<boolean>(() => {
     if (reducedMotion || mobile) return false;
-    if (phase !== "interactive") return false;
     try {
       return sessionStorage.getItem(BOOT_KEY) !== "1";
     } catch {
@@ -151,7 +180,6 @@ const HallLanding: React.FC = () => {
       .then((r) => (r.ok ? r.json() : null))
       .then((cfg: { waypoints?: Array<{ position: number[]; lookAt: number[]; fov?: number; dwellMs?: number }> } | null) => {
         if (canceled || !cfg?.waypoints?.length) {
-          // Fallback: single fly from BOOT to HUB (the old behaviour).
           setBootStarting(false);
           setTransitionEpoch((x) => x + 1);
           return;
@@ -163,14 +191,10 @@ const HallLanding: React.FC = () => {
         }));
         dwellsRef.current = cfg.waypoints.map((w) => w.dwellMs ?? 1000);
         bootPathRef.current = path;
-        // Step through waypoints starting at index 1 — index 0 is the
-        // initial camera pose (BOOT_POSE), no fly needed there.
         let i = 1;
         const step = (): void => {
           if (canceled) return;
           if (i >= path.length) {
-            // Final waypoint reached. Clear boot state — the camera
-            // now rests at HALL_HUB_POSE (last waypoint matches).
             setBootWaypoint(null);
             setBootStarting(false);
             setTransitionEpoch((x) => x + 1);
@@ -182,8 +206,6 @@ const HallLanding: React.FC = () => {
           i += 1;
           setTimeout(step, dwell);
         };
-        // Slight delay so Canvas + initial render complete before the
-        // first fly kicks off.
         setTimeout(step, 250);
       })
       .catch(() => {
@@ -196,37 +218,6 @@ const HallLanding: React.FC = () => {
     };
   }, [bootStarting]);
 
-  // Door fly waypoints — only populated while phase === "entering".
-  const introWaypoints = useMemo<HallTargetPose[] | undefined>(() => {
-    if (phase !== "entering") return undefined;
-    return [HALL_DOORWAY_POSE, HALL_HALLWAY_WAYPOINT];
-  }, [phase]);
-
-  const onEnterDoor = useCallback(() => {
-    setPhase((p) => {
-      if (p !== "intro") return p;
-      setActive("hub");
-      setTransitionEpoch((x) => x + 1);
-      return "entering";
-    });
-  }, []);
-
-  // When the entry fly completes, settle into the interactive phase and
-  // persist "user has been here" so future visits skip the door.
-  useEffect(() => {
-    if (phase !== "entering") return;
-    const t = setTimeout(() => {
-      setPhase("interactive");
-      try {
-        sessionStorage.setItem(ENTERED_KEY, "1");
-        sessionStorage.setItem(BOOT_KEY, "1");
-      } catch {
-        /* ignore */
-      }
-    }, INTRO_FLY_DURATION * 1000);
-    return () => clearTimeout(t);
-  }, [phase]);
-
   // Sync URL hash → camera target. Keeps deep links working & back-button
   // navigation moving the camera.
   useEffect(() => {
@@ -238,11 +229,9 @@ const HallLanding: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  // Sync camera target → URL hash (replace, not push, to avoid spamming
-  // history with every key press).
+  // Sync camera target → URL hash (replace, not push).
   useEffect(() => {
-    const desired =
-      active === "hub" ? "/hall" : `/hall/${active}`;
+    const desired = active === "hub" ? "/hall" : `/hall/${active}`;
     if (location.pathname !== desired) {
       navigate(desired, { replace: true });
     }
@@ -257,24 +246,11 @@ const HallLanding: React.FC = () => {
     });
   }, []);
 
-  const handleAlcoveSelect = useCallback(
-    (id: SectionId) => {
-      flyTo(id);
-    },
-    [flyTo]
-  );
-
-  // Keyboard navigation: 0 → hub, 1-6 → alcove, M → map, Esc → close map /
-  // return to workstation if at hub. During intro, Enter triggers the door.
+  // Keyboard navigation: 0 → hub, 1-6 → section, M → map,
+  // Esc → close map / return to workstation if at hub.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target && (e.target as HTMLElement).tagName === "INPUT") return;
-      if (phase === "intro" && (e.key === "Enter" || e.key === " ")) {
-        e.preventDefault();
-        onEnterDoor();
-        return;
-      }
-      if (phase !== "interactive") return;
       if (e.key === "m" || e.key === "M") {
         e.preventDefault();
         setMapOpen((v) => !v);
@@ -301,7 +277,7 @@ const HallLanding: React.FC = () => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, mapOpen, navigate, flyTo, phase, onEnterDoor]);
+  }, [active, mapOpen, navigate, flyTo]);
 
   const handleReturnToWorkstation = useCallback(() => {
     navigate("/");
@@ -312,81 +288,62 @@ const HallLanding: React.FC = () => {
     else setFidMode("low");
   }, [fidMode, setFidMode]);
 
-  // Reduced-motion: hard-cut camera changes, lock hologram + atmosphere
-  // animation. Document-hidden: freeze the frame loop entirely.
   const hardCut = reducedMotion;
-  const idleOrbitDisabled =
-    reducedMotion || hoveredId !== null || mapOpen || phase !== "interactive";
+  const idleOrbitDisabled = reducedMotion || mapOpen;
   const staticMode = reducedMotion;
-  const dragEnabled = phase === "interactive";
 
-  // While the door intro is running, override the hub pose so CameraDirector
-  // parks the camera outside the door (intro) and flies through the corridor
-  // on the next render (entering). On entering→interactive, the override is
-  // dropped and the camera rests at the real hub pose.
+  // While the boot fly is running, point the "hub" target at the current
+  // waypoint so CameraDirector flies the camera there.
   const effectiveTargets = useMemo(() => {
-    if (phase === "intro") return { ...targets, hub: HALL_DOOR_POSE };
     if (bootStarting) {
-      // While the boot fly is running, point the "hub" target at the
-      // current waypoint so CameraDirector flies the camera there. The
-      // boot sequencer advances waypoints via setBootWaypoint.
       const dest = bootWaypoint ?? HALL_BOOT_POSE;
       return { ...targets, hub: dest };
     }
     return targets;
-  }, [phase, bootStarting, bootWaypoint, targets]);
+  }, [bootStarting, bootWaypoint, targets]);
 
   const initialCameraPosition = useMemo<[number, number, number]>(() => {
-    if (phase === "intro") return HALL_DOOR_POSE.position;
     if (bootStarting) return HALL_BOOT_POSE.position;
     return targets[active].position;
-  }, [phase, bootStarting, targets, active]);
+  }, [bootStarting, targets, active]);
 
-  const effectiveFlyDuration =
-    phase === "entering"
-      ? INTRO_FLY_DURATION
-      : bootStarting
-      ? 1.0  // per-waypoint duration during the multi-step boot fly
-      : 1.2;
+  const effectiveFlyDuration = bootStarting ? 1.0 : 1.2;
 
   const dprCap: [number, number] = mobile ? [1, 1] : [1, 1.25];
 
   return (
     <div className="hall-scene" role="main">
+      {probingRenderer ? null : (
       <Canvas
-        shadows={false}
+        shadows
         dpr={dprCap}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        gl={glFactory ?? { antialias: true, powerPreference: "high-performance" }}
         camera={{
           position: initialCameraPosition,
           fov: 46,
           near: 0.1,
-          far: 60,
+          far: 500,
         }}
         frameloop={hidden ? "never" : "always"}
-        onPointerMissed={() => setHoveredId(null)}
       >
         <Suspense fallback={null}>
-          <Scene
-            hoveredId={hoveredId}
-            onAlcoveHover={setHoveredId}
-            onAlcoveSelect={handleAlcoveSelect}
-            lowFidelity={lowFidelity}
-            staticMode={staticMode}
-            showEntrance={phase !== "interactive"}
-            entranceClosed={phase === "intro"}
-            onEnterDoor={onEnterDoor}
-          />
+          <Scene lowFidelity={lowFidelity} staticMode={staticMode} />
           <CameraDirector
             targets={effectiveTargets}
             active={bootStarting ? "hub" : active}
-            flyWaypoints={introWaypoints}
             hardCut={hardCut}
             idleOrbitDisabled={idleOrbitDisabled}
-            dragEnabled={dragEnabled}
+            dragEnabled
             flyDuration={effectiveFlyDuration}
           />
-          <Postprocessing enabled={!lowFidelity && !reducedMotion} />
+          {/* Postprocessing disabled on Stage 3 — TSL bloom + tone
+              mapping under WebGPU was crushing the scene to near-black.
+              The renderer's `toneMapping` + `outputColorSpace` (set in
+              the gl factory) handle final colour transform directly,
+              and the scene renders correctly without a composite pass.
+              Bloom + polish post-fx come back in a later session once
+              the pipeline is properly tuned for `three/webgpu`. */}
+          {/* <Postprocessing enabled={!lowFidelity && !reducedMotion} /> */}
           <AdaptiveDpr pixelated={false} />
           <FpsSampler
             onSample={(f) => {
@@ -396,20 +353,23 @@ const HallLanding: React.FC = () => {
           />
         </Suspense>
       </Canvas>
+      )}
 
       <HUDOverlay
-        active={hoveredId ?? active}
-        hoveredId={hoveredId}
+        active={active}
+        hoveredId={null}
         lowFidelity={lowFidelity}
         audioMuted={muted}
         fps={fps}
-        phase={phase}
+        phase="interactive"
         onToggleMap={() => setMapOpen((v) => !v)}
         onToggleAudio={toggleMuted}
         onToggleFidelity={toggleFidelity}
         onReturnToWorkstation={handleReturnToWorkstation}
         onJumpToTerminal={() => navigate("/about")}
-        onEnterDoor={onEnterDoor}
+        onEnterDoor={() => {
+          /* no-op — entrance/door removed with cathedral */
+        }}
       />
 
       <Map

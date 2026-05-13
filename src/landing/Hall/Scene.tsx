@@ -1,91 +1,112 @@
 /** @format */
 
 import React from "react";
-import { Environment } from "@react-three/drei";
-import Hub from "./Hub.tsx";
-import { Alcoves } from "./Alcove.tsx";
+import Island from "./Island.tsx";
 import Atmosphere from "./Atmosphere.tsx";
 import Lighting from "./Lighting.tsx";
-import Entrance from "./Entrance.tsx";
-import type { SectionId } from "../sections.ts";
-
-// Session 22: custom Wakandan-dusk HDRI baked via
-// `blender/scripts/atmo/skybox-bake.py`. Deep navy zenith → warm
-// magenta horizon band → amber sun glow → dark base. Replaces the
-// previous Drakensberg mountain photo for a cinematic dusk feel.
-const VISTA_HDRI = `${process.env.PUBLIC_URL}/hdri/hall-vista.hdr`;
+import Skybox from "./Skybox.tsx";
+import GridFloor from "./GridFloor.tsx";
+import PoiMarkers from "./PoiMarkers.tsx";
+import AboutLandmark from "./AboutLandmark.tsx";
+import EnterHouseOrb from "./EnterHouseOrb.tsx";
+import ProjectsLandmark from "./ProjectsLandmark.tsx";
+import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
+import Signboard from "./Signboard.tsx";
+import { HALL_POI_POSITIONS } from "../sections.ts";
 
 interface SceneProps {
-  hoveredId: SectionId | null;
-  onAlcoveHover: (id: SectionId | null) => void;
-  onAlcoveSelect: (id: SectionId) => void;
   lowFidelity: boolean;
   staticMode: boolean;
-  /** True while the door+hallway prologue is mounted (intro or entering). */
-  showEntrance: boolean;
-  /** True only during the intro phase — door is intact and clickable. */
-  entranceClosed: boolean;
-  /** Fires when the user clicks the door or activates the keyboard fallback. */
-  onEnterDoor: () => void;
 }
 
-/** Composes hub + 6 alcoves + atmosphere + lighting + scene-level fog.
- *  Mounted inside a single Canvas in HallLanding. */
-const Scene: React.FC<SceneProps> = ({
-  hoveredId,
-  onAlcoveHover,
-  onAlcoveSelect,
-  lowFidelity,
-  staticMode,
-  showEntrance,
-  entranceClosed,
-  onEnterDoor,
-}) => {
+/** Archipelago hub scene: neon-dusk gradient skybox + hub island +
+ *  atmosphere motes + lighting rig. Phase 3 style overlay landed
+ *  2026-05-12 — replaced the daylight Drakensberg HDRI with a
+ *  procedural gradient sphere; rewrote the lighting rig for
+ *  neon-on-dark; recoloured fog/motes for the saturated palette.
+ */
+const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
   return (
     <>
-      {/* Session 26 daylight Drakensberg HDRI as both scene background AND
-          IBL. backgroundIntensity 0.65 keeps the daylight punchy through
-          the arched windows without blowing out the highlights;
-          environmentIntensity 0.55 keeps the interior cool + dim —
-          matching the reference's dramatic interior/exterior contrast. */}
-      {!lowFidelity && (
-        <Environment
-          files={VISTA_HDRI}
-          background
-          backgroundBlurriness={0.08}
-          backgroundIntensity={0.65}
-          environmentIntensity={0.55}
-        />
-      )}
-      {/* Fallback for low-fidelity mode where Environment is skipped — solid
-          cool grey so the dome glass doesn't render against transparent. */}
-      {lowFidelity && <color attach="background" args={["#5a6b7a"]} />}
-      {/* Cool atmospheric haze fog matching the daylight palette; far pushed
-       *  past the outer wall + 30 m corridor so they stay readable from the
-       *  boot pose. */}
-      <fog attach="fog" args={["#8090a0", 22, 90]} />
+      <Skybox />
+      <fog attach="fog" args={["#1a0b30", 160, 360]} />
       <Lighting lowFidelity={lowFidelity} />
-      <Hub />
-      <Alcoves
-        onSelect={onAlcoveSelect}
-        hoveredId={hoveredId}
-        onHoverChange={onAlcoveHover}
-        staticMode={staticMode}
+      <GridFloor />
+      <Island />
+      {/* About landmark — house + environment (yard, pond, plants,
+          mailbox, path stones) loaded as two separate GLBs so the
+          environment can be re-positioned / re-styled / regenerated
+          independently of the dwelling. Both sit at the front-centre
+          PoI spot (index 0 in HALL_ALCOVE_ORDER); y is dropped to 0
+          since the assets bake their own vertical extent. */}
+      <AboutLandmark
+        position={[HALL_POI_POSITIONS[0][0], 0, HALL_POI_POSITIONS[0][2]]}
       />
+      {/* Doorway orb — clicking enters the house i.e. routes to the
+          terminal workstation at "/". Positioned just in front of the
+          house's +Z (door) face at eye-height so it reads from the
+          /hall/about camera pose. Stays small on the wide /hall view. */}
+      <EnterHouseOrb
+        position={[
+          HALL_POI_POSITIONS[0][0],
+          2.3,
+          HALL_POI_POSITIONS[0][2] + 4.8,
+        ]}
+      />
+      {/* Funky hand-painted signboard, planted to the camera-LEFT of the
+          doorway orb. Arrow on the plank visually points to the orb so
+          the user reads "ABOUT ME →" then their eye follows the arrow
+          straight to the glowing orb. RotationY 0.5 rad ≈ 28°: plank
+          face turns toward the /hall/about camera (which sits at +X +Z),
+          and the local-+X arrow direction lands on the orb's world
+          position to the upper-right. */}
+      <Signboard
+        position={[
+          HALL_POI_POSITIONS[0][0] - 2.5,
+          0,
+          HALL_POI_POSITIONS[0][2] + 6.0,
+        ]}
+        rotationY={0.5}
+        text="ABOUT ME"
+      />
+      {/* /projects landmark — crashed mecha-satellite at the east rim.
+          The wreck itself is clickable -> /hall/projects close-up. The
+          terminal orb sits ~3.8m above the terminal console screen and
+          jumps straight to /projects/credit-memo. World position takes
+          the PoI's planar (x,z) and grounds y to 0 (asset bakes its
+          own vertical extent + crash tilt). */}
+      <ProjectsLandmark
+        position={[HALL_POI_POSITIONS[1][0], 0, HALL_POI_POSITIONS[1][2]]}
+      />
+      {/* Terminal orb: hovers above the standalone GROUND pedestal beside
+          the wreck. Pedestal was authored in Blender at (9.0, 2.5) on the
+          ground with the screen at z=1.62. With Blender's export_yup, the
+          Blender (x, y, z) → Three (x, z, -y), so the screen lands in world
+          coords at (POI[1].x + 9.0, 1.62, POI[1].z + (-2.5)) =
+          (POI[1].x + 9.0, 1.62, POI[1].z - 2.5). Orb sits ~1.4 m above. */}
+      <ProjectsTerminalOrb
+        position={[
+          HALL_POI_POSITIONS[1][0] + 9.0,
+          3.0,
+          HALL_POI_POSITIONS[1][2] - 2.5,
+        ]}
+      />
+      {/* Projects signboard — same hand-painted plank style as the house
+          ABOUT ME sign, but planted to the camera-LEFT of the doorway-
+          equivalent (the ground pedestal). Arrow on the plank points
+          right-up toward the teal orb hovering over the pedestal. */}
+      <Signboard
+        position={[
+          HALL_POI_POSITIONS[1][0] + 6.5,
+          0,
+          HALL_POI_POSITIONS[1][2] - 4.5,
+        ]}
+        rotationY={-0.6}
+        text="CASE STUDIES"
+        scale={1.3}
+      />
+      <PoiMarkers />
       <Atmosphere lowFidelity={lowFidelity} staticMode={staticMode} />
-      {showEntrance && (
-        <Entrance closed={entranceClosed} onEnter={onEnterDoor} />
-      )}
-      {/* Background floor extension for off-camera framing — solid dark plane
-       *  well below the hub so god-ray cone clips into something instead of
-       *  disappearing into the fog. */}
-      <mesh
-        position={[0, -0.1, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
-        <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#05080a" roughness={1} metalness={0} />
-      </mesh>
     </>
   );
 };

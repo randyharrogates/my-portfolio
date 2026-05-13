@@ -1,41 +1,34 @@
 {
   "$schema": "boot-path-v1",
-  "generated": "2026-05-12",
-  "description": "Multi-waypoint camera path for the Hall first-load boot fly. CameraDirector.tsx walks these in order, flying via B-spline arc between each. Final waypoint blends into HALL_HUB_POSE. Phase 9 added the boot-corridor waypoint to traverse the extended 30 m entry hallway.",
+  "generated": "2026-05-13",
+  "description": "Multi-waypoint camera path for the Hall first-load boot fly. Archipelago version (Phase 6 rescale, 2026-05-13): waypoints scaled ~1.85x to match the hub island's 2.0x scale-up. Cinematic exterior descent that reveals the floating hub island silhouette before settling at HALL_HUB_POSE.",
   "waypoints": [
     {
       "id": "boot-start",
-      "position": [0, 44, 52],
-      "lookAt": [0, 4, 0],
+      "position": [0, 110, 160],
+      "lookAt": [0, -6, 0],
       "fov": 56,
       "dwellMs": 0
     },
     {
-      "id": "boot-corridor",
-      "position": [0, 6, 68],
-      "lookAt": [0, 4, 30],
-      "fov": 48,
+      "id": "boot-reveal-spire",
+      "position": [92, 8, 118],
+      "lookAt": [0, -16, 0],
+      "fov": 50,
+      "dwellMs": 1800
+    },
+    {
+      "id": "boot-orbit-half",
+      "position": [-74, 28, 100],
+      "lookAt": [0, -8, 0],
+      "fov": 50,
       "dwellMs": 1400
     },
     {
-      "id": "boot-descent",
-      "position": [18, 22, 34],
-      "lookAt": [-4, 6, -8],
-      "fov": 54,
-      "dwellMs": 1100
-    },
-    {
-      "id": "boot-sweep",
-      "position": [12, 10, 16],
-      "lookAt": [0, 6, 0],
-      "fov": 52,
-      "dwellMs": 900
-    },
-    {
       "id": "boot-settle",
-      "position": [0, 8, 22],
-      "lookAt": [0, 6, 0],
-      "fov": 52,
+      "position": [70, 42, 96],
+      "lookAt": [0, -10, 0],
+      "fov": 48,
       "dwellMs": 0
     }
   ]

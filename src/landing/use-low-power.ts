@@ -77,6 +77,39 @@ export function useFidelityMode(): {
   };
 }
 
+type WebGPUState = "probing" | "available" | "unavailable";
+
+/** Async feature-detects WebGPU: checks `navigator.gpu` and requests an
+ *  adapter. Returns "probing" until the adapter probe resolves, then
+ *  "available" or "unavailable". Phase 1.5 of the archipelago build
+ *  consumes this to decide whether the Hall Canvas mounts a
+ *  `WebGPURenderer` or falls back to default WebGL. */
+export function useWebGPUAvailable(): WebGPUState {
+  const [state, setState] = useState<WebGPUState>("probing");
+  useEffect(() => {
+    let cancelled = false;
+    const probe = async () => {
+      try {
+        const gpu = (navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+        if (!gpu) {
+          if (!cancelled) setState("unavailable");
+          return;
+        }
+        const adapter = await gpu.requestAdapter();
+        if (cancelled) return;
+        setState(adapter ? "available" : "unavailable");
+      } catch {
+        if (!cancelled) setState("unavailable");
+      }
+    };
+    probe();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return state;
+}
+
 /** Tracks the viewport aspect ratio (width / height) and re-renders on
  *  resize / orientationchange. Used to swap the 3D camera pose between
  *  landscape and portrait framings. */

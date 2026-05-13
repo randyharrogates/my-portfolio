@@ -154,25 +154,92 @@ export function alcoveFocalPose(index: number): HallTargetPose {
   };
 }
 
-/** Idle hub viewpoint — elevated platform at ~8 m looking gently downward
- *  at the rotunda centre. Doubled from Session 12's 4 m / 11 m for the
- *  Session 20 2× rescale. FOV 52° still embraces the new vertical real
- *  estate; containment cylinder in CameraDirector keeps wheel-zoom
- *  bounded inside r ≤ 29.5 m / y ∈ [0.6, 27 m]. */
+/** Idle hub viewpoint — exterior orbital pose framing the floating hub
+ *  island. Camera pulled back further on Phase 6 since the island
+ *  scaled up 2.0× to accommodate six distinct themed landmarks. FOV
+ *  48° gives the new silhouette breathing room. */
 export const HALL_HUB_POSE: HallTargetPose = {
-  position: [0, 8.0, 22.0],
-  lookAt: [0, 6.0, 0],
-  fov: 52,
+  position: [70, 42.0, 96.0],
+  lookAt: [0, -10.0, 0],
+  fov: 48,
 };
 
-/** Bird's-eye pose used by the boot sequence + map "fly camera into view"
- *  on first load. The boot pose intentionally violates the containment
- *  cylinder (above the dome) so first-load reads as a "cinematic
- *  approach" from outside; CameraDirector applies containment only AFTER
- *  the boot fly completes. */
+/* -------------------------------------------------------------------------
+ *  Phase 6 — Points of interest on the hub island.
+ *
+ *  Inspired by jordan-breton.com: instead of separate satellite
+ *  islands, the navigation lives ON the hub. Each section is a small
+ *  marker placed at a distinct position on the platter's top surface;
+ *  the camera flies between them on URL change. Keeps the whole
+ *  portfolio as one coherent place.
+ * ------------------------------------------------------------------------ */
+
+/** Per-section landmark positions on the hub island top. Phase 6
+ *  themed layout: each section is a distinct landmark (not floating
+ *  marker), and the placements are intentionally NON-uniform so the
+ *  island reads as an organic landscape rather than a turntable.
+ *
+ *  Hub platter top sits at world y=0 and now spans roughly r=56 (2.0×
+ *  scale-up). Each landmark sits in its own "district" of the
+ *  platter, themed:
+ *
+ *  - about     → house with desk    — front-centre, the dwelling
+ *  - projects  → crashed satellite  — east rim, half-buried, impact site
+ *  - skills    → waterfall / river  — west rim, water tumbling off edge
+ *  - blog      → tree               — deep back-left, vertical canopy
+ *  - resume    → garden             — near the house (cultivated patch)
+ *  - contact   → entrance / dock    — south, the visitor approach
+ *
+ *  Y is +1.6 — just above the rocky displacement so PoI markers float
+ *  clear of the rim. When real Blender-authored landmarks land they
+ *  will replace the markers and sit ON the rock surface at y=0 (the
+ *  asset itself contains the vertical extent). Order follows
+ *  `HALL_ALCOVE_ORDER`. */
+export const HALL_POI_POSITIONS: Array<[number, number, number]> = [
+  [4,    1.6, -8],   // about      — house, front-centre dwelling
+  [32,   1.6,  18],  // projects   — crashed satellite, east-rim impact
+  [-30,  1.6, -6],   // skills     — waterfall, west rim falling off
+  [-14,  1.6, -36],  // blog       — tree, deep back-left canopy
+  [18,   1.6, -4],   // resume     — garden, adjacent to the house
+  [0,    1.6,  38],  // contact    — entrance, south landing
+];
+
+/** Camera focal pose for each PoI. The camera arcs around the PoI at
+ *  an oblique angle so the marker reads against the magenta skybox /
+ *  cyan grid rather than the rock immediately behind it. Height +9 m
+ *  and an outward radial offset keep the framing readable. */
+export function poiFocalPose(index: number): HallTargetPose {
+  const p = HALL_POI_POSITIONS[index] ?? [0, 1.6, 0];
+  // Direction from origin → PoI, normalised to give us the outward
+  // radial axis. Camera sits 18 m beyond the PoI on that axis,
+  // tangentially shifted so we don't look straight down the spoke.
+  const dx = p[0];
+  const dz = p[2];
+  const len = Math.max(Math.hypot(dx, dz), 0.0001);
+  const rx = dx / len;
+  const rz = dz / len;
+  // Tangent (rotated 90°) for the sideways camera offset.
+  const tx = -rz;
+  const tz = rx;
+  const outRadius = 18.0;
+  const tangentOffset = 10.0;
+  return {
+    position: [
+      p[0] + rx * outRadius + tx * tangentOffset,
+      p[1] + 9.0,
+      p[2] + rz * outRadius + tz * tangentOffset,
+    ],
+    lookAt: [p[0], p[1] - 0.5, p[2]],
+    fov: 46,
+  };
+}
+
+/** Bird's-eye pose used by the boot sequence on first load. Starts high
+ *  + far so the cinematic descent reveals the island silhouette over
+ *  several seconds. */
 export const HALL_BOOT_POSE: HallTargetPose = {
-  position: [0, 44, 52],
-  lookAt: [0, 4.0, 0],
+  position: [0, 110, 160],
+  lookAt: [0, -6.0, 0],
   fov: 56,
 };
 
@@ -234,13 +301,34 @@ export const HALL_HALLWAY_WAYPOINT: HallTargetPose = poseAlongEntrance(
   46
 );
 
-/** Build a flat map of target id → pose for the CameraDirector. */
+/** Per-section camera pose overrides. When a section has an authored
+ *  landmark with a specific best-framing angle, register the pose
+ *  here; otherwise the generic `poiFocalPose` is used. */
+const POI_POSE_OVERRIDES: Partial<Record<SectionId, HallTargetPose>> = {
+  // /about — frame the house from the south so the door, steps, plants,
+  // path stones and mailbox all read. House lives at (~4, 0, -8) with
+  // its door on the -Z side; camera sits ~14 m south and ~6 m above.
+  about: {
+    // House at world (4, 0, -8). Door + decorations are on the +Z face
+    // of the house (Blender authored the door on -Y; GLTF export_yup
+    // flips axes so -Y becomes +Z). Camera sits on the +Z side looking
+    // -Z back at the house so the door, steps, plants, path, and
+    // mailbox all read.
+    position: [5, 5.5, 8],
+    lookAt: [4, 2.4, -8],
+    fov: 50,
+  },
+};
+
+/** Build a flat map of target id → pose for the CameraDirector. Phase
+ *  6: each section flies the camera to its on-island landmark / PoI
+ *  marker. Hub remains the wide orbital. */
 export function buildHallTargetPoses(): Record<HallTargetId, HallTargetPose> {
   const out: Record<string, HallTargetPose> = {
     hub: HALL_HUB_POSE,
   };
   HALL_ALCOVE_ORDER.forEach((id, i) => {
-    out[id] = alcoveFocalPose(i);
+    out[id] = POI_POSE_OVERRIDES[id] ?? poiFocalPose(i);
   });
   return out as Record<HallTargetId, HallTargetPose>;
 }

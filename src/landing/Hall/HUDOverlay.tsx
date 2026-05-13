@@ -48,7 +48,7 @@ const HUDOverlay: React.FC<HUDOverlayProps> = ({
         <span className="hall-hud__dot" />
         {isIntro
           ? "the hall · entrance · click the door"
-          : "the hall · phase 3-7 wired · placeholder geometry"}
+          : "the hall · archipelago · hub island"}
       </div>
 
       {/* Top-right: utility controls (suppressed during intro to keep the
@@ -96,7 +96,7 @@ const HUDOverlay: React.FC<HUDOverlayProps> = ({
       {!isIntro && (
         <div className="hall-hud__label">
           <span className="hall-hud__label-eyebrow">
-            {isHub ? "hub" : "alcove"}
+            {isHub ? "hub" : "island"}
           </span>
           <span
             className="hall-hud__label-title"
@@ -106,10 +106,10 @@ const HUDOverlay: React.FC<HUDOverlayProps> = ({
                 : undefined
             }
           >
-            {isHub ? "workstation rotunda" : theme?.title ?? ""}
+            {isHub ? "hub island" : theme?.title ?? ""}
           </span>
           <span className="hall-hud__label-subtitle">
-            {isHub ? "idle orbit · drag to rotate" : theme?.subtitle ?? ""}
+            {isHub ? "orbital view · drag to rotate" : theme?.subtitle ?? ""}
           </span>
         </div>
       )}
@@ -131,8 +131,6 @@ const HUDOverlay: React.FC<HUDOverlayProps> = ({
       {/* Bottom-left: keymap hint — replaced with door-entry prompt in intro. */}
       {!isIntro && (
         <div className="hall-hud__keys">
-          <span>1–6 alcove</span>
-          <span>·</span>
           <span>0 hub</span>
           <span>·</span>
           <span>M map</span>

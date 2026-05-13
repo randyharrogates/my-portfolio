@@ -50,6 +50,36 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 
 `src/data/portfolio.ts` is the single source of truth for personal content (identity, tech stack, roles, certifications, education, interests, social links). `AboutMe.tsx` consumes it directly; the ambient 3D layer also reads from it. Editing `portfolioData` here propagates everywhere — never duplicate content into a component.
 
+## /hall landmark authoring — Cycles bake workflow (committed 2026-05-13)
+
+**Rule — no exceptions:** every mesh that ships in a `/hall` landmark GLB carries baked shading and shadows. Walls, roofs, windows, doors, chimneys, shutters, eave brackets, ridge caps, cornices, awnings, posts, rocks, plants, ground, props, trees, grass — **everything**. The only meshes allowed to ship without a bake are emissive light sources (lantern bulbs, chimney embers, pond glow rings) which are supposed to read as uniform glow. If you add a new piece of architecture mid-session, it MUST be added to a bake group before the GLB is re-exported — do not let it ship as flat-colour Principled BSDF.
+
+The `/hall` archipelago landmarks (house, satellite, waterfall, tree, garden, entrance, plus all environment assets — rocks, plants, ponds, ground patches, etc.) are authored in Blender via MCP and **every asset is finished with a full Cycles bake before export**. Reason: WebGPU's `MeshStandardNodeMaterial` pipeline doesn't deliver real-time shadows or per-vertex variation correctly in our setup, so we bake lighting + shadows + AO + colour variation directly into a diffuse texture per asset. That texture ships in the GLB and the React side just samples it.
+
+**Workflow per landmark:**
+1. Author geometry in Blender via MCP, **showing the work in the open Blender GUI** (see `feedback_blender_workflow.md` in user memory — never headless during authoring).
+2. Set up a Cycles bake scene that matches the runtime lighting direction:
+   - Sun lamp from the same angle as the `Lighting.tsx` magenta directional (currently `[40, 50, 20]`, colour `#ff5fa8`).
+   - A cooler fill matching the cyan rim (`[-45, 28, -35]`, `#5feaff`).
+   - World/environment background tinted to the skybox horizon so indirect light has the right magenta-cyan colour shift.
+3. UV-unwrap every asset (Smart UV Project or Cube projection — whichever produces fewer seam artifacts for the geometry).
+4. Bake `COMBINED` pass (direct + indirect + AO + cast shadows) at 1024×1024 or 2048×2048 per asset, with 16-pixel UV island margin to avoid seam bleed.
+5. Save baked PNG to `public/models/hall/landmarks/<asset>-baked.png`.
+6. Rewire the asset's material so the BSDF base colour reads from the baked image texture.
+7. Export GLB with `export_image_format='AUTO'` so the baked PNG is packed into the GLB.
+8. On the React side, `AboutLandmark.tsx`'s material conversion preserves the texture map (`src.map`) when converting to `MeshStandardNodeMaterial` and pipes it through the texture-based emission branch so the bake survives even without scene lights reaching the material.
+
+**Bake group strategy:** assets are baked in groups (ground+boulders together, all foliage together, etc.) so the inter-shadowing reads correctly — e.g. the house casts a shadow onto the ground, the tree casts a shadow onto bushes. The shadow caster objects stay in the scene during the bake but their pixels aren't the target.
+
+**The pragmatic shortcut for stylised landmarks:** if a single asset doesn't need cast shadows from neighbours (e.g. a pond ring, a beacon finial), it can be baked alone in a neutral hemisphere — much faster and the result still has surface AO + colour variation baked in.
+
+**Never ship a `/hall` landmark with primitive-shape Principled BSDF flat colour materials again.** That's been the visual ceiling we kept hitting; Cycles bake is the floor going forward.
+
+**Pre-export checklist (run mentally before every GLB export):**
+1. List every non-emissive mesh added since the last bake.
+2. For each, confirm it is part of a bake group (its material reads from a baked image texture, not a flat colour or procedural shader).
+3. If any new mesh lacks a bake, group it with peers (or bake it alone in a neutral hemisphere) before exporting. Do not export with flat-colour holes in the scene.
+
 ## Ambient 3D Background
 
 A subtle slow-drifting agent graph sits behind every page (`AmbientCanvas` mounted in `App.tsx`). Lazy-loaded via `React.lazy` so the R3F core ships as a separate chunk and doesn't block first paint. The graph is `pointer-events: none` and decorative only — it doesn't intercept clicks and isn't interactive. On mobile the terminal window covers most of the viewport, so the canvas is largely hidden behind it; that is accepted.

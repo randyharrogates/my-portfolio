@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-05-13
+
+### Added
+
+- **(landing)** Archipelago pivot — Hall route reimagined as a stylised floating archipelago (central hub island + satellite landmarks per section) replacing the cathedral typology. Phase 1.5 (WebGPU substrate) + Phase 2 (hub island base) + first two Phase 7 landmarks (about + projects) all land in this drop. Visual reference target: samsy.ninja-tier WebGPU graphics; build budget held to GitHub Pages free-tier
+- **(landing)** Three.js `WebGPURenderer` substrate (Phase 1.5) — `Scene.tsx` now mounts under R3F's WebGPU pipeline using `MeshStandardNodeMaterial` / `MeshBasicNodeMaterial` (from `three/webgpu`). All hand-authored TSL graphs (`positionLocal`, `length`, `smoothstep`, `pow`, `uniform`, `mix`) flow through the node material system. WebGL fallback path retained
+- **(landing)** `Island.tsx` — Blender-authored hub island GLB (`island-hub.glb`, 254 KB) with baked AO + lightmap KTX2 textures (`public/textures/hall/baked/{ao,lightmap}/island-hub.ktx2`, ~200 KB combined). 60 m diameter rock platter with jagged underside, floats at y=0
+- **(landing)** `Skybox.tsx` — procedural neon-dusk gradient skybox (saturated magenta/cyan/purple sphere) replacing the daylight Drakensberg HDRI. Pure shader (no texture sample), tinted to match the new key/rim lighting rig
+- **(landing)** `GridFloor.tsx` — receding neon grid floor under the archipelago for spatial reference
+- **(landing)** `MotesGPU.tsx` — compute-shader particle motes ported to TSL, replacing the CPU-side `Atmosphere.tsx` mote loop. Real GPU-side simulation enabled by the WebGPU substrate
+- **(landing)** `PoiMarkers.tsx` — six floating glowing orb markers placed at `HALL_POI_POSITIONS`, one per section. Solid inner sphere with TSL "hot core" lift + soft outer halo with additive blending + slow vertical bob. Click jumps the camera via the React Router hash. PoI marker is suppressed for sections that have an authored landmark (currently `about` + `projects`)
+- **(landing)** `AboutLandmark.tsx` — Cycles-baked house + environment GLB at the about PoI. Loads `landmark-about.glb` (11.2 MB), converts each `MeshStandardMaterial` → `MeshStandardNodeMaterial` via a three-tier emission strategy: authored hard-emissive (mag ≥ 0.4) → 5× boost, soft-emissive → 2×, base-colour texture only → texture piped through `emissiveMap` at 0.55 intensity (so the bake reads even when no scene light hits the surface), plain colour → flat self-emission at 45% base. Click navigates to `/hall/about`
+- **(landing)** `EnterHouseOrb.tsx` — amber orb floating in front of the about-house doorway; click navigates to `/` (terminal workstation). Same TSL orb language as the PoI markers
+- **(landing)** `ProjectsLandmark.tsx` — Cycles-baked crashed mecha-satellite GLB at the projects PoI. Loads `landmark-projects.glb` (14.5 MB / 58 meshes). Anime mecha-sat silhouette à la ArtStation Lemuel Calpito reference; weathered metal hull + light moss patches + faint seam glow + lava cracks in the impact crater. Crash-site reads: skid furrow, debris, torn wing/fin, cockpit + 15 cockpit windows, terminal asset on the wreck, terminal-screen + buttons stay flat-emissive as light sources. Beside the wreck: stepped concrete fortress + detailed mountain (5 tiers + 10 jagged spires + 8 ledges + 7 outcrops + 25 moss patches + 12 vines) acting as backdrop. Click hull → `/hall/projects`; dynamic shadows disabled (shadow camera frustum doesn't reach the satellite at world ~(32, 0, 18); Cycles bake already includes shadows)
+- **(landing)** `ProjectsTerminalOrb.tsx` — teal orb hovering above the satellite's standalone ground-pedestal terminal screen; click navigates straight to `/projects/credit-memo`
+- **(landing)** `Signboard.tsx` — funky hand-painted wooden signboard with cyan/amber neon text + arrow on a canvas texture. Auto-widening plank + canvas size based on text length so long phrases like `CASE STUDIES` fit without clipping. Used to label the about doorway orb (`ABOUT ME →`) and the projects terminal pedestal (`CASE STUDIES →`)
+- **(landing)** `useKTX2Compat.ts` — KTX2 transcoder compat shim for the WebGPU NodeMaterial pipeline
+- **(blender)** `blender/scripts/islands/island-hub.py` — deterministic Blender builder for the hub island; jagged-underside rock platter under the existing cathedral footprint
+- **(blender)** `blender/scripts/bake/island-ao.py` + `blender/scripts/bake/island-lightmap.py` — Cycles AO + lightmap bakers; transcode to KTX2 via the existing basisu pipeline
+- **(assets)** ~60 Cycles-baked diffuse PNGs in `public/models/hall/landmarks/` covering every non-emissive mesh in the about + projects landmarks: walls, ground, foliage, boulders, pond stones, satellite structural hull, crash extras, crater ground (7 iterations), volcanic features, organics, vines + overgrowth, fortress, mountain. 1024² / 2048² with 16-px UV island margin
+- **(assets)** `public/models/hall/landmarks/landmark-about.glb` (11.2 MB), `landmark-projects.glb` (14.5 MB), plus `house-about.glb` + `environment-about.glb` standalone splits
+- **(assets)** `public/models/hall/island-hub.glb` + companion KTX2 AO + lightmap maps
+- **(blender)** `blender/about-landmark-bake.blend` + `blender/projects-landmark-bake.blend` Blender checkpoint files so the bake scenes can be re-opened and re-baked deterministically
+- **(docs)** CLAUDE.md — new "/hall landmark authoring — Cycles bake workflow" section codifying the rule that every non-emissive mesh in a /hall landmark GLB must ship with baked lighting + shadows + AO + colour variation. Documents bake group strategy (group inter-shadowing assets), the pragmatic-shortcut neutral-hemisphere case, and a pre-export checklist. Reason: WebGPU's `MeshStandardNodeMaterial` pipeline doesn't deliver real-time shadows or per-vertex variation correctly in our setup, so we bake everything into a diffuse texture per asset
+
+### Fixed
+
+- **(landing)** `useFidelityMode()` + `isMobileViewport()` stubs restored to `use-low-power.ts` — the master "simplify-fx-add-lighting" PR (#24) removed both hooks when it locked the workstation runtime to always-low-fidelity, but the Hall branch's `HallLanding.tsx` still imports + calls both. Thin always-low stubs preserve the API at the seam (`useFidelityMode()` returns `{ lowFidelity: true, mode: "low", setMode: noop, reportFps: noop }`; `isMobileViewport()` returns `true` when `window.innerWidth <= 800`)
+
+### Changed
+
+- **(landing)** `Scene.tsx` retooled for the archipelago — replaced the cathedral hub + alcove pavilions + outer wall + door corridor with: skybox + neon-dusk fog (`#1a0b30`, 160–360 m) + island + lighting rig + about-landmark + door-orb + ABOUT ME signboard + projects-landmark + terminal-orb + CASE STUDIES signboard + PoI markers + atmosphere
+- **(landing)** `Lighting.tsx` rewritten for neon-on-dark archipelago — magenta key directional at `[40, 50, 20]` `#ff5fa8` + cyan rim at `[-45, 28, -35]` `#5feaff`. Lighting directions match the Cycles bake sun setup so baked shadows + dynamic shading agree
+- **(landing)** `Atmosphere.tsx` trimmed (-216 net lines) — god-ray cone shader removed; CPU mote loop superseded by `MotesGPU.tsx`
+- **(landing)** `Postprocessing.tsx` retuned for the saturated archipelago palette
+- **(landing)** `CameraDirector.tsx` simplified — drops the outer-wall cylinder clamp (and `poseR > CAMERA_MAX_R` skip-clamp) that no longer applies in open archipelago space; drag-orbit + wheel-zoom retained
+- **(landing)** `HallLanding.tsx` simplified phase machine — `intro → entering → interactive` door+corridor cinematic removed since the archipelago has no entrance hallway; boot fly goes straight from bird's-eye to hub pose
+- **(landing)** `HUDOverlay.tsx` copy trimmed for the new scene
+- **(landing)** `src/landing/sections.ts` — added `HALL_POI_POSITIONS` ring (six landmark mount points around the hub island) + archipelago hub geometry constants; deprecated the cathedral-era `HALL_OUTER_WALL_RADIUS` / `HALL_DOOR_RADIUS` / inner-cylinder-clamp math
+- **(landing)** `public/data/hall-boot-path.json` — boot polyline rewritten for the archipelago bird's-eye → hub-pose flight (no more corridor waypoint)
+
 ## [0.8.0] - 2026-05-12
 
 ### Added
