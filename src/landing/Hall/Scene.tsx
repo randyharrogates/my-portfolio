@@ -122,10 +122,17 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           Blender (x, y, z) → Three (x, z, -y), so the screen lands at
           world (POI[2].x + 8.0, 1.78, POI[2].z - 2.5). Orb sits ~1.2 m
           above. */}
+      {/* SkillsForgeOrb now includes its own contrasting podium (stone
+          cylinder + brass trim + emissive lime screen + floating orb)
+          rendered procedurally in React. We position the BASE of the
+          podium at ground level — the orb floats 2m above. World pos
+          (-22, 0, -8.5) places it just east of the plunge pool,
+          clearly visible from the focal camera at PoI+(24, 8, 5) and
+          where the SKILLS signboard's plank is centred. */}
       <SkillsForgeOrb
         position={[
           HALL_POI_POSITIONS[2][0] + 8.0,
-          3.0,
+          0,
           HALL_POI_POSITIONS[2][2] - 2.5,
         ]}
       />
