@@ -11,6 +11,8 @@ import AboutLandmark from "./AboutLandmark.tsx";
 import EnterHouseOrb from "./EnterHouseOrb.tsx";
 import ProjectsLandmark from "./ProjectsLandmark.tsx";
 import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
+import SkillsLandmark from "./SkillsLandmark.tsx";
+import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
@@ -104,6 +106,43 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         rotationY={-0.6}
         text="CASE STUDIES"
         scale={1.3}
+      />
+      {/* /skills landmark — 3-tier waterfall pouring off the west cliff
+          + forge platform (anvil, hammer, tool rack, sword) on the
+          bank. Mounted at HALL_POI_POSITIONS[2] = (-30, _, -6). The
+          wreck-equivalent (the whole landmark) routes to /hall/skills;
+          the lime forge-orb above the pedestal jumps to /skills. */}
+      <SkillsLandmark
+        position={[HALL_POI_POSITIONS[2][0], 0, HALL_POI_POSITIONS[2][2]]}
+      />
+      {/* Forge orb: hovers above the standalone GROUND pedestal beside
+          the river. Pedestal was authored in Blender at (8.0, 2.5) on
+          the ground with the screen at z=1.78. With Blender's export_yup,
+          Blender (x, y, z) → Three (x, z, -y), so the screen lands at
+          world (POI[2].x + 8.0, 1.78, POI[2].z - 2.5). Orb sits ~1.2 m
+          above. */}
+      <SkillsForgeOrb
+        position={[
+          HALL_POI_POSITIONS[2][0] + 8.0,
+          3.0,
+          HALL_POI_POSITIONS[2][2] - 2.5,
+        ]}
+      />
+      {/* Skills signboard — same hand-painted plank style. Planted on
+          the bank, camera-LEFT of the forge pedestal. Arrow rotation
+          calculated to point the local +X direction at the orb (orb
+          at +2.5x, -2.5z relative to sign → arrow angle π/4 → rotationY
+          = -π/4 because three.js Y rotation maps local +X to
+          (cos θ, 0, -sin θ)). */}
+      <Signboard
+        position={[
+          HALL_POI_POSITIONS[2][0] + 5.5,
+          0,
+          HALL_POI_POSITIONS[2][2] - 5.0,
+        ]}
+        rotationY={-0.78}
+        text="SKILLS"
+        scale={1.0}
       />
       <PoiMarkers />
       <Atmosphere lowFidelity={lowFidelity} staticMode={staticMode} />
