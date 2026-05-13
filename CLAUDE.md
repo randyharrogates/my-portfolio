@@ -112,7 +112,7 @@ Single winding river (Philosophy B), chevron path through the 3 built landmarks:
 
 - **Source:** Skills cliff pool at POI[2] = (-30, _, -6). The existing Cycles-baked plunge pool is the headwater.
 - **First leg:** Arcs NE to Projects POI[1] = (+32, _, +18). ~50m.
-- **Projects detour:** River loops AROUND the mecha wreck (existing pedestal becomes an island in the loop). Wreck stays on dry ground — crashed-satellite-in-a-lake reads as too aquarium-like.
+- **Projects detour (split-rejoin):** River SPLITS approaching the mecha — one branch loops north (behind wreck from camera POV), one loops south (in front). Branches REJOIN on the far side. The wreck + pedestal sit on a true island. The convergence point on the far side is where the two streams collide; this is the natural target for FLIP-baked foam-mask intensity. Wreck stays on dry ground — crashed-satellite-in-a-lake reads as too aquarium-like.
 - **Return leg:** Arcs SW down to About POI[0] = (4, _, -8). ~50m.
 - **Terminus:** About's existing static decorative pond becomes the river basin. Pond stops being a separate water feature.
 
