@@ -209,25 +209,35 @@ export const HALL_POI_POSITIONS: Array<[number, number, number]> = [
  *  the camera pulled back further, lifted higher, and aimed at the
  *  midpoint of the action — otherwise the default oblique 18-m pose
  *  cuts off the top of the geometry. */
-const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, {
+type FocalRadialOverride = {
+  kind?: "radial";
   outRadius: number;
   tangentOffset: number;
   cameraHeight: number;
   lookAtHeight: number;
   fov: number;
-}>> = {
-  // skills: tall waterfall column from upper-rock top (~y=40) down to
-  // plunge pool (~y=0). Default pose at 18m only sees the bottom ~10m
-  // of the column. Pull back to 30m (close enough that the water shader
-  // detail reads) + raise camera + look at mid-waterfall (y=15). FOV
-  // 55° gives ~28m visible vertical span at 30m distance, covering
-  // pool to mid-rock comfortably.
+};
+type FocalFixedOverride = {
+  kind: "fixed";
+  cameraOffset: [number, number, number];
+  lookAtOffset: [number, number, number];
+  fov: number;
+};
+type FocalOverride = FocalRadialOverride | FocalFixedOverride;
+
+const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, FocalOverride>> = {
+  // skills: front-view of the SKILLS sign + waterfall column together.
+  // Camera sits to the +X side of the landmark looking toward -X (the
+  // waterfall is at PoI+(-3,*,0) and the sign + forge are at
+  // PoI+(5.5,0,-5..-7)). Mid-low elevation + lookAt at mid-pool height
+  // so the bottom half of the waterfall (most detailed shader area) +
+  // the sign + the forge are all framed. Upper rock cut off
+  // intentionally per user.
   skills: {
-    outRadius: 30.0,
-    tangentOffset: 10.0,
-    cameraHeight: 15.0,
-    lookAtHeight: 15.0,
-    fov: 55,
+    kind: "fixed",
+    cameraOffset: [15.0, 5.5, 3.0],
+    lookAtOffset: [-4.0, 4.0, -1.0],
+    fov: 52,
   },
 };
 
@@ -240,11 +250,31 @@ export function poiFocalPose(index: number): HallTargetPose {
   const p = HALL_POI_POSITIONS[index] ?? [0, 1.6, 0];
   const id = HALL_ALCOVE_ORDER[index];
   const ov = POI_FOCAL_OVERRIDES[id];
-  const outRadius = ov?.outRadius ?? 18.0;
-  const tangentOffset = ov?.tangentOffset ?? 10.0;
-  const cameraHeight = ov?.cameraHeight ?? 9.0;
-  const lookAtHeight = ov?.lookAtHeight ?? -0.5;
-  const fov = ov?.fov ?? 46;
+
+  // Fixed-offset override: explicit camera + lookAt offsets from PoI.
+  if (ov && ov.kind === "fixed") {
+    return {
+      position: [
+        p[0] + ov.cameraOffset[0],
+        p[1] + ov.cameraOffset[1],
+        p[2] + ov.cameraOffset[2],
+      ],
+      lookAt: [
+        p[0] + ov.lookAtOffset[0],
+        p[1] + ov.lookAtOffset[1],
+        p[2] + ov.lookAtOffset[2],
+      ],
+      fov: ov.fov,
+    };
+  }
+
+  // Default radial path (with optional radial-tuned override).
+  const radial = ov as FocalRadialOverride | undefined;
+  const outRadius = radial?.outRadius ?? 18.0;
+  const tangentOffset = radial?.tangentOffset ?? 10.0;
+  const cameraHeight = radial?.cameraHeight ?? 9.0;
+  const lookAtHeight = radial?.lookAtHeight ?? -0.5;
+  const fov = radial?.fov ?? 46;
 
   // Direction from origin → PoI, normalised to give us the outward
   // radial axis. Camera sits `outRadius` beyond the PoI on that axis,

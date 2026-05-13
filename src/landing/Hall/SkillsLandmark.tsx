@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
   abs,
+  atan2,
   clamp,
   cos,
   float,
@@ -15,6 +16,7 @@ import {
   mix,
   normalView,
   oneMinus,
+  positionLocal,
   positionViewDirection,
   pow,
   sin,
@@ -69,8 +71,27 @@ function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWater
   });
 
   const t = timerLocal();
-  const u = uv().x;
-  const v = uv().y;
+  // Don't rely on the cylindrical waterfall mesh's UV unwrap (Blender's
+  // smart-project on a separate non-merged mesh gave us bad UVs that
+  // collapsed to (0,0) → uniform colour). Derive U from the angular
+  // position around the cylinder axis (X-Z plane in local space), and
+  // V from the vertical position (local Y). Falls back to standard UV
+  // for non-cylinder water meshes (plunge pool, creek, trough — those
+  // are merged + properly unwrapped).
+  const POOL_CX_LOCAL = float(-3.0);
+  const POOL_CZ_LOCAL = float(0.0);
+  const dx = positionLocal.x.sub(POOL_CX_LOCAL);
+  const dz = positionLocal.z.sub(POOL_CZ_LOCAL);
+  const angleAround = atan2(dz, dx);
+  // Normalised angular coord, 0..1 around the cylinder
+  const cylU = angleAround.mul(0.5 / Math.PI).add(0.5);
+  // Vertical V coord: 0 at pool surface, 1 at top of fall (~40m)
+  const cylV = positionLocal.y.mul(1.0 / 40.0);
+
+  // Pick the right (u, v) source — derived cylindrical for waterfall+
+  // spray, regular UV for the merged-mesh water surfaces.
+  const u = (kind === "waterfall" || kind === "spray") ? cylU : uv().x;
+  const v = (kind === "waterfall" || kind === "spray") ? cylV : uv().y;
 
   // === Fresnel — brighter at silhouette ===
   // dot(view dir, normal) → close to 1 when looking at face head-on,
