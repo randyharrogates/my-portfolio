@@ -204,14 +204,50 @@ export const HALL_POI_POSITIONS: Array<[number, number, number]> = [
   [0,    1.6,  38],  // contact    — entrance, south landing
 ];
 
+/** Per-section override for the focal-pose framing. Landmarks with
+ *  vertical features (e.g. skills has a 40-m waterfall column) need
+ *  the camera pulled back further, lifted higher, and aimed at the
+ *  midpoint of the action — otherwise the default oblique 18-m pose
+ *  cuts off the top of the geometry. */
+const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, {
+  outRadius: number;
+  tangentOffset: number;
+  cameraHeight: number;
+  lookAtHeight: number;
+  fov: number;
+}>> = {
+  // skills: tall waterfall column from upper-rock top (~y=40) down to
+  // plunge pool (~y=0). Default pose at 18m only sees the bottom ~10m
+  // of the column. Pull back to 30m (close enough that the water shader
+  // detail reads) + raise camera + look at mid-waterfall (y=15). FOV
+  // 55° gives ~28m visible vertical span at 30m distance, covering
+  // pool to mid-rock comfortably.
+  skills: {
+    outRadius: 30.0,
+    tangentOffset: 10.0,
+    cameraHeight: 15.0,
+    lookAtHeight: 15.0,
+    fov: 55,
+  },
+};
+
 /** Camera focal pose for each PoI. The camera arcs around the PoI at
  *  an oblique angle so the marker reads against the magenta skybox /
- *  cyan grid rather than the rock immediately behind it. Height +9 m
- *  and an outward radial offset keep the framing readable. */
+ *  cyan grid rather than the rock immediately behind it. Default:
+ *  height +9 m, radius 18 m, lookAt at PoI. Per-section overrides in
+ *  POI_FOCAL_OVERRIDES customise for tall verticals. */
 export function poiFocalPose(index: number): HallTargetPose {
   const p = HALL_POI_POSITIONS[index] ?? [0, 1.6, 0];
+  const id = HALL_ALCOVE_ORDER[index];
+  const ov = POI_FOCAL_OVERRIDES[id];
+  const outRadius = ov?.outRadius ?? 18.0;
+  const tangentOffset = ov?.tangentOffset ?? 10.0;
+  const cameraHeight = ov?.cameraHeight ?? 9.0;
+  const lookAtHeight = ov?.lookAtHeight ?? -0.5;
+  const fov = ov?.fov ?? 46;
+
   // Direction from origin → PoI, normalised to give us the outward
-  // radial axis. Camera sits 18 m beyond the PoI on that axis,
+  // radial axis. Camera sits `outRadius` beyond the PoI on that axis,
   // tangentially shifted so we don't look straight down the spoke.
   const dx = p[0];
   const dz = p[2];
@@ -221,16 +257,14 @@ export function poiFocalPose(index: number): HallTargetPose {
   // Tangent (rotated 90°) for the sideways camera offset.
   const tx = -rz;
   const tz = rx;
-  const outRadius = 18.0;
-  const tangentOffset = 10.0;
   return {
     position: [
       p[0] + rx * outRadius + tx * tangentOffset,
-      p[1] + 9.0,
+      p[1] + cameraHeight,
       p[2] + rz * outRadius + tz * tangentOffset,
     ],
-    lookAt: [p[0], p[1] - 0.5, p[2]],
-    fov: 46,
+    lookAt: [p[0], p[1] + lookAtHeight, p[2]],
+    fov,
   };
 }
 

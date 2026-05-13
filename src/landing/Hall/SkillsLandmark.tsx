@@ -6,9 +6,19 @@ import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
+  abs,
+  clamp,
+  cos,
   float,
+  floor,
+  hash,
   mix,
+  normalView,
+  oneMinus,
+  positionViewDirection,
+  pow,
   sin,
+  smoothstep,
   timerLocal,
   uv,
   vec2,
@@ -42,68 +52,143 @@ function getWaterKind(meshName: string): "waterfall" | "spray" | "pool" | "creek
  *  Colour is mixed between deep blue and a brighter highlight blue,
  *  driven by the noise — gives the surface a constantly-shifting
  *  pattern of bright water highlights against the deep colour. */
+/** Build a stylised jordan-breton-style water material. Targets the
+ *  reference look (image #49):
+ *   - many vertical bright cyan streamers over a darker translucent blue
+ *   - random foam bursts that pop in/out
+ *   - fresnel rim brightening at silhouette
+ *   - variable transparency (see-through between streamers)
+ *   - pool gets concentric ripple caustics + a foam patch around the
+ *     waterfall impact point
+ *  Driven entirely via TSL so it animates every frame with no CPU cost. */
 function buildAnimatedWaterMaterial(kind: NonNullable<ReturnType<typeof getWaterKind>>): MeshStandardNodeMaterial {
   const mat = new MeshStandardNodeMaterial({
-    color: new THREE.Color(0.10, 0.35, 0.85),
-    roughness: 0.1,
+    color: new THREE.Color(0.05, 0.18, 0.50),
+    roughness: 0.08,
     metalness: 0.0,
   });
 
-  let scrolled;
-  let freqA = 20;
-  let freqB = 15;
-  let speedA = 1.5;
-  let speedB = 2.3;
-  if (kind === "waterfall" || kind === "spray") {
-    // Scroll DOWN: subtract from V so pattern moves toward +V over time
-    scrolled = uv().add(vec2(float(0), timerLocal().mul(-1.5)));
-    freqA = 28;
-    freqB = 24;
-    speedA = 4.0;
-    speedB = 5.5;
-  } else if (kind === "creek") {
-    // Creek flows in +X (east). Scroll U with time.
-    scrolled = uv().add(vec2(timerLocal().mul(0.5), float(0)));
-    freqA = 22;
-    freqB = 18;
-    speedA = 2.0;
-    speedB = 2.8;
-  } else {
-    // Pool + trough: gentle ripple — slow radial pulse
-    scrolled = uv();
-    freqA = 18;
-    freqB = 14;
-    speedA = 1.2;
-    speedB = 1.6;
-  }
+  const t = timerLocal();
+  const u = uv().x;
+  const v = uv().y;
 
-  // Layered sin-wave noise — two perpendicular frequencies multiplied
-  // gives a checker-y water highlight pattern that reads as caustics.
-  const waveA = sin(scrolled.x.mul(freqA).add(timerLocal().mul(speedA))).mul(0.5).add(0.5);
-  const waveB = sin(scrolled.y.mul(freqB).add(timerLocal().mul(speedB))).mul(0.5).add(0.5);
-  const noise = waveA.mul(waveB);
+  // === Fresnel — brighter at silhouette ===
+  // dot(view dir, normal) → close to 1 when looking at face head-on,
+  // close to 0 when grazing. Invert + pow for falloff.
+  const cosTheta = abs(normalView.dot(positionViewDirection));
+  const fresnel = pow(oneMinus(cosTheta), float(2.0));
 
-  // Darker, deeper blue palette — previous (0.10, 0.35, 0.85 / bright
-  // 0.45, 0.75, 1.25) was reading too white-blown-out against the
-  // magenta skybox + bloom. New palette stays in saturated deep blue
-  // even at the bright caustic peaks.
-  const baseBlue = vec3(0.03, 0.10, 0.32);
-  const brightBlue = vec3(0.10, 0.30, 0.70);
+  const isFall = kind === "waterfall" || kind === "spray";
 
-  const animatedColor = mix(baseBlue, brightBlue, noise);
+  if (isFall) {
+    // ============================================================
+    // WATERFALL: vertical streamers + foam bursts + fresnel
+    // ============================================================
+    const N_STREAMERS = 18;
+    // Per-streamer index (which vertical stripe a fragment belongs to)
+    const streamerIdx = floor(u.mul(N_STREAMERS));
+    // Per-streamer hash for randomised phase & frequency offset
+    const streamerHash = hash(streamerIdx);
 
-  mat.colorNode = animatedColor;
-  // Toned-down self-emission (was 2.0×, now 1.0×) so the water reads
-  // as glowing deep blue without blowing out to white. The TSL noise
-  // animation still drives the highlight movement visibly.
-  mat.emissiveNode = animatedColor.mul(1.0);
+    // Soft stripe envelope: cos around band centre, sharpened. Most
+    // surface ≈ dim base; ~30% becomes bright streamer columns.
+    const bandPhase = u.mul(N_STREAMERS).mul(Math.PI * 2);
+    const stripeRaw = cos(bandPhase).mul(0.5).add(0.5);
+    const streamerMask = pow(stripeRaw, float(2.5));
 
-  // Spray + trough are slightly translucent so they don't read as
-  // solid sheets when overlapping.
-  if (kind === "spray") {
+    // Streamer pulse: scrolling sine moving down fast, with per-streamer
+    // phase offset so they're not in sync.
+    const fallSpeed = float(3.2);
+    const scrolledV = v.add(t.mul(fallSpeed)).add(streamerHash.mul(2.0));
+    const streamerWave = sin(scrolledV.mul(30)).mul(0.5).add(0.5);
+    const streamerWaveFast = sin(scrolledV.mul(70).add(t.mul(2))).mul(0.5).add(0.5);
+    const streamerPulse = streamerWave.mul(0.7).add(streamerWaveFast.mul(0.3));
+
+    // Combined streamer intensity
+    const streamer = streamerMask.mul(streamerPulse);
+
+    // === Foam bursts: hash-random bright spots that pop ===
+    const foamSeedU = floor(u.mul(60));
+    const foamSeedV = floor(v.mul(40).sub(t.mul(2.5)));
+    const foamSeed = foamSeedU.add(foamSeedV.mul(60));
+    const foamRand = hash(foamSeed);
+    const foamBurst = smoothstep(float(0.92), float(1.0), foamRand);
+
+    // === Colour mix ===
+    const baseBlue = vec3(0.05, 0.18, 0.50);     // deep translucent blue
+    const streamColor = vec3(0.55, 0.85, 1.15);   // bright cyan streamer
+    const foamColor = vec3(0.95, 1.00, 1.05);     // pure white foam
+
+    let color = mix(baseBlue, streamColor, streamer.mul(0.85));
+    color = mix(color, foamColor, foamBurst.mul(0.75));
+    // Fresnel brightens edges (more visible streamer cores at silhouette)
+    color = mix(color, streamColor.mul(1.4), fresnel.mul(0.45));
+
+    // === Opacity: see-through between streamers, opaque on bright bits ===
+    const alphaMix = clamp(
+      streamerMask.mul(0.55).add(foamBurst.mul(0.35)).add(fresnel.mul(0.45)),
+      float(0), float(1)
+    );
+    const alpha = mix(float(0.35), float(0.95), alphaMix);
+
+    mat.colorNode = color;
+    mat.emissiveNode = color.mul(0.75);
+    mat.opacityNode = alpha;
     mat.transparent = true;
-    mat.opacity = 0.65;
     mat.depthWrite = false;
+    mat.side = THREE.DoubleSide;
+  } else if (kind === "creek") {
+    // ============================================================
+    // CREEK: gentle east-flowing surface with caustic glints
+    // ============================================================
+    const scroll = vec2(t.mul(0.35), float(0));
+    const scrolledU = u.add(scroll.x);
+    const wave1 = sin(scrolledU.mul(20).add(v.mul(8)).add(t.mul(1.5))).mul(0.5).add(0.5);
+    const wave2 = sin(scrolledU.mul(50).add(t.mul(2.2))).mul(0.5).add(0.5);
+    const causticMask = pow(wave1.mul(wave2), float(2.5));
+
+    const baseBlue = vec3(0.04, 0.16, 0.45);
+    const causticColor = vec3(0.65, 0.90, 1.20);
+    const color = mix(baseBlue, causticColor, causticMask);
+
+    mat.colorNode = color;
+    mat.emissiveNode = color.mul(0.7);
+    mat.opacityNode = mix(float(0.7), float(1.0), causticMask);
+    mat.transparent = true;
+    mat.depthWrite = false;
+  } else {
+    // ============================================================
+    // PLUNGE POOL + TROUGH: concentric ripples from centre + caustics
+    // ============================================================
+    // Distance from UV centre (pool centre)
+    const centeredU = u.sub(0.5);
+    const centeredV = v.sub(0.5);
+    const dist = centeredU.mul(centeredU).add(centeredV.mul(centeredV)).sqrt();
+
+    // Concentric ripple rings, moving outward from centre
+    const ripple = sin(dist.mul(40).sub(t.mul(4))).mul(0.5).add(0.5);
+    const rippleSoft = pow(ripple, float(2.0));
+
+    // Caustic glints: random hash-based bright spots that pop in/out
+    const causticSeedU = floor(u.mul(35).add(t.mul(0.3)));
+    const causticSeedV = floor(v.mul(35).sub(t.mul(0.4)));
+    const causticSeed = causticSeedU.add(causticSeedV.mul(35));
+    const causticRand = hash(causticSeed);
+    const causticGlint = smoothstep(float(0.88), float(1.0), causticRand);
+
+    // Foam patch around centre (where waterfall lands)
+    const foamPatch = smoothstep(float(0.20), float(0.05), dist);
+
+    const baseBlue = vec3(0.04, 0.15, 0.42);
+    const rippleColor = vec3(0.25, 0.55, 1.00);
+    const foamColor = vec3(0.95, 1.00, 1.05);
+
+    let color = mix(baseBlue, rippleColor, rippleSoft.mul(0.65));
+    color = mix(color, foamColor, causticGlint.mul(0.6));
+    color = mix(color, foamColor, foamPatch.mul(0.7));
+
+    mat.colorNode = color;
+    mat.emissiveNode = color.mul(0.6);
   }
 
   return mat;
@@ -147,7 +232,12 @@ function convertToNodeMaterials(root: THREE.Group) {
     } else if (hasBaseTexture) {
       finalEmissive = new THREE.Color(1, 1, 1);
       finalEmissiveMap = src.map;
-      finalIntensity = 0.55;
+      // 0.30 (was 0.55) — the previous value was amplifying any
+      // pink-tinted baked pixels (basalt columns picking up magenta
+      // sun) into bright pink hotspots that broke the dark-stone
+      // read of the island. Lower intensity keeps the bake visible
+      // without lighting up wrong-colour pixels.
+      finalIntensity = 0.30;
     } else {
       finalEmissive = src.color.clone().multiplyScalar(0.45);
       finalIntensity = 1.0;
