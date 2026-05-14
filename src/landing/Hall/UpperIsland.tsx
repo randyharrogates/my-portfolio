@@ -64,6 +64,41 @@ const UpperIsland: React.FC<UpperIslandProps> = ({ position }) => {
 
       const lowerName = m.name.toLowerCase();
 
+      // === Flow ribbon — water flowing across the plateau from pool to
+      // spill point. Same TSL animated water as the source pool but the
+      // ripples are biased to scroll in +U direction (along the flow).
+      if (lowerName.includes("flow_ribbon")) {
+        const flowMat = new MeshStandardNodeMaterial({
+          color: new THREE.Color(0.06, 0.22, 0.50),
+          roughness: 0.06,
+          metalness: 0.0,
+        });
+        const t = timerLocal();
+        const u = uv();
+        // Stripes scrolling in U (along the flow direction)
+        const v1 = u.x.mul(6).sub(t.mul(0.9));
+        const v2 = u.x.mul(11).sub(t.mul(1.3));
+        const stripe = sin(v1.mul(Math.PI * 2)).mul(0.5).add(0.5)
+          .mul(0.6).add(sin(v2.mul(Math.PI * 2)).mul(0.5).add(0.5).mul(0.4));
+        // Foam at the spill end (high U)
+        const spillFoam = smoothstep(float(0.78), float(0.98), u.x);
+        // Cross-channel ripple (low V amplitude wave)
+        const crossRipple = sin(u.y.mul(Math.PI * 2)).mul(0.5).add(0.5);
+
+        const deep = vec3(0.05, 0.22, 0.55);
+        const aqua = vec3(0.35, 0.78, 1.0);
+        const foam = vec3(1.0, 1.06, 1.12);
+        let col = mix(deep, aqua, stripe);
+        col = mix(col, foam, crossRipple.mul(0.18));
+        col = mix(col, foam, spillFoam.mul(0.9));
+        flowMat.colorNode = col;
+        flowMat.emissiveNode = col.mul(0.5);
+        m.material = flowMat;
+        m.castShadow = false;
+        m.receiveShadow = false;
+        return;
+      }
+
       // === Pool water surface — TSL animated water disc inside the basin.
       // Concentric ripple rings + caustic glints + foam patch near center
       // where the waterfall would conceptually originate. Same recipe as

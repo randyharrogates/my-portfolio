@@ -14,6 +14,7 @@ import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import UpperIsland from "./UpperIsland.tsx";
+import WaterfallDroplets from "./WaterfallDroplets.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
 import WaterfallMist from "./WaterfallMist.tsx";
 import WaterfallSpray from "./WaterfallSpray.tsx";
@@ -174,6 +175,22 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2],
         ]}
         count={2000}
+      />
+      {/* Falling-water droplets along the cascade path — 1500 particles
+          distributed from lip down to impact, each following a free-fall
+          trajectory with a unique phase so the entire column reads as
+          "particle level detail" (per user 2026-05-14). Mount at ground
+          (y=0); the shader adds yFromTop ∈ [0, fallHeight] so particles
+          span the full y=[0, 44] cascade range. */}
+      <WaterfallDroplets
+        position={[
+          HALL_POI_POSITIONS[2][0] + 22.0,
+          0.0,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+        fallHeight={44.0}
+        lipHalfWidth={3.5}
+        count={1500}
       />
       {/* Stacked planar mist discs above the impact zone — substitute
           for real volumetric fog (which WebGPU doesn't support). */}
