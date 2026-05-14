@@ -5,18 +5,8 @@ import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 import { useLoader } from "@react-three/fiber";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-import {
-  cos,
-  float,
-  mix,
-  pow,
-  sin,
-  smoothstep,
-  texture,
-  timerLocal,
-  uv,
-  vec3,
-} from "three/tsl";
+import { texture, uv } from "three/tsl";
+import { buildPhotorealWater } from "./photorealWater.ts";
 
 interface UpperIslandProps {
   /** World position where the landmark origin is mounted (POI[2] x,0,z). */
@@ -26,6 +16,8 @@ interface UpperIslandProps {
 const MODEL_PATH = `${process.env.PUBLIC_URL}/models/hall/landmarks/upper-island.glb`;
 const BAKED_DIFFUSE_PATH = `${process.env.PUBLIC_URL}/models/hall/landmarks/upper-island-baked.png`;
 const BAKED_EMIT_PATH = `${process.env.PUBLIC_URL}/models/hall/landmarks/upper-island-emit.png`;
+const POOL_NORMAL_PATH = `${process.env.PUBLIC_URL}/models/hall/landmarks/pool_water_normal.png`;
+const WATERFALL_NORMAL_PATH = `${process.env.PUBLIC_URL}/models/hall/landmarks/waterfall_water_normal.png`;
 useGLTF.preload(MODEL_PATH);
 
 /** Witcher 2-tier upper floating island authored in
@@ -45,12 +37,18 @@ const UpperIsland: React.FC<UpperIslandProps> = ({ position }) => {
   // previously-replaced TSL material (with no .map/.emissiveMap) on HMR.
   const bakedMap = useLoader(THREE.TextureLoader, BAKED_DIFFUSE_PATH);
   const emitMap = useLoader(THREE.TextureLoader, BAKED_EMIT_PATH);
+  const poolNormalMap = useLoader(THREE.TextureLoader, POOL_NORMAL_PATH);
+  const waterfallNormalMap = useLoader(THREE.TextureLoader, WATERFALL_NORMAL_PATH);
   // GLB exports with flipY=false (UVs already V-flipped at export time);
   // useLoader returns flipY=true by default, so flip back to match the bake.
   bakedMap.flipY = false;
   bakedMap.colorSpace = THREE.SRGBColorSpace;
   emitMap.flipY = false;
   emitMap.colorSpace = THREE.SRGBColorSpace;
+  poolNormalMap.flipY = false;
+  poolNormalMap.colorSpace = THREE.NoColorSpace;
+  waterfallNormalMap.flipY = false;
+  waterfallNormalMap.colorSpace = THREE.NoColorSpace;
 
   // Clone the scene so HMR / re-renders don't reuse an already-mutated copy.
   const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
@@ -64,76 +62,29 @@ const UpperIsland: React.FC<UpperIslandProps> = ({ position }) => {
 
       const lowerName = m.name.toLowerCase();
 
-      // === Flow ribbon — water flowing across the plateau from pool to
-      // spill point. Same TSL animated water as the source pool but the
-      // ripples are biased to scroll in +U direction (along the flow).
+      // === Flow ribbon — photoreal water flowing east across plateau ===
       if (lowerName.includes("flow_ribbon")) {
-        const flowMat = new MeshStandardNodeMaterial({
-          color: new THREE.Color(0.06, 0.22, 0.50),
-          roughness: 0.06,
-          metalness: 0.0,
+        m.material = buildPhotorealWater({
+          normalMap: poolNormalMap,
+          flow: "horizontal-east",
+          tile: 2.5,
+          scrollSpeed: 1.2,
+          emissionStrength: 0.50,
         });
-        const t = timerLocal();
-        const u = uv();
-        // Stripes scrolling in U (along the flow direction)
-        const v1 = u.x.mul(6).sub(t.mul(0.9));
-        const v2 = u.x.mul(11).sub(t.mul(1.3));
-        const stripe = sin(v1.mul(Math.PI * 2)).mul(0.5).add(0.5)
-          .mul(0.6).add(sin(v2.mul(Math.PI * 2)).mul(0.5).add(0.5).mul(0.4));
-        // Foam at the spill end (high U)
-        const spillFoam = smoothstep(float(0.78), float(0.98), u.x);
-        // Cross-channel ripple (low V amplitude wave)
-        const crossRipple = sin(u.y.mul(Math.PI * 2)).mul(0.5).add(0.5);
-
-        const deep = vec3(0.05, 0.22, 0.55);
-        const aqua = vec3(0.35, 0.78, 1.0);
-        const foam = vec3(1.0, 1.06, 1.12);
-        let col = mix(deep, aqua, stripe);
-        col = mix(col, foam, crossRipple.mul(0.18));
-        col = mix(col, foam, spillFoam.mul(0.9));
-        flowMat.colorNode = col;
-        flowMat.emissiveNode = col.mul(0.5);
-        m.material = flowMat;
         m.castShadow = false;
         m.receiveShadow = false;
         return;
       }
 
-      // === Pool water surface — TSL animated water disc inside the basin.
-      // Concentric ripple rings + caustic glints + foam patch near center
-      // where the waterfall would conceptually originate. Same recipe as
-      // SkillsLandmark's plunge-pool TSL but tuned for the basin scale. ===
+      // === Source pool — photoreal calm water with radial ripple ===
       if (lowerName.includes("source_pool") || lowerName.includes("pool_surface")) {
-        const poolMat = new MeshStandardNodeMaterial({
-          color: new THREE.Color(0.04, 0.18, 0.45),
-          roughness: 0.08,
-          metalness: 0.0,
+        m.material = buildPhotorealWater({
+          normalMap: poolNormalMap,
+          flow: "radial-out",
+          tile: 2.0,
+          scrollSpeed: 0.6,
+          emissionStrength: 0.55,
         });
-        const t = timerLocal();
-        const u = uv();
-        const cu = u.x.sub(0.5);
-        const cv = u.y.sub(0.5);
-        const dist = cu.mul(cu).add(cv.mul(cv)).sqrt();
-        // Concentric ripples from center, moving outward
-        const ripple = sin(dist.mul(35).sub(t.mul(3.5))).mul(0.5).add(0.5);
-        const rippleSoft = pow(ripple, float(2.0));
-        // Foam concentrated near the centre — where the water source feeds in
-        const foam = smoothstep(float(0.30), float(0.05), dist);
-        // Slow rotating caustics — sin/cos around UV centre, time-driven
-        const caustic = sin(cu.mul(18).add(t.mul(1.2))).mul(cos(cv.mul(18).sub(t.mul(0.9))));
-        const causticGlint = smoothstep(float(0.45), float(0.95), caustic);
-
-        const baseBlue = vec3(0.05, 0.20, 0.50);
-        const rippleColor = vec3(0.28, 0.62, 1.10);
-        const foamColor = vec3(0.95, 1.00, 1.10);
-        let color = mix(baseBlue, rippleColor, rippleSoft.mul(0.7));
-        color = mix(color, foamColor, causticGlint.mul(0.5));
-        color = mix(color, foamColor, foam.mul(0.85));
-
-        poolMat.colorNode = color;
-        poolMat.emissiveNode = color.mul(0.55);
-
-        m.material = poolMat;
         m.castShadow = false;
         m.receiveShadow = false;
         return;
@@ -161,7 +112,7 @@ const UpperIsland: React.FC<UpperIslandProps> = ({ position }) => {
       m.castShadow = false;
       m.receiveShadow = false;
     });
-  }, [scene, bakedMap, emitMap]);
+  }, [scene, bakedMap, emitMap, poolNormalMap, waterfallNormalMap]);
 
   return <primitive object={scene} position={position} />;
 };
