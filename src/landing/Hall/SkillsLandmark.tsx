@@ -463,6 +463,44 @@ function buildRiverV2Material(
   return mat;
 }
 
+/** The elevated portion of skl_ground_merged (Y > 15 in Three.js world,
+ *  i.e. landmark-local Z > 15 in Blender) is the OLD low-poly dark blob
+ *  that represented the upper floating island. Witcher 2-tier replacement
+ *  ships as a separate `upper-island.glb` mounted in Scene.tsx. We drop
+ *  the redundant elevated triangles from the merged ground mesh so the
+ *  two don't double up / z-fight. The base island (Y ≤ 15) stays —
+ *  that's the ground where the forge, river, pedestal sit. */
+function cullUpperIslandFromGround(root: THREE.Group) {
+  root.traverse((obj) => {
+    const m = obj as THREE.Mesh;
+    if (!(m as unknown as { isMesh?: boolean }).isMesh) return;
+    if (!m.name.toLowerCase().includes("ground_merged")) return;
+    const geom = m.geometry as THREE.BufferGeometry;
+    const pos = geom.getAttribute("position");
+    if (!pos) return;
+    const idx = geom.getIndex();
+    if (!idx) return;
+    const newIdx: number[] = [];
+    const arr = idx.array as ArrayLike<number>;
+    const Y_THRESHOLD = 15.0; // landmark-local cutoff: below = base island, above = old upper blob
+    for (let i = 0; i < arr.length; i += 3) {
+      const a = arr[i];
+      const b = arr[i + 1];
+      const c = arr[i + 2];
+      const ya = pos.getY(a);
+      const yb = pos.getY(b);
+      const yc = pos.getY(c);
+      // Keep only triangles whose centroid is below the threshold.
+      if ((ya + yb + yc) / 3 < Y_THRESHOLD) {
+        newIdx.push(a, b, c);
+      }
+    }
+    geom.setIndex(newIdx);
+    geom.computeBoundingBox();
+    geom.computeBoundingSphere();
+  });
+}
+
 function relocateForgeGroup(root: THREE.Group) {
   root.traverse((obj) => {
     const m = obj as THREE.Mesh;
@@ -613,6 +651,7 @@ const SkillsLandmark: React.FC<SkillsLandmarkProps> = ({ position }) => {
 
   const landmark = useMemo(() => {
     const r = gltf.scene.clone(true);
+    cullUpperIslandFromGround(r);
     convertToNodeMaterials(r);
     relocateForgeGroup(r);
     return r;

@@ -13,7 +13,10 @@ import ProjectsLandmark from "./ProjectsLandmark.tsx";
 import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
+import UpperIsland from "./UpperIsland.tsx";
 import WaterfallFoam from "./WaterfallFoam.tsx";
+import WaterfallMist from "./WaterfallMist.tsx";
+import WaterfallSpray from "./WaterfallSpray.tsx";
 import WaterfallTSL from "./WaterfallTSL.tsx";
 // WaterfallVideo (commit 9c0cc19) was an experimental Cycles-render-as-
 // video-billboard. Disabled 2026-05-14 in favour of the new pipeline:
@@ -142,29 +145,69 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           HALL_POI_POSITIONS[2][2] - 7.0,
         ]}
       />
-      {/* TSL-shaded waterfall mesh — replaces both the runtime cylinder
-          (flat scrolling stripes) AND the unwound WaterfallVideo
-          billboard. High-poly curved sheet (~5k verts, 4×36m) authored
-          in blender/skills-waterfall-tsl.blend. Multi-layered TSL
-          shader: layered vertical UV scrolls + procedural foam mask +
-          fresnel rim + base-of-waterfall splash zone. v1 uses hardcoded
-          downward flow; v2 will sample FLIP-baked flow vectors per
-          vertex. Mounted at world (POI[2].x - 3, 0, POI[2].z) so the
-          base sits on the pool surface. */}
-      <WaterfallTSL
+      {/* Witcher 2-tier waterfall — spills over the east edge of the
+          UPPER FLOATING ISLAND (carved spill notch at landmark-local
+          x=+22, z=44). Mounted with its TOP at the cliff plateau height
+          (y=44 world ≈ y=44 landmark) and its BASE on the ground (y=0).
+          Mesh is the 4×36m curved sheet from waterfall-tsl.glb; scaled
+          to (1.7, 44/36, 1.0) so it spans the full 44m drop and the
+          wider 7m spill at the cliff edge. Shader is the AAA stack
+          (multi-layered scrolling normals + multi-stream split via 3 U
+          bands + foam cells + flow streaks + fresnel + Beckmann spec).
+          Spray + mist add the impact-zone details. */}
+      <group
         position={[
-          HALL_POI_POSITIONS[2][0] - 3.0,
+          HALL_POI_POSITIONS[2][0] + 22.0,
+          0,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+        scale={[1.7, 44 / 36, 1.0]}
+      >
+        <WaterfallTSL position={[0, 0, 0]} />
+      </group>
+      {/* TSL-instanced particle spray at the impact zone — 2000 droplets
+          following parabolic trajectories from the splash point. */}
+      <WaterfallSpray
+        position={[
+          HALL_POI_POSITIONS[2][0] + 22.0,
+          0.5,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+        count={2000}
+      />
+      {/* Stacked planar mist discs above the impact zone — substitute
+          for real volumetric fog (which WebGPU doesn't support). */}
+      <WaterfallMist
+        position={[
+          HALL_POI_POSITIONS[2][0] + 22.0,
+          0.0,
+          HALL_POI_POSITIONS[2][2],
+        ]}
+        radius={6.5}
+        height={3.0}
+      />
+      {/* Witcher 2-tier upper floating island authored 2026-05-14 in
+          blender/skills-cliff.blend. Replaces the dark low-poly elevated
+          portion of skl_ground_merged. Saucer-shaped: ~54×44m at the top
+          plateau, tapering down to underside stalactite spikes around
+          z_world=12. Pool basin sits on the plateau near x=-3,z=0 in
+          landmark-local coords (where the existing waterfall originates).
+          Mounted at the skills POI so the GLB's internal landmark-local
+          coords align with the rest of the landmark. The redundant
+          elevated portion of skl_ground_merged is hidden inside
+          SkillsLandmark.tsx via a face-Y filter. */}
+      <UpperIsland
+        position={[
+          HALL_POI_POSITIONS[2][0],
           0,
           HALL_POI_POSITIONS[2][2],
         ]}
       />
       {/* Waterfall foam cluster — soft white puffy cloud at the base
-          of the video plane (the FLIP sim has its own splashes baked
-          into the video but the React puffs add a hint of volumetric
-          cloud above the pool surface). */}
+          of the new waterfall position (east edge of upper island). */}
       <WaterfallFoam
         position={[
-          HALL_POI_POSITIONS[2][0] - 3.0,
+          HALL_POI_POSITIONS[2][0] + 22.0,
           0.2,
           HALL_POI_POSITIONS[2][2],
         ]}
