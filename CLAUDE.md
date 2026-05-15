@@ -50,96 +50,192 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 
 `src/data/portfolio.ts` is the single source of truth for personal content (identity, tech stack, roles, certifications, education, interests, social links). `AboutMe.tsx` consumes it directly; the ambient 3D layer also reads from it. Editing `portfolioData` here propagates everywhere — never duplicate content into a component.
 
-## /hall landmark authoring — Cycles bake workflow (committed 2026-05-13)
+## /hall landmark authoring — Cycles bake workflow for Genshin hand-painted look (REVISED 2026-05-15)
 
-**Rule — no exceptions:** every mesh that ships in a `/hall` landmark GLB carries baked shading and shadows. Walls, roofs, windows, doors, chimneys, shutters, eave brackets, ridge caps, cornices, awnings, posts, rocks, plants, ground, props, trees, grass — **everything**. The only meshes allowed to ship without a bake are emissive light sources (lantern bulbs, chimney embers, pond glow rings) which are supposed to read as uniform glow. If you add a new piece of architecture mid-session, it MUST be added to a bake group before the GLB is re-exported — do not let it ship as flat-colour Principled BSDF.
+**Rule — no exceptions:** every mesh that ships in a `/hall` landmark GLB carries a baked **hand-painted** diffuse texture. Walls, roofs, windows, doors, chimneys, shutters, rocks, plants, ground, props, trees, grass — **everything**. The only meshes allowed to ship without a bake are emissive accents (lantern wicks, crystal cores, foam glints) that read as uniform glow. If you add a new piece mid-session, it MUST be added to a bake group before re-export — do not let it ship as flat-colour Principled BSDF.
 
-The `/hall` archipelago landmarks (house, satellite, waterfall, tree, garden, entrance, plus all environment assets — rocks, plants, ponds, ground patches, etc.) are authored in Blender via MCP and **every asset is finished with a full Cycles bake before export**. Reason: WebGPU's `MeshStandardNodeMaterial` pipeline doesn't deliver real-time shadows or per-vertex variation correctly in our setup, so we bake lighting + shadows + AO + colour variation directly into a diffuse texture per asset. That texture ships in the GLB and the React side just samples it.
+The `/hall` archipelago landmarks + every environment asset (rocks, plants, ponds, ground patches, grass, signs, etc.) are authored in Blender via MCP and **every asset is finished with a Cycles bake that targets a Genshin-style hand-painted look** — NOT photoreal AO + GI. The texture ships in the GLB. The React side just samples it.
+
+**What the new bake target looks like:**
+- **Flat, even lighting** (no harsh directional shadows baked in). Slight overhead key + soft fill — closer to "flat-lit reference paint" than "golden hour photoreal."
+- **Saturated, painterly colour blocks** — grass reads as a single saturated mid-green with hand-painted lighter-green highlight strokes + darker-green shadow strokes, NOT a continuous photoreal gradient. Rocks read as faceted grey/blue blocks with painted highlight + shadow strokes along edges, NOT a continuous PBR normal map.
+- **Painted edge lighting** baked in as light strokes where light would catch — top edge of a rock, leeward leaves of a bush, ridge of a roof tile. This is the Genshin "stylised rim" effect, baked rather than runtime-shader.
+- **No photoreal AO darkening in crevices.** Genshin scenes avoid heavy AO; they replace it with deliberate painted shadow strokes only where they help readability.
+- **Saturated palette anchored to the Genshin Inazuma sakura-dusk OR Sumeru cyan-magic family** (see the aesthetic section below). Browns are warm and saturated, NOT muddy photoreal earth tones. Greens are vivid saturated mid-greens, NOT desaturated naturalistic greens.
 
 **Workflow per landmark:**
-1. Author geometry in Blender via MCP, **showing the work in the open Blender GUI** (see `feedback_blender_workflow.md` in user memory — never headless during authoring).
-2. Set up a Cycles bake scene that matches the runtime lighting direction:
-   - Sun lamp from the same angle as the `Lighting.tsx` magenta directional (currently `[40, 50, 20]`, colour `#ff5fa8`).
-   - A cooler fill matching the cyan rim (`[-45, 28, -35]`, `#5feaff`).
-   - World/environment background tinted to the skybox horizon so indirect light has the right magenta-cyan colour shift.
-3. UV-unwrap every asset (Smart UV Project or Cube projection — whichever produces fewer seam artifacts for the geometry).
-4. Bake `COMBINED` pass (direct + indirect + AO + cast shadows) at 1024×1024 or 2048×2048 per asset, with 16-pixel UV island margin to avoid seam bleed.
-5. Save baked PNG to `public/models/hall/landmarks/<asset>-baked.png`.
-6. Rewire the asset's material so the BSDF base colour reads from the baked image texture.
-7. Export GLB with `export_image_format='AUTO'` so the baked PNG is packed into the GLB.
-8. On the React side, `AboutLandmark.tsx`'s material conversion preserves the texture map (`src.map`) when converting to `MeshStandardNodeMaterial` and pipes it through the texture-based emission branch so the bake survives even without scene lights reaching the material.
+1. Author geometry in Blender via MCP, **showing the work in the open Blender GUI** (see `feedback_blender_workflow.md` — never headless during authoring).
+2. Set up a Cycles bake scene tuned for hand-painted look:
+   - Single soft area light from above (Genshin-style "painted sun") — soft, broad, gentle falloff. Colour: warm magenta-pink (`#ffb0d8`) if Inazuma palette, cool cyan-white (`#c8e8ff`) if Sumeru palette.
+   - Soft fill from the opposite side at ~30% key intensity — keeps shadow side from going dark.
+   - Environment background set to a flat painterly tint matching the chosen palette (NOT an HDR — flat colour or a 2-stop gradient).
+   - World ambient lifted so there are **no near-black shadows** anywhere on the asset.
+3. UV-unwrap every asset (Smart UV Project; Cube projection only if Smart UV produces bad seams).
+4. Bake `COMBINED` pass at **1024×1024** per asset (NOT 2048² — that was for photoreal AO detail we no longer need; 1024² keeps bundle size in line with the <30 MB target). 16-pixel UV island margin to avoid seam bleed.
+5. **Texture-paint pass (optional but encouraged) in Blender's Texture Paint mode:** add hand-painted highlight strokes on the top edges + hand-painted shadow strokes on the bottom edges of the baked texture, then re-save. This is what bridges "flat-lit bake" → "Genshin-style painted asset." Skip only when batch-baking dozens of identical small props.
+6. Save baked PNG to `public/models/hall/landmarks/<asset>-baked.png`.
+7. Rewire the asset's material so the BSDF base colour reads from the baked image texture.
+8. Export GLB with `export_image_format='AUTO'` so the baked PNG is packed in.
+9. React side: the landmark component's material conversion preserves the texture map (`src.map`) when converting to `MeshStandardNodeMaterial` and pipes it through the texture-based emission branch so the bake survives even without scene lights reaching the material.
 
-**Bake group strategy:** assets are baked in groups (ground+boulders together, all foliage together, etc.) so the inter-shadowing reads correctly — e.g. the house casts a shadow onto the ground, the tree casts a shadow onto bushes. The shadow caster objects stay in the scene during the bake but their pixels aren't the target.
+**Bake group strategy:** assets are still baked in groups so per-asset palettes harmonise (ground + foliage together so the grass colour reads as paired with the soil colour). Cast-shadow inter-bakes matter less under the new flat-lit target — keep groups for palette coherence, not shadow accuracy.
 
-**The pragmatic shortcut for stylised landmarks:** if a single asset doesn't need cast shadows from neighbours (e.g. a pond ring, a beacon finial), it can be baked alone in a neutral hemisphere — much faster and the result still has surface AO + colour variation baked in.
-
-**Never ship a `/hall` landmark with primitive-shape Principled BSDF flat colour materials again.** That's been the visual ceiling we kept hitting; Cycles bake is the floor going forward.
+**Never ship a `/hall` landmark with primitive-shape Principled BSDF flat colour materials.** Cycles bake (now hand-painted, not photoreal) remains the floor.
 
 **Pre-export checklist (run mentally before every GLB export):**
 1. List every non-emissive mesh added since the last bake.
-2. For each, confirm it is part of a bake group (its material reads from a baked image texture, not a flat colour or procedural shader).
-3. If any new mesh lacks a bake, group it with peers (or bake it alone in a neutral hemisphere) before exporting. Do not export with flat-colour holes in the scene.
+2. For each, confirm it reads from a baked hand-painted image texture, not a flat colour or procedural shader.
+3. Confirm the asset's palette is in the locked Inazuma sakura-dusk OR Sumeru cyan-magic family (not earthy photoreal browns/greys).
+4. If any mesh lacks a bake, group it with peers (or bake alone in a neutral painted hemisphere) before exporting. Do not export with flat-colour holes.
 
-## /hall quality bar — Witcher 2-tier for every asset (HARD RULE, locked 2026-05-14)
+## /hall quality bar — Genshin-inspired stylized (LOCKED 2026-05-15, REPLACES Witcher-2-tier photoreal)
 
-**Rule:** every `/hall` asset must target **stylized-photoreal "Witcher 2-tier" quality** within WebGPU's browser ceiling. This applies to water (river, waterfall, pond), rocks, trees, foliage, soil, landmark assets, lighting, atmosphere. No stylised shortcuts that ship faster.
+**Rule:** every `/hall` asset targets **Genshin Impact-inspired stylized quality** within WebGPU's browser ceiling — specifically the Inazuma sakura-dusk and Sumeru cyan-magic palette range (Genshin's own dusk/magenta moods, NOT the bright-daytime Liyue/Mondstadt look). Hand-painted faceted cliffs, hand-painted trees with brown trunks + rounded saturated foliage clusters, hand-painted grass blades, hand-painted faceted rocks, cartoon-stylized cyan water with foam edges, painterly sky with painted clouds.
 
-**The browser-imposed ceiling is honest:** WebGPU + Mac + Chrome can't reach Witcher 3 PS5-tier (no real volumetric fog, no SSR, no tessellation, no PCSS soft shadows, ~500 MB total texture budget). The realistic ceiling is **Witcher 2 max-settings on PC, circa 2011.** That's the bar. Anything less is wrong.
+**The honest ceiling:** ~60-70% of Genshin's visual impact, executed at "Genshin-inspired stylized" tier — NOT "Genshin-tier" (miHoYo had hundreds of artists + $200M+ + 5 years; we are one person + Claude Code + 5-7 months + GitHub Pages + 30 MB bundle). The aim is "this clearly references Genshin's art language" not "this is mistaken for Genshin."
 
-User explicitly authorised 4-6 months of work for this ambition on 2026-05-14. Do not propose "stylised approximations" or "cheap variants" as primary options — they were rejected.
+**User commit 2026-05-15:** 5-7 months focused solo work, scope = hub + 6 satellite islands. Replaces the earlier 4-6 month commit to Witcher-2-tier photoreal (that target killed for being unachievable under the substrate + bundle constraints).
 
-## /hall aesthetic — Wakandan-vibranium (locked 2026-05-14)
+**Why the photoreal target died:**
+- 4 days + 53 commits chasing "Witcher 2-tier photoreal" produced: river that reads as a black void, waterfall that reads as a featureless white tube, hub disc that still reads as low-poly despite procedural Perlin noise, 181 MB bundle (6× over budget), and a style clash between photoreal-ambition terrain + cartoon buildings + Tron-grid backdrop + Vegas-neon signs + Pixar-orange lava cracks.
+- The substrate (R3F + WebGPU + Mac + Chrome) cannot ship the missing AAA ingredients — no real volumetric fog, no SSR, no tessellation, no PCSS soft shadows, no real-time GI. Every "AAA stack" attempt was a workaround for a missing primitive.
+- A stylized target plays to the substrate's actual strengths: flat-lit baked textures, painterly post, cheap geometry, low texture budget.
 
-The aesthetic is **photoreal-natural ground + neon-magenta-cyan dusk sky + vibranium emissive accents on landmarks**. This is the Wakandan-futuristic frame from the original Hall pitch (`project_hall_redesign.md` in user memory), course-correcting from the recent drift into pure synthwave.
+**How to apply:**
+- Default mental model: when proposing any /hall asset, ask **"is this clearly in the Genshin Inazuma-sakura-dusk OR Sumeru-cyan-magic art language?"** If no, propose a more painterly version.
+- Reject "photoreal" as a primary option for water, terrain, rocks, foliage, sky. The locked target is hand-painted-stylized.
+- "Realism" exists only in proportion, scale, and silhouette — surfaces, lighting, and colour are all painterly.
+- Will-it-read-from-orbit (~80m camera) still matters — but the test changes: at 80m a Genshin scene reads as **coherent colour blocks with painted edge lighting**, not as photoreal microdetail. Scale features for orbital readability accordingly (saturated palette, bold silhouettes, visible foam edges).
 
-- **Sky stays neon** — magenta `#ff5fa8` directional + cyan `#5feaff` rim + magenta-purple horizon gradient (the current Lighting.tsx + Skybox.tsx). Don't touch this.
-- **Ground becomes photoreal-natural** — rocks ship with full PBR texture sets (basecolor + normal + roughness + AO from Polyhaven or equivalent), water is real FLIP-baked geometry via VAT, trees use branch geometry + bark + leaf cards (not stylised cones), soil/moss reads as real surfaces.
-- **Vibranium accents** — cyan/magenta emissive veins, runes, glowing minerals, animated emissive scrolling on the landmarks (forge has cyan-glowing seams, mecha has magenta terminal screens, etc.). The neon palette becomes accent lighting on otherwise-photoreal materials, not the surface treatment itself.
+**Specific consequences (replaces all prior asset-tier rules):**
+- Water (waterfall, river, pond) — cartoon shader: UV-scroll cyan base + soft caustic noise + foam edges + fresnel rim. NO planar reflector, NO multi-layer photoreal normal stack, NO GPU-instanced particle spray, NO wet-rock shader. See water pipeline section below.
+- Rocks — faceted grey/blue blocks with painted highlight + shadow strokes baked in. NO photoreal PBR normal/roughness/AO stack.
+- Trees — Genshin-style brown trunks + rounded foliage clusters (sakura-pink, saturated-green, or autumn-red variants). NO real branch geometry + bark normals + leaf-card-alpha + wind shader.
+- Grass — painted grass-blade clusters + scattered painted flowers. NO 3D crossed-plane volumes.
+- Foam — painted foam-edge strokes baked into the water texture, OR a soft painted ring decal at impact zones. NO foam-crown ring meshes with TSL vertex churn.
+- Sky — Genshin-style painted sky with painted cumulus clouds in Inazuma sakura-dusk OR Sumeru cyan-magic palette. NO photoreal HDRI, NO procedural atmospheric scattering.
 
-Reference frames that hold visual coherence: Wakanda Forever Talokan kingdom, Avatar Pandora, Annihilation's shimmer zone. NOT Cyberpunk 2077 (which is fully neon) and NOT Witcher 3 (which has no neon at all).
+**Acknowledged style-clash carve-out:**
+- The existing pink-tiered pagoda house at /aboutme is kept AS-IS — its hand-cartoon style is different from the surrounding Genshin terrain. User pre-acknowledged this. Do NOT re-author the pagoda to "match" — it stays as the playful style-clash element.
+- The grey mecha-wreck at /projects is kept (silhouette only). Its orange vibranium cracks are **recolored to cyan crystal veins** to align with the Genshin energy palette. This reads as "Khaenri'ah ruin in a fantasy world" — sci-fi crash in Genshin's universe — which Genshin's own canon supports.
 
-## /hall water pipeline — full AAA stack, not VAT (REVISED 2026-05-14 evening — 3rd revision)
+## /hall aesthetic — Genshin Inazuma-sakura-dusk + Sumeru-cyan-magic palettes (LOCKED 2026-05-15, REPLACES brightened-photoreal-AAA + Wakandan-dusk + Path-A)
 
-**Iteration history (so we don't drift again):**
-- 2026-05-13: pre-rendered Cycles → video billboard → wrong: flat in 3D orbital scene
-- 2026-05-14 AM: TSL-displaced mesh + procedural flow → 15% of reference quality
-- 2026-05-14 PM: proposed VAT pipeline → wrong, AAA games don't use VAT for water
-- 2026-05-14 PM (current): **full AAA stack with TSL as mesh-displacement layer**
+**The locked aesthetic — Genshin's own dusk/magenta range, NOT bright daytime, NOT photoreal:**
 
-**Locked rule:** animated water surfaces (waterfall, river, pond ripples, fountains) ship as the AAA standard stack — exactly what Witcher 3, RDR2, Horizon, Sea of Thieves use:
+Two palette families to pull from. Pick one as the dominant tone per landmark scene; both are valid for the archipelago overall:
 
-1. **Static high-poly mesh** authored in Blender at 5-15k verts. Shape matches average flow path.
-2. **TSL shader** with multiple layers: 3-4 scrolling normal maps at different scales + flow-direction texture (RG, baked from a single-frame FLIP) + Gerstner wave perturbation + foam mask + fresnel rim + Beckmann specular.
-3. **TSL-instanced particle spray system** at every splash zone (~2000-5000 GPU-instanced droplets, physics-curved trajectories, all shader-side).
-4. **Planar mist mesh** at splash zones (stacked semi-transparent planes — substituting for real volumetric fog which WebGPU doesn't support).
-5. **Wet-rock shader** on neighbouring stones within ~5m of splash zones (darker basecolor + lower roughness + higher specular).
-6. **Custom-shaped cliff/riverbed geometry** that channels the flow naturally (multi-stream cascade, not single column).
+- **Inazuma sakura-dusk:** soft magenta-pink sky + saturated cherry-blossom-pink foliage accents + warm-rose stone + cyan-teal water + painted clouds with rose underbelly. Magenta-pink-warm dominant.
+- **Sumeru cyan-magic-night:** cool cyan-magic sky + luminous teal-cyan foliage accents + cool-blue stone + cyan water with magic glint + painted clouds with cyan underbelly + bioluminescent mushroom dots for accent points. Cyan-cool-magic dominant.
 
-VAT (vertex animation textures) was considered + rejected: AAA games **don't** use VAT for waterfalls/rivers (it's a Houdini/cinematic technique used for cloth, debris, crowd anim, NOT real-time water). The chaos in a waterfall is at the **droplet scale**, not the mesh-sheet scale — VAT can't capture droplets (they're disconnected geometry), but particle systems can.
+**Lighting frame:**
+- Single soft warm key light (magenta-pink if Inazuma) OR cool key light (cyan-white if Sumeru). NOT a sharp directional sun. Soft, broad, gentle falloff — painted-sun, not photoreal-sun.
+- Soft fill at ~30% key intensity from the opposite side — keeps shadow side painterly, never near-black.
+- Painted ambient — flat saturated tint matching the palette. NOT HDRI-driven indirect light.
+- No real-time shadows (we are bake-only for shading). No bloom-heavy synthwave post; light bloom OK for crystal/mushroom emissives only.
 
-**The 15% gap is NOT from TSL being weak.** It's from missing the surrounding stack. Build the stack, not a fancier displacement.
+**KEEP / EDIT / KILL element table (locked):**
 
-**The current TSL waterfall (commit `188fb04`)** is the *starting* mesh + shader. The full stack is added around/on top of it incrementally.
+| Element | Decision | Notes |
+|---|---|---|
+| Tron grid backdrop | **KILL** | Replaced with painterly Genshin sky |
+| Magenta-cyan dusk skybox | **REWRITE** | As Genshin painted sky (Inazuma OR Sumeru) with painted clouds |
+| Brown earthy hub disc | **REBUILD** | Multi-tier terraced Liyue-style cliff platform — grass top + faceted grey/blue cliff rim |
+| Cracked-clay upper floating island | **KILL** | Remove entirely (water source moves to the Liyue-cliff cascade) |
+| White-tube waterfall | **KILL** | Genshin-style multi-stream painted cyan-white waterfall (cartoon shader) |
+| Black-ribbon river | **KILL** | Genshin-style stylized cyan painted water + foam edges |
+| Pond at /aboutme | **EDIT** | Genshin-style cyan pond with painted ripples + foam edges + caustic glints |
+| Splash foam ring | **EDIT** | Painted foam-burst decal (no particle system) |
+| Pink-tiered pagoda house | **KEEP AS-IS** | Style-clash carve-out (user-acknowledged) |
+| Mecha wreck blocks | **KEEP, RECOLOR** | Orange vibranium cracks → cyan crystal veins (Khaenri'ah-ruin-in-Genshin read) |
+| Vegas neon signboards | **KILL** | Hand-painted wooden directional signs (Liyue/Mondstadt style) |
+| Cyan/green cone "trees" | **KILL** | Genshin painted trees (brown trunks + rounded foliage clusters) |
+| Purple geodesic-sphere rocks | **KILL** | Genshin faceted grey/blue rocks with painted highlight + shadow strokes |
+| Green grass tufts | **KILL** | Painted grass-blade clusters + scattered painted flowers |
+| Floating orbs + terminal pedestals | **EDIT** | Pedestals → Genshin stone-pillar lanterns; orb stays as click-target with re-styled shader |
+| Skills landmark / forge cave | **REBUILD** | Genshin cliff outcrop + painted moss + cyan crystal accents |
 
-## /hall master Blender file + connections.glb architecture (locked 2026-05-14)
+**Reference frames:**
+- Genshin Impact Inazuma sakura-dusk scenes (Kannazuka coast at dusk, Narukami Shrine path at dusk)
+- Genshin Impact Sumeru cyan-magic-night scenes (Apam Woods at night, Dharma Forest crystal areas)
+- NOT: bright Liyue/Mondstadt daytime, NOT photoreal AAA games, NOT Wakandan-vibranium dusk, NOT synthwave-Tron, NOT Witcher 2/3
 
-Cross-landmark assets — currently the river-of-life (skills → projects → about), bridges and paths in future — live in **`blender/hall-master.blend`** + **`connections.glb`**, separate from per-landmark assets.
+**For implementers:**
+- `src/landing/Hall/Lighting.tsx` — re-author for Genshin lighting: one soft warm-or-cool key + soft fill + painted ambient. Drop the Path-A brightening hacks (they were tuned for photoreal terrain, not for hand-painted assets).
+- `src/landing/Hall/Skybox.tsx` + `SkyEnvMap.ts` — re-author as Genshin painted sky + painted cloud layer (procedural OR baked image; baked is easier).
+- `src/landing/Hall/Island.tsx` — rebuild around new Liyue multi-tier terraced cliff GLB. Drop procedural Perlin noise. Material reads from baked hand-painted texture.
+- `src/landing/Hall/stylizedWater.ts` (renamed from `photorealWater.ts`) — cartoon water shader (see water pipeline section).
+- All `landmark-*.glb` — re-bake under the new hand-painted Cycles config.
+- All neon-Vegas signboards → wooden directional signs.
+
+## /hall water pipeline — Genshin stylized cartoon water (LOCKED 2026-05-15, REPLACES full-AAA-stack)
+
+**Locked rule:** all water surfaces (waterfall, river, pond, fountain, basin) ship as a single **cartoon stylized water shader** — Genshin Impact's water language, NOT photoreal PBR.
+
+**The cartoon water shader (single layer, ~80% LOC reduction from the AAA stack):**
+
+1. **Authored static mesh** in Blender at 2-4k verts (not 5-15k — we don't need photoreal sheet displacement). Shape matches the average flow path.
+2. **TSL shader** with these layers only:
+   - UV-scrolling cyan-painted base colour (a hand-painted cyan-and-foam tile texture, scrolled along flow direction at slow speed)
+   - Soft caustic noise overlay (low-frequency perlin tinted brighter cyan)
+   - **Painted foam edges** — a soft white band where the water mesh intersects bank geometry, computed from depth-to-bank distance OR baked into a foam mask painted in Blender Texture Paint
+   - Fresnel rim brightening (subtle, painted-style)
+   - Optional sakura-petal particles drifting on the surface (Inazuma palette) OR fairy-light glints (Sumeru palette) — sparse, billboard quads, decorative
+3. **Multi-stream painted waterfall** (for /skills cascade): 2-3 painted ribbon meshes side-by-side, each UV-scrolling at slightly different speeds. NO particle spray, NO mist plane, NO wet-rock shader.
+
+**What's KILLED from the prior AAA stack:**
+- ~~3-4 scrolling photoreal normal maps at different scales~~ — replaced by single painted tile texture
+- ~~Flow-direction RG texture~~ — replaced by uniform-direction scroll along mesh UV
+- ~~Gerstner wave perturbation~~ — Genshin water doesn't displace, it's a painted surface
+- ~~Beckmann specular~~ — replaced by painted highlight strokes baked into the texture
+- ~~GPU-instanced particle spray (2000-5000 droplets)~~ — DELETE `WaterfallSpray.tsx`
+- ~~Planar mist mesh~~ — DELETE
+- ~~Wet-rock shader on neighbouring stones~~ — DELETE
+- ~~Planar reflector~~ — DELETE
+- ~~FLIP-baked or hand-painted RG flow textures~~ — replaced by uniform UV scroll
+- ~~Custom-shaped multi-stream cliff geometry that channels flow naturally~~ — replaced by 2-3 simple painted ribbons
+
+**Why cartoon, not photoreal:**
+- The AAA-stack pipeline shipped a black-void river and a featureless white-tube waterfall after 4 days. The substrate cannot deliver photoreal water without the missing AAA primitives (real volumetric fog, SSR, tessellation).
+- Genshin water on Switch hardware (weaker than browser WebGPU in some respects) reads as gorgeous water — proof that cartoon-stylized water is achievable on tighter constraints than ours.
+- Cartoon water plays to the substrate's strengths (flat baked textures, cheap UV scroll, cheap blend) and avoids the photoreal trap entirely.
+
+**Iteration history (for context, do not re-litigate):**
+- 2026-05-13: pre-rendered Cycles → video billboard → flat in 3D
+- 2026-05-14 AM: TSL-displaced mesh + procedural flow → 15% quality
+- 2026-05-14 PM: proposed VAT → wrong tool
+- 2026-05-14 PM: full AAA stack → shipped a black void
+- **2026-05-15 (current): cartoon-stylized Genshin water — locked**
+
+**Files affected (Phase 1 of the Genshin pivot):**
+- `src/landing/Hall/photorealWater.ts` → rename to `stylizedWater.ts`, gut + rewrite as cartoon shader. ~80% LOC reduction.
+- `src/landing/Hall/WaterfallSpray.tsx` → DELETE
+- `src/landing/Hall/WaterfallDroplets.tsx` → DELETE
+- `src/landing/Hall/PlanarReflector.tsx` → DELETE
+- `src/landing/Hall/WaterfallTSL.tsx` → rewrite as multi-stream painted ribbon, OR fold into stylizedWater
+- `src/landing/Hall/Connections.tsx` → drop AAA-stack mesh routing (river_bank, river_grass, river_pebble, river_bedrock, river_bush, river_boulder), simplify to cartoon-water + foam-edge routing.
+
+## /hall master Blender file + connections.glb architecture (locked 2026-05-14, content target revised 2026-05-15)
+
+Cross-landmark assets — currently the river-of-life (skills → projects → about), bridges and paths in future — live in **`blender/hall-master.blend`** + **`connections.glb`**, separate from per-landmark assets. **The architecture survives the 2026-05-15 Genshin pivot; only the water content inside `connections.glb` changes from photoreal AAA-stack meshes to Genshin cartoon-water meshes.**
 
 - **`blender/hall-master.blend`** is the planning + cross-landmark authoring source. Imports all per-landmark GLBs at their world POI positions (`HALL_POI_POSITIONS` in `src/landing/sections.ts`) so cross-landmark features can be authored against the actual geometry of all neighbouring landmarks.
 - **Per-landmark GLBs** (`landmark-{about,projects,skills}.glb`) stay self-contained for features that are visually local to one landmark. They are NOT edited inside the master file — they live in their own `.blend` files and the master imports them read-only.
-- **`connections.glb`** is the new shared asset. Holds the cross-landmark river (riverbed + water surface mesh + baked flow + foam textures) and any future spanning features. Mounted at world origin in `Scene.tsx`, not at any POI offset.
+- **`connections.glb`** is the shared cross-landmark asset. Holds the Genshin-style cartoon-water river (water surface mesh + painted foam masks + sakura-petal-or-fairy-light particle anchors). Mounted at world origin in `Scene.tsx`, not at any POI offset.
 
 When adding visually-local features, edit the per-landmark `.blend` + re-export its GLB; the master re-imports it. When adding cross-landmark features, edit `hall-master.blend`, author against the world geometry, export only the new asset selection to `connections.glb`.
 
-## /hall river-of-life (locked 2026-05-14)
+## /hall river-of-life (locked 2026-05-14, water language revised 2026-05-15)
 
-Single winding river (Philosophy B), chevron path through the 3 built landmarks:
+Single winding river (Philosophy B), chevron path through the 3 built landmarks. **The chevron path survives the Genshin pivot; the water language changes from photoreal to cartoon-stylized.**
 
-- **Source:** Skills cliff pool at POI[2] = (-30, _, -6). The existing Cycles-baked plunge pool is the headwater.
-- **First leg:** Arcs NE to Projects POI[1] = (+32, _, +18). ~50m.
-- **Projects detour (split-rejoin):** River SPLITS approaching the mecha — one branch loops north (behind wreck from camera POV), one loops south (in front). Branches REJOIN on the far side. The wreck + pedestal sit on a true island. The convergence point on the far side is where the two streams collide; this is the natural target for FLIP-baked foam-mask intensity. Wreck stays on dry ground — crashed-satellite-in-a-lake reads as too aquarium-like.
+- **Source:** Skills cliff pool at POI[2] = (-30, _, -6). After Phase 6 rebuild, the source is a Genshin Liyue-style multi-stream painted cascade plunge pool.
+- **First leg:** Arcs NE to Projects POI[1] = (+32, _, +18). ~50m. Cartoon cyan painted water + foam edges.
+- **Projects detour (split-rejoin):** River SPLITS approaching the mecha — one branch loops north (behind wreck from camera POV), one loops south (in front). Branches REJOIN on the far side. The wreck + pedestal sit on a true island. Convergence point on the far side gets painted foam-edge intensity (no FLIP bake — hand-painted in Blender Texture Paint). Wreck stays on dry ground.
 - **Return leg:** Arcs SW down to About POI[0] = (4, _, -8). ~50m.
-- **Terminus:** About's existing static decorative pond becomes the river basin. Pond stops being a separate water feature.
+- **Terminus:** About's existing pond becomes the river basin (cartoon cyan painted pond with painted ripples).
+
+**Water language:** all river segments use the cartoon water shader from the water-pipeline section above — UV-scroll cyan base + painted foam edges + soft caustics + fresnel rim. Sakura-petal particles drift on the surface (Inazuma palette) OR fairy-light glints (Sumeru palette). NO photoreal normal maps, NO Gerstner waves, NO particle spray, NO planar mist, NO wet-rock shader.
 
 Blog, Resume, Contact landmarks (POI 3-5) do NOT get river touchpoints — only the 3 currently-built scenes are connected.
 
