@@ -15,6 +15,9 @@ import ProjectsLandmark from "./ProjectsLandmark.tsx";
 import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
+import BlogLandmark from "./BlogLandmark.tsx";
+import ResumeLandmark from "./ResumeLandmark.tsx";
+import ContactLandmark from "./ContactLandmark.tsx";
 import Connections from "./Connections.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
@@ -103,6 +106,48 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         rotationY={Math.PI / 4}
         text="SKILLS"
         scale={1.5}
+      />
+      {/* /blog landmark — Liyue stone book pedestal at POI[3]
+          (deep back-left of the hub). Wooden sign sits hub-side. */}
+      <BlogLandmark
+        position={[HALL_POI_POSITIONS[3][0], 0, HALL_POI_POSITIONS[3][2]]}
+      />
+      <Signboard
+        position={[
+          HALL_POI_POSITIONS[3][0] + 2.5,
+          0,
+          HALL_POI_POSITIONS[3][2] + 3.0,
+        ]}
+        rotationY={-0.6}
+        text="BLOG"
+      />
+      {/* /resume landmark — Liyue carved-stone stele at POI[4] (east
+          rim adjacent to the house). */}
+      <ResumeLandmark
+        position={[HALL_POI_POSITIONS[4][0], 0, HALL_POI_POSITIONS[4][2]]}
+      />
+      <Signboard
+        position={[
+          HALL_POI_POSITIONS[4][0] - 2.8,
+          0,
+          HALL_POI_POSITIONS[4][2] + 2.6,
+        ]}
+        rotationY={0.7}
+        text="RESUME"
+      />
+      {/* /contact landmark — Inazuma wooden lantern post at POI[5] (south
+          landing, the visitor approach). */}
+      <ContactLandmark
+        position={[HALL_POI_POSITIONS[5][0], 0, HALL_POI_POSITIONS[5][2]]}
+      />
+      <Signboard
+        position={[
+          HALL_POI_POSITIONS[5][0] - 2.5,
+          0,
+          HALL_POI_POSITIONS[5][2] - 3.0,
+        ]}
+        rotationY={Math.PI + 0.4}
+        text="CONTACT"
       />
       <PoiMarkers />
       <Atmosphere lowFidelity={lowFidelity} staticMode={staticMode} />

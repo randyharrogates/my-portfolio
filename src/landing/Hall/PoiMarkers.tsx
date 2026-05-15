@@ -25,7 +25,14 @@ import type { SectionId } from "../sections.ts";
 /** Sections that have an authored landmark (GLB or procedural). The
  *  PoI marker is suppressed for these so we don't render an orb on top
  *  of the landmark itself. */
-const HAS_LANDMARK = new Set<SectionId>(["about", "projects", "skills"]);
+const HAS_LANDMARK = new Set<SectionId>([
+  "about",
+  "projects",
+  "skills",
+  "blog",
+  "resume",
+  "contact",
+]);
 
 interface MarkerProps {
   position: [number, number, number];
