@@ -2,6 +2,8 @@
 
 import React from "react";
 import Island from "./Island.tsx";
+import UpperIsland from "./UpperIsland.tsx";
+import Foliage from "./Foliage.tsx";
 import Atmosphere from "./Atmosphere.tsx";
 import Lighting from "./Lighting.tsx";
 import EnvironmentRig from "./EnvironmentRig.tsx";
@@ -39,6 +41,8 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
       <fog attach="fog" args={["#1a0b30", 160, 360]} />
       <Lighting lowFidelity={lowFidelity} />
       <Island />
+      <UpperIsland />
+      <Foliage />
       {/* About landmark (front-centre POI). Pagoda style-clash carve-out
           per the 2026-05-15 pivot: house keeps its existing cartoon look;
           surrounding environment retargets to Genshin terrain in Phase 4. */}
