@@ -58,11 +58,10 @@ export function isMobileViewport(): boolean {
 type FidelityMode = "auto" | "low" | "high";
 
 /** Master's "simplify-fx" PR locked the runtime to always-low fidelity to
- *  avoid the perf cliff on consumer GPUs. This stub preserves the
- *  `useFidelityMode` API the Hall consumes (lowFidelity flag + mode +
- *  setMode + reportFps) but with the mode pinned to `"low"` so callers
- *  unconditionally render in the cheaper path. setMode + reportFps are
- *  intentional no-ops. */
+ *  avoid the perf cliff on consumer GPUs. As of 2026-05-14 we're back on
+ *  HIGH to drive the photoreal water / envMap-IBL rewrite — low fidelity
+ *  was masking the lighting cliff on the upper island base. setMode +
+ *  reportFps stay as no-ops for now (caller wiring kept for HUD parity). */
 export function useFidelityMode(): {
   lowFidelity: boolean;
   mode: FidelityMode;
@@ -70,8 +69,8 @@ export function useFidelityMode(): {
   reportFps: (fps: number) => void;
 } {
   return {
-    lowFidelity: true,
-    mode: "low",
+    lowFidelity: false,
+    mode: "high",
     setMode: () => {},
     reportFps: () => {},
   };

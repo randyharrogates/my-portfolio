@@ -37,7 +37,7 @@ const SkillsForgeOrb: React.FC<SkillsForgeOrbProps> = ({ position }) => {
   useFrame((state) => {
     if (!orbRef.current) return;
     const t = state.clock.elapsedTime;
-    orbRef.current.position.y = Math.sin(t * 1.3 + 1.2) * 0.18;
+    orbRef.current.position.y = position[1] + Math.sin(t * 1.3 + 1.2) * 0.18;
   });
 
   const orbInnerMaterial = useMemo(() => {

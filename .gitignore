@@ -45,3 +45,14 @@ resume.log
 # Playwright MCP artifacts (page snapshots, console logs)
 /.playwright-mcp/
 
+# Local-only asset backup snapshots produced during decimation passes
+/.asset-backups/
+
+# Third-party Blender asset caches + scratch
+/blender/assets/
+/blender/blenderkit/
+/blender/*.blend.bak-*
+
+# Reference image scratch dir
+/sample/
+
