@@ -6,7 +6,6 @@ import Atmosphere from "./Atmosphere.tsx";
 import Lighting from "./Lighting.tsx";
 import EnvironmentRig from "./EnvironmentRig.tsx";
 import Skybox from "./Skybox.tsx";
-import GridFloor from "./GridFloor.tsx";
 import PoiMarkers from "./PoiMarkers.tsx";
 import AboutLandmark from "./AboutLandmark.tsx";
 import EnterHouseOrb from "./EnterHouseOrb.tsx";
@@ -39,7 +38,6 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
       <EnvironmentRig />
       <fog attach="fog" args={["#1a0b30", 160, 360]} />
       <Lighting lowFidelity={lowFidelity} />
-      <GridFloor />
       <Island />
       {/* About landmark (front-centre POI). Pagoda style-clash carve-out
           per the 2026-05-15 pivot: house keeps its existing cartoon look;
