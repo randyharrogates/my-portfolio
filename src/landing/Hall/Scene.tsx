@@ -2,7 +2,6 @@
 
 import React from "react";
 import Island from "./Island.tsx";
-import UpperIsland from "./UpperIsland.tsx";
 import Foliage from "./Foliage.tsx";
 import Atmosphere from "./Atmosphere.tsx";
 import Lighting from "./Lighting.tsx";
@@ -18,7 +17,6 @@ import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import BlogLandmark from "./BlogLandmark.tsx";
 import ResumeLandmark from "./ResumeLandmark.tsx";
 import ContactLandmark from "./ContactLandmark.tsx";
-import Connections from "./Connections.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
@@ -44,7 +42,6 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
       <fog attach="fog" args={["#1a0b30", 160, 360]} />
       <Lighting lowFidelity={lowFidelity} />
       <Island />
-      <UpperIsland />
       <Foliage />
       {/* About landmark (front-centre POI). Pagoda style-clash carve-out
           per the 2026-05-15 pivot: house keeps its existing cartoon look;
@@ -90,17 +87,14 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         text="CASE STUDIES"
         scale={1.3}
       />
-      {/* /skills landmark — forge cave; rebuilt as a Genshin Liyue cliff
-          outcrop with painted multi-stream cartoon waterfall in Phase 6. */}
+      {/* /skills landmark — Liyue cliff outcrop + multi-stream waterfall
+          + floating island with shed/fence/sheep + mountain ridges +
+          interactive pedestal + terminal. Rebuilt 2026-05-15 under the
+          canonical projects-style Cycles bake recipe. */}
       <SkillsLandmark
         position={[HALL_POI_POSITIONS[2][0], 0, HALL_POI_POSITIONS[2][2]]}
       />
       <SkillsForgeOrb position={[-25.45, 8.1, -16.70]} />
-      {/* Cross-landmark water — sourced at /skills, chevrons NE to
-          /projects, returns SW into the /about basin. All cartoon-water
-          authored in `blender/hall-master.blend` and packed into
-          `connections.glb`. */}
-      <Connections />
       <Signboard
         position={[-32.0, 4.0, -17.0]}
         rotationY={Math.PI / 4}
