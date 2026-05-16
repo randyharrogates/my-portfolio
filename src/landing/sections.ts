@@ -235,12 +235,24 @@ const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, FocalOverride>> = {
   // intentionally per user.
   skills: {
     kind: "fixed",
-    // Pulled back again per user (31/10.5/6.5 → 36/12/7.5). Same
-    // lookAt; just more headroom so the whole tool-armory scene
-    // (sign + relocated terminal + orb + greenery + waterfall +
-    // plunge pool) lives in one frame without anything crowding.
-    cameraOffset: [36.0, 12.0, 7.5],
-    lookAtOffset: [-5.0, 5.5, -1.0],
+    // Orbited ~10° CW around the lookAt (Z 18 → 10) so the view comes
+    // from more to the right and the sign + pedestal + orb cluster
+    // reads with the cliff column behind. LookAt centred on that
+    // cluster (offset 9, 2.5, 14 from POI).
+    cameraOffset: [54.0, 20.0, 10.0],
+    lookAtOffset: [9.0, 2.5, 14.0],
+    fov: 55,
+  },
+  // contact: cinematic shrine-approach pose — camera north of POI looking
+  // south at the climbing compound. POI[5] = (0, 1.6, 38); camera
+  // resolves to (0, 4.1, 28), lookAt to (0, 5.6, 46). FOV 50° frames the
+  // torii foreground + stone path mid + bell pavilion + ema tree summit,
+  // with the twin cliff in the right-side composition. Rebuilt 2026-05-16
+  // for the Inazuma shrine compound (replaces the prior beach-jetty pose).
+  contact: {
+    kind: "fixed",
+    cameraOffset: [0, 2.5, -10],
+    lookAtOffset: [0, 4.0, 8],
     fov: 50,
   },
 };
@@ -486,11 +498,11 @@ export const HALL_THEMES: Record<SectionId, AlcoveTheme> = {
   },
   contact: {
     id: "contact",
-    title: "comms array",
-    subtitle: "how to reach me",
+    title: "shrine of letters",
+    subtitle: "ring the bell · release a lantern",
     accent: "#4ddfff",
     hologramColor: [0.30, 0.87, 1.0],
-    // Comms array = broadcast, outward-facing. Fully open.
+    // Shrine = open-air ritual ground, fully visible from any orbit angle.
     openness: "fully-open",
   },
 };

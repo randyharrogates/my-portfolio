@@ -50,43 +50,133 @@ A single-page React 19 + TypeScript portfolio site, bootstrapped with Create Rea
 
 `src/data/portfolio.ts` is the single source of truth for personal content (identity, tech stack, roles, certifications, education, interests, social links). `AboutMe.tsx` consumes it directly; the ambient 3D layer also reads from it. Editing `portfolioData` here propagates everywhere — never duplicate content into a component.
 
-## /hall landmark authoring — Cycles bake workflow for Genshin hand-painted look (REVISED 2026-05-15)
+## /hall GRAPHICS PIPELINE STANDARD (locked 2026-05-16)
 
-**Rule — no exceptions:** every mesh that ships in a `/hall` landmark GLB carries a baked **hand-painted** diffuse texture. Walls, roofs, windows, doors, chimneys, shutters, rocks, plants, ground, props, trees, grass — **everything**. The only meshes allowed to ship without a bake are emissive accents (lantern wicks, crystal cores, foam glints) that read as uniform glow. If you add a new piece mid-session, it MUST be added to a bake group before re-export — do not let it ship as flat-colour Principled BSDF.
+**The graphics pipeline is FIXED. The design theme is a knob.** Every landmark uses the same Cycles bake rig, the same palette VALUE range, the same export sequence, the same runtime material conversion. The only thing that varies per landmark is the specific palette FAMILY (Inazuma sakura-dusk vs Sumeru cyan-magic-night vs future themes) and which assets exist (shrine vs cliff vs pagoda).
 
-The `/hall` archipelago landmarks + every environment asset (rocks, plants, ponds, ground patches, grass, signs, etc.) are authored in Blender via MCP and **every asset is finished with a Cycles bake that targets a Genshin-style hand-painted look** — NOT photoreal AO + GI. The texture ships in the GLB. The React side just samples it.
+**If a new landmark looks pale, washed out, or inconsistent with skills/projects/about, it is a pipeline failure (see "Diagnosing pale renders" below) — NOT a design or rig tuning problem.** Do not change `Lighting.tsx`, the per-landmark bake rig, or the runtime emissive-intensity to "fix" a wash. Fix the pipeline.
 
-**What the new bake target looks like:**
-- **Flat, even lighting** (no harsh directional shadows baked in). Slight overhead key + soft fill — closer to "flat-lit reference paint" than "golden hour photoreal."
-- **Saturated, painterly colour blocks** — grass reads as a single saturated mid-green with hand-painted lighter-green highlight strokes + darker-green shadow strokes, NOT a continuous photoreal gradient. Rocks read as faceted grey/blue blocks with painted highlight + shadow strokes along edges, NOT a continuous PBR normal map.
-- **Painted edge lighting** baked in as light strokes where light would catch — top edge of a rock, leeward leaves of a bush, ridge of a roof tile. This is the Genshin "stylised rim" effect, baked rather than runtime-shader.
-- **No photoreal AO darkening in crevices.** Genshin scenes avoid heavy AO; they replace it with deliberate painted shadow strokes only where they help readability.
-- **Saturated palette anchored to the Genshin Inazuma sakura-dusk OR Sumeru cyan-magic family** (see the aesthetic section below). Browns are warm and saturated, NOT muddy photoreal earth tones. Greens are vivid saturated mid-greens, NOT desaturated naturalistic greens.
+The canonical reference is `blender/skills-landmark-bake.blend`. New landmarks copy its rig byte-equivalent. If skills' values change, the new values become canonical for everyone — but never let two landmarks diverge.
 
-**Workflow per landmark:**
-1. Author geometry in Blender via MCP, **showing the work in the open Blender GUI** (see `feedback_blender_workflow.md` — never headless during authoring).
-2. Set up a Cycles bake scene tuned for hand-painted look:
-   - Single soft area light from above (Genshin-style "painted sun") — soft, broad, gentle falloff. Colour: warm magenta-pink (`#ffb0d8`) if Inazuma palette, cool cyan-white (`#c8e8ff`) if Sumeru palette.
-   - Soft fill from the opposite side at ~30% key intensity — keeps shadow side from going dark.
-   - Environment background set to a flat painterly tint matching the chosen palette (NOT an HDR — flat colour or a 2-stop gradient).
-   - World ambient lifted so there are **no near-black shadows** anywhere on the asset.
+### Hard rule
+Every mesh that ships in a `/hall` landmark GLB carries a baked **hand-painted** diffuse texture. Walls, roofs, windows, doors, chimneys, shutters, rocks, plants, ground, props, trees, grass — **everything**. The only meshes allowed to ship without a bake are emissive accents (lantern wicks, crystal cores, foam glints) that read as uniform glow. New geometry added mid-session MUST be added to a bake group before re-export.
+
+### Canonical bake rig (source of truth: `skills-landmark-bake.blend`)
+
+| Component | Canonical value | Why this exact value |
+|---|---|---|
+| Render engine | Cycles | EEVEE doesn't trace indirect for painted-edge highlights |
+| Samples | 128 | Denoises hand-painted areas at 1024² |
+| View transform | **AgX** | Raw clips highlights; Filmic has a different curve. AgX matches Genshin rolloff. |
+| Key sun | `SUN`, colour `(1.0, 0.37, 0.66)` saturated magenta, energy `2.5`, rotation `(41.8°, 0°, 116.6°)` | Saturated tint multiplies into painted defaults and preserves chroma through the bake. Whiter/pinker tints (`#ffb0d8`) desaturate the bake. |
+| Fill sun | `SUN`, colour `(0.37, 0.92, 1.0)` saturated cyan, energy `1.7`, rotation `(63.8°, 0°, -52.1°)` | Cool side of the bicolor rig |
+| World background | flat colour `(0.2, 0.1, 0.3)` dark purple, strength `0.4` | NO HDRI, NO sky texture. Flat painterly ambient. |
+| Bake target | 1024×1024, type `COMBINED`, margin `16` px, `ADJACENT_FACES` | <30 MB bundle target |
+| Image colorspace | `sRGB` (NOT `Non-Color`) | Non-Color exports without sRGB metadata; three.js renders ~2.5× too bright |
+| Material `surface_render_method` | `DITHERED` (Blender 4.2+ opaque equivalent) | Legacy `blend_method` is inert in 5.x |
+| Material `default_value` range (non-emissive) | **0.025–0.18** sRGB per channel; max ~0.7 only for white-ish (wool/paper) | Brighter values get clipped to white by runtime lighting |
+| Emission strength range | **≤ 3.0** | Skills' max is fire_ember / terminal_screen at 3.0 |
+
+Reference palette values from `skills-landmark-bake.blend` (use as a starting point for new landmark materials):
+- Indigo stone: `(0.06, 0.05, 0.10)`
+- Vermilion red: `(0.14, 0.05, 0.04)`
+- Dark wood: `(0.06, 0.045, 0.04)`
+- Saturated grass: `(0.09, 0.26, 0.08)`
+- Cool path stone: `(0.085, 0.085, 0.092)`
+- Beige wood (lightest non-white): `(0.18, 0.11, 0.07)`
+- Bright white (wool/paper): `(0.70, 0.68, 0.64)`
+- Saturated pink (lily bloom): `(0.62, 0.20, 0.38)`
+
+### Bake-then-export workflow (canonical)
+
+1. Author geometry in Blender via MCP, **showing the work in the open Blender GUI** (see `feedback_blender_workflow.md`).
+2. Set up the bake rig — copy from `skills-landmark-bake.blend` byte-equivalent.
 3. UV-unwrap every asset (Smart UV Project; Cube projection only if Smart UV produces bad seams).
-4. Bake `COMBINED` pass at **1024×1024** per asset (NOT 2048² — that was for photoreal AO detail we no longer need; 1024² keeps bundle size in line with the <30 MB target). 16-pixel UV island margin to avoid seam bleed.
-5. **Texture-paint pass (optional but encouraged) in Blender's Texture Paint mode:** add hand-painted highlight strokes on the top edges + hand-painted shadow strokes on the bottom edges of the baked texture, then re-save. This is what bridges "flat-lit bake" → "Genshin-style painted asset." Skip only when batch-baking dozens of identical small props.
-6. Save baked PNG to `public/models/hall/landmarks/<asset>-baked.png`.
-7. Rewire the asset's material so the BSDF base colour reads from the baked image texture.
-8. Export GLB with `export_image_format='AUTO'` so the baked PNG is packed in.
-9. React side: the landmark component's material conversion preserves the texture map (`src.map`) when converting to `MeshStandardNodeMaterial` and pipes it through the texture-based emission branch so the bake survives even without scene lights reaching the material.
+4. Set every non-emissive material's BSDF Base Color `default_value` to a hue in the 0.025–0.18 range. Reference skills' palette above.
+5. **Bake feedback caveat**: when a material's BSDF Base Color is linked to its bake target image, Cycles substitutes black for the input → bake comes out dark/empty. Fix: temporarily disconnect Image Texture → Base Color before bake, reconnect after. Cycles uses `default_value` (the dark painted hue) during bake.
+   ```python
+   # Before bake: disconnect Image Texture → Base Color (save links so you can restore)
+   # After bake: restore the links
+   ```
+6. Bake `COMBINED` at 1024×1024, 16-px margin, 128 samples.
+7. Save baked PNG: `image.filepath_raw = .../<asset>-baked.png; image.file_format='PNG'; image.save()`.
+8. Confirm `image.colorspace_settings.name == 'sRGB'` (NOT `Non-Color`).
+9. **CRITICAL pre-export step 1 — unpack stale packed_files**: Blender keeps a `packed_files` blob from when the image was first packed. Re-baking updates `image.pixels` and writes the PNG to disk, but `packed_files` is untouched. The GLB exporter embeds the stale packed bytes, NOT the current pixels — so the GLB ships the OLD pre-rebake content even though the on-disk PNG is correct. **Always unpack before export:**
+   ```python
+   for img in bpy.data.images:
+       if 'baked' in img.name and '<landmark>' in img.name and len(img.packed_files) > 0:
+           img.unpack(method='USE_ORIGINAL')
+   ```
+10. **CRITICAL pre-export step 2 — wire every baked Image Texture → BSDF Base Color**: Blender's glTF exporter only writes `baseColorTexture` when the BSDF Base Color is actively linked to the Image Texture node. An unlinked texture (which is the state after a bake-feedback disconnect, or for materials that never had the wiring set up) gets dropped from export. At runtime the material falls into the flat-color branch of `convertToNodeMaterials` and gets washed by `Lighting.tsx`.
+    ```python
+    for mat in bpy.data.materials:
+        if mat.users == 0 or not mat.use_nodes: continue
+        bsdf = next((n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+        if not bsdf: continue
+        baked_node = next((n for n in mat.node_tree.nodes
+                           if n.type == 'TEX_IMAGE' and n.image and 'baked' in n.image.name), None)
+        if not baked_node: continue
+        bc = bsdf.inputs['Base Color']
+        if bc.is_linked and bc.links[0].from_node == baked_node: continue
+        for link in list(bc.links): mat.node_tree.links.remove(link)
+        mat.node_tree.links.new(baked_node.outputs['Color'], bc)
+    ```
+11. Export GLB: `bpy.ops.export_scene.gltf(export_format='GLB', use_selection=True, export_apply=True, export_image_format='AUTO', export_keep_originals=False, ...)`.
+12. **Verify the export was clean**: byte-parse the GLB and compute the embedded image average. Must match the on-disk PNG average within ±5 per channel. If they diverge, packed_files is stale → go back to step 9. See "Diagnosing pale renders" for the JS snippet.
+13. React side: `LandmarkXxx.tsx`'s `convertToNodeMaterials` is byte-identical across landmarks (canonical version lives in `SkillsLandmark.tsx`). **No `src.map.colorSpace` overrides, no force-opaque overrides.** If you're tempted to add a "safety belt" override, that means the bake-side pipeline is broken — fix the pipeline.
 
-**Bake group strategy:** assets are still baked in groups so per-asset palettes harmonise (ground + foliage together so the grass colour reads as paired with the soil colour). Cast-shadow inter-bakes matter less under the new flat-lit target — keep groups for palette coherence, not shadow accuracy.
+### Pre-export checklist (run before every `export_scene.gltf` call)
 
-**Never ship a `/hall` landmark with primitive-shape Principled BSDF flat colour materials.** Cycles bake (now hand-painted, not photoreal) remains the floor.
+1. ☐ Every non-emissive material's BSDF Base Color `default_value` is in 0.025–0.18 range (or 0.6–0.7 for whites).
+2. ☐ Every used material's Image Texture node is wired to BSDF Base Color (step 10).
+3. ☐ Every baked image has `colorspace_settings.name == 'sRGB'`.
+4. ☐ Every baked image has `len(packed_files) == 0` (step 9).
+5. ☐ World background is `(0.2, 0.1, 0.3)` strength `0.4`. Lights match skills byte-equivalent.
+6. ☐ View transform is `AgX`. Render samples 128.
+7. ☐ After export: GLB-embedded image average matches on-disk PNG average within ±5 per channel.
+8. ☐ React-side `convertToNodeMaterials` is byte-identical to `SkillsLandmark.tsx`'s (no per-landmark safety belts).
 
-**Pre-export checklist (run mentally before every GLB export):**
-1. List every non-emissive mesh added since the last bake.
-2. For each, confirm it reads from a baked hand-painted image texture, not a flat colour or procedural shader.
-3. Confirm the asset's palette is in the locked Inazuma sakura-dusk OR Sumeru cyan-magic family (not earthy photoreal browns/greys).
-4. If any mesh lacks a bake, group it with peers (or bake alone in a neutral painted hemisphere) before exporting. Do not export with flat-colour holes.
+### Diagnosing pale renders
+
+When a landmark renders "pale," "washed out," or "different from skills" despite the bake PNG looking correct on disk, do NOT change the rig, lights, or palette. **Run this diagnostic first** (in the browser console at `/#/hall`):
+
+```js
+async () => {
+  const url = '/my-portfolio/models/hall/landmarks/landmark-X.glb?cb=' + Date.now();
+  const buf = await fetch(url).then(r => r.arrayBuffer());
+  const dv = new DataView(buf);
+  const chunk0Len = dv.getUint32(12, true);
+  const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, chunk0Len)));
+  // Pick a baked image to inspect
+  const img = json.images.find(i => i.name.includes('outcrop'));  // adjust per landmark
+  const bv = json.bufferViews[img.bufferView];
+  const binStart = 12 + 8 + chunk0Len + 8;
+  const pngBytes = new Uint8Array(buf, binStart + (bv.byteOffset || 0), bv.byteLength);
+  const bmp = await createImageBitmap(new Blob([pngBytes], {type: 'image/png'}));
+  const cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height;
+  const ctx = cv.getContext('2d'); ctx.drawImage(bmp, 0, 0);
+  let tR=0, tG=0, tB=0, c=0;
+  for (let y=0; y<bmp.height; y+=bmp.height/32) for (let x=0; x<bmp.width; x+=bmp.width/32) {
+    const p = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+    tR+=p[0]; tG+=p[1]; tB+=p[2]; c++;
+  }
+  return [Math.round(tR/c), Math.round(tG/c), Math.round(tB/c)];
+}
+```
+
+Skills bakes hover at sRGB-byte average `(8, 8, 11)` to `(41, 36, 45)`. If your landmark's GLB-embedded image is above ~50 average, the runtime lights will clip it to white. Cross-check:
+- Direct disk PNG average (via `python3` + PIL).
+- GLB-embedded image average (snippet above).
+- If GLB ≫ disk → `packed_files` is stale, run step 9 and re-export.
+- If both are above ~50 → palette defaults are too bright, go to step 4.
+- If both are dark but runtime still looks pale → check for unwired textures (step 10) by traversing the loaded scene and counting `mesh.material.map` presence.
+
+See `feedback_glb_export_pitfalls.md` in user memory for the full 5-pitfall catalogue.
+
+### Never ship
+- A `/hall` landmark with primitive-shape Principled BSDF flat-colour materials (no bake).
+- A landmark whose GLB-embedded image average differs from its on-disk PNG (packed_files stale).
+- A landmark with per-component `convertToNodeMaterials` that diverges from skills' (safety belts mean the pipeline is broken).
 
 ## /hall quality bar — Genshin-inspired stylized (LOCKED 2026-05-15, REPLACES Witcher-2-tier photoreal)
 

@@ -27,6 +27,20 @@ const Foliage: React.FC = () => {
 
   const cloned = useMemo(() => {
     const root = scene.clone(true);
+    root.updateMatrixWorld(true);
+
+    // Drop foliage that was scattered on the removed UpperIsland (it sat
+    // at world y ≈ +18; anything above the hub plateau is orphan scatter).
+    const orphans: THREE.Object3D[] = [];
+    const worldPos = new THREE.Vector3();
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
+      mesh.getWorldPosition(worldPos);
+      if (worldPos.y > 10) orphans.push(mesh);
+    });
+    orphans.forEach((o) => o.parent?.remove(o));
+
     root.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;

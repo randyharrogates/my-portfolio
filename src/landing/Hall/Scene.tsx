@@ -17,6 +17,7 @@ import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import BlogLandmark from "./BlogLandmark.tsx";
 import ResumeLandmark from "./ResumeLandmark.tsx";
 import ContactLandmark from "./ContactLandmark.tsx";
+import ContactBeaconOrb from "./ContactBeaconOrb.tsx";
 import Signboard from "./Signboard.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
@@ -94,10 +95,14 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
       <SkillsLandmark
         position={[HALL_POI_POSITIONS[2][0], 0, HALL_POI_POSITIONS[2][2]]}
       />
-      <SkillsForgeOrb position={[-25.45, 8.1, -16.70]} />
+      {/* Orb hovers just above the small foreground pedestal at the cliff
+          base (skl_pedestal_merged, local Blender ~(11.1, 1.35, 17.7) after
+          y-up conversion). Signboard sits ground-level beside the pedestal
+          pointing toward the orb. */}
+      <SkillsForgeOrb position={[-18.9, 2.6, 11.7]} />
       <Signboard
-        position={[-32.0, 4.0, -17.0]}
-        rotationY={Math.PI / 4}
+        position={[-19.3, 0, 15.4]}
+        rotationY={Math.PI / 2}
         text="SKILLS"
         scale={1.5}
       />
@@ -129,19 +134,36 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         rotationY={0.7}
         text="RESUME"
       />
-      {/* /contact landmark — Inazuma wooden lantern post at POI[5] (south
-          landing, the visitor approach). */}
+      {/* /contact landmark — Inazuma shrine compound at POI[5] (south
+          landing). Twin floating cliffs: main cliff carries the full
+          shrine (red torii + climbing stone path lined with toro
+          lanterns + plaza + bell pavilion + sky-lantern release deck +
+          sacred sakura ema tree + brazier at plaza entrance + komainu +
+          chozuya + nobori). Adjacent twin cliff has a mini-torii +
+          kitsune fox + furin chime + mini sakura + bamboo, connected
+          via chochin paper lanterns strung on rope lines. Off-outcrop
+          scenery: satellite floating rocks, bamboo grove, floating
+          petals, glow orbs. Authored 2026-05-16 (pivot from the
+          abandoned beach concept) under Sumeru cyan-magic palette. The
+          brazier sits at the plaza entrance — the cyan beacon orb
+          hovers above and is the click target for /contact. */}
       <ContactLandmark
         position={[HALL_POI_POSITIONS[5][0], 0, HALL_POI_POSITIONS[5][2]]}
       />
+      {/* Beacon orb hovers above the plaza-entrance brazier. Brazier
+          in landmark-local Blender (0, -7.6, 2.8) → GLTF (0, 2.8, 7.6)
+          → world (0, 2.8, 45.6) after POI[5] offset. Orb sits a bit
+          higher so it's clearly above the flame. */}
+      <ContactBeaconOrb position={[0, 4.2, 45.6]} />
       <Signboard
         position={[
-          HALL_POI_POSITIONS[5][0] - 2.5,
+          HALL_POI_POSITIONS[5][0] - 3.0,
           0,
           HALL_POI_POSITIONS[5][2] - 3.0,
         ]}
-        rotationY={Math.PI + 0.4}
+        rotationY={Math.PI / 2}
         text="CONTACT"
+        scale={1.5}
       />
       <PoiMarkers />
       <Atmosphere lowFidelity={lowFidelity} staticMode={staticMode} />
