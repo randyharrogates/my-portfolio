@@ -7,6 +7,7 @@ import {
   Routes,
   useLocation,
   useNavigate,
+  Navigate,
 } from "react-router-dom";
 import "./App.css";
 
@@ -16,6 +17,7 @@ import Skills from "./pages/Skills.tsx";
 import Blog from "./pages/Blog.tsx";
 import Contact from "./pages/Contact.tsx";
 import Resume from "./pages/Resume.tsx";
+import { isMobileViewport } from "./landing/use-low-power.ts";
 
 // Lazy-load the canvases so R3F doesn't bloat the main bundle.
 const AmbientCanvas = React.lazy(
@@ -28,6 +30,7 @@ const WorkstationLanding = React.lazy(
 const TerminalApp: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = React.useMemo(() => isMobileViewport(), []);
 
   // Global ESC → home. Inner pages have no internal nav; the 3D workstation
   // is the only entry point to sections.
@@ -42,7 +45,10 @@ const TerminalApp: React.FC = () => {
   }, [location.pathname, navigate]);
 
   // Landing route: render the 3D Workstation full-bleed without terminal chrome.
+  // On mobile (≤ 800px), redirect straight to the terminal AboutMe page — the
+  // workstation UI is uncomfortable to operate on touch + small viewports.
   if (location.pathname === "/") {
+    if (isMobile) return <Navigate to="/about" replace />;
     return (
       <Suspense fallback={<div style={{ background: "#0c0b0a", height: "100vh" }} />}>
         <WorkstationLanding />
@@ -70,15 +76,17 @@ const TerminalApp: React.FC = () => {
           <span className="terminal-title">
             terminal — <span className="title-name">Randy Chan</span> · GenAI Solutions Portfolio
           </span>
-          <button
-            type="button"
-            className="titlebar-back"
-            onClick={() => navigate("/")}
-            aria-label="back to workstation"
-            title="back to workstation (esc)"
-          >
-            ← workstation
-          </button>
+          {!isMobile && (
+            <button
+              type="button"
+              className="titlebar-back"
+              onClick={() => navigate("/")}
+              aria-label="back to workstation"
+              title="back to workstation (esc)"
+            >
+              ← workstation
+            </button>
+          )}
         </div>
 
         {/* Page Content */}
