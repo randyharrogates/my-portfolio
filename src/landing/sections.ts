@@ -199,8 +199,8 @@ export const HALL_POI_POSITIONS: Array<[number, number, number]> = [
   [4,    1.6, -8],   // about      — house, front-centre dwelling
   [32,   1.6,  18],  // projects   — crashed satellite, east-rim impact
   [-30,  1.6, -6],   // skills     — waterfall, west rim falling off
-  [-14,  1.6, -36],  // blog       — tree, deep back-left canopy
-  [18,   1.6, -4],   // resume     — garden, adjacent to the house
+  [14,   1.6, -32],  // blog       — Mondstadt cottage bookhouse + Sumeru-Akademiya backdrop
+  [-15, 28.0, -55],  // resume     — Sumeru Akademiya floating satellite, NORTH-EAST of skills' mini-island, 3m higher than its top (Y=25.1)
   [0,    1.6,  38],  // contact    — entrance, south landing
 ];
 
@@ -243,17 +243,65 @@ const POI_FOCAL_OVERRIDES: Partial<Record<SectionId, FocalOverride>> = {
     lookAtOffset: [9.0, 2.5, 14.0],
     fov: 55,
   },
-  // contact: cinematic shrine-approach pose — camera north of POI looking
-  // south at the climbing compound. POI[5] = (0, 1.6, 38); camera
-  // resolves to (0, 4.1, 28), lookAt to (0, 5.6, 46). FOV 50° frames the
-  // torii foreground + stone path mid + bell pavilion + ema tree summit,
-  // with the twin cliff in the right-side composition. Rebuilt 2026-05-16
-  // for the Inazuma shrine compound (replaces the prior beach-jetty pose).
+  // contact: high-oblique drone-style framing (locked 2026-05-16 to match
+  // user's manually-composed reference shot). POI[5] = (0, 1.6, 38);
+  // camera resolves to (-20, 22, 65) (west + south + elevated), lookAt
+  // to (5, 4, 40) (compound centre, slightly east). From SW of cluster
+  // looking NE at the compound; the adjacent twin cliff (bamboo + mini-
+  // torii) sits on the left edge, the main shrine compound (torii path
+  // + bell pavilion + sakura tree + brazier + orb) fills center-right,
+  // and the CONTACT signboard floats east on the grass plain.
+  //
+  // Pose horizontal radius √(20² + 65²) ≈ 68 m > 39.5 m → CameraDirector
+  // containment-cylinder Y clamp [0.6, 27] is skipped, so the elevated
+  // pose at Y=22 is preserved and drag-pitch + wheel-zoom stay unlocked.
+  // FOV 50° at 39.7m distance gives ~37m horizontal coverage so the
+  // ~30m-wide cluster fits with sign + grass plain in frame.
   contact: {
     kind: "fixed",
-    cameraOffset: [0, 2.5, -10],
-    lookAtOffset: [0, 4.0, 8],
+    cameraOffset: [-20, 20.4, 27],
+    lookAtOffset: [5, 2.4, 2],
     fov: 50,
+  },
+  // blog: front-facing hero shot. POI[3] = (14, 1.6, -32); pedestal cluster
+  // at world (14, ~4.7, -23) is the foreground; cottage body sits at
+  // world (14, ~2, -32); mid-ridge backdrop wraps behind it at world
+  // z ~ -43..-51. Camera at (14, 8, -5) looks at (14, 4, -28) — south
+  // of pedestal looking north, frames pedestal+orb+signboard foreground
+  // + cottage middle + ridge mountains behind. FOV 55° (slightly wider
+  // than the 50° default) gives extra breathing room around the orb.
+  blog: {
+    kind: "fixed",
+    cameraOffset: [0, 6.4, 27],
+    lookAtOffset: [0, 2.4, 4],
+    fov: 55,
+  },
+  // resume: Sumeru Akademiya floating satellite NORTH-WEST of skills' mini-
+  // island, 3m higher than its top surface. POI[4] = (-15, 28, -55);
+  // skills' mini-island center world (-5, ~22, -21) with radius ~20m
+  // (top surface Y=25.1). Bridge descends south from resume satellite
+  // ~10m, dropping 2.6m to land on skills' mini-island top.
+  //
+  // Sweeping-oblique framing (locked 2026-05-16 to match user's manually-
+  // composed reference shot): camera world (+25, +40, +35) looks at
+  // (-5, 25, -30). From SE of cluster, moderately elevated. The frame
+  // captures the FULL vertical stack — skills' ground-level cliff +
+  // waterfall + pedestal at the lower edge, skills' floating mini-island
+  // (with shed/fence/sheep/pond) filling the mid-frame, and the resume
+  // Akademiya satellite plus its enlarged signboard in the upper-right.
+  // The bridge descending from resume to skills' mini-island angles
+  // diagonally between them.
+  //
+  // Camera sits OUTSIDE the CameraDirector containment cylinder (poseR =
+  // √(25²+35²) ≈ 43.0 m > 39.5 m) so the Y ∈ [0.6, 27] clamp is skipped
+  // and the elevated pose at Y=40 is preserved + drag-pitch is unlocked.
+  // Distance to lookAt ~73m, FOV 55° gives ~76m coverage so the ~50m
+  // cluster + ground-level cliff context fits comfortably.
+  resume: {
+    kind: "fixed",
+    cameraOffset: [40, 12, 90],
+    lookAtOffset: [10, -3, 25],
+    fov: 55,
   },
 };
 

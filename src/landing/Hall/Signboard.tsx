@@ -14,6 +14,11 @@ interface SignboardProps {
   /** Overall scale of the signboard (post + plank). Use >1 for longer
    *  text so the plank stays readable. Default 1. */
   scale?: number;
+  /** When true, render ONLY the floating plank (no post, no cross-brace,
+   *  no chain risers). The plank's `position` is treated as the plank's
+   *  centre rather than the post base. Use for in-air pointer signs that
+   *  shouldn't carry visible support hardware. Default false. */
+  floating?: boolean;
 }
 
 /** Build a 1024×512 canvas with neon hand-painted text + arrow, return
@@ -128,6 +133,7 @@ const Signboard: React.FC<SignboardProps> = ({
   rotationY = 0,
   text = "ABOUT ME",
   scale = 1,
+  floating = false,
 }) => {
   const signTex = useMemo(() => buildSignTexture(text), [text]);
 
@@ -163,40 +169,53 @@ const Signboard: React.FC<SignboardProps> = ({
   const plankH = 1.6;
   const plankTilt = -0.10;
 
+  // Floating mode: position is the plank's CENTRE; no post / cross-brace /
+  // chain risers. Ground mode: position is the post BASE; plank sits at the
+  // top of the post.
+  const plankY = floating ? 0 : postHeight - 0.05;
+
   return (
     <group position={position} rotation={[0, rotationY, 0]} scale={[scale, scale, scale]}>
-      {/* Post — small cylinder rising from the ground. */}
-      <mesh
-        position={[0, postHeight / 2, 0]}
-        rotation={[0, 0, 0.04]}
-      >
-        <cylinderGeometry args={[0.13, 0.16, postHeight, 10]} />
-        <primitive object={postMaterial} attach="material" />
-      </mesh>
-      {/* Cross-brace at the top of the post for the "fence sign" feel. */}
-      <mesh position={[0, postHeight - 0.15, 0]}>
-        <boxGeometry args={[0.6, 0.12, 0.12]} />
-        <primitive object={postMaterial} attach="material" />
-      </mesh>
+      {!floating && (
+        <>
+          {/* Post — small cylinder rising from the ground. */}
+          <mesh
+            position={[0, postHeight / 2, 0]}
+            rotation={[0, 0, 0.04]}
+          >
+            <cylinderGeometry args={[0.13, 0.16, postHeight, 10]} />
+            <primitive object={postMaterial} attach="material" />
+          </mesh>
+          {/* Cross-brace at the top of the post for the "fence sign" feel. */}
+          <mesh position={[0, postHeight - 0.15, 0]}>
+            <boxGeometry args={[0.6, 0.12, 0.12]} />
+            <primitive object={postMaterial} attach="material" />
+          </mesh>
+        </>
+      )}
       {/* Plank — tilted back slightly so it reads hand-hung. */}
       <group
-        position={[0, postHeight - 0.05, 0]}
+        position={[0, plankY, 0]}
         rotation={[plankTilt, 0, 0.02]}
       >
         <mesh>
           <boxGeometry args={[plankW, plankH, 0.08]} />
           <primitive object={plankMaterial} attach="material" />
         </mesh>
-        {/* Thin chain-style risers — two short bars connecting the
-            plank to the cross-brace, giving the "hanging sign" silhouette. */}
-        <mesh position={[-plankW * 0.32, plankH * 0.55, 0]}>
-          <boxGeometry args={[0.05, 0.4, 0.05]} />
-          <primitive object={postMaterial} attach="material" />
-        </mesh>
-        <mesh position={[plankW * 0.32, plankH * 0.55, 0]}>
-          <boxGeometry args={[0.05, 0.4, 0.05]} />
-          <primitive object={postMaterial} attach="material" />
-        </mesh>
+        {!floating && (
+          <>
+            {/* Thin chain-style risers — two short bars connecting the
+                plank to the cross-brace, giving the "hanging sign" silhouette. */}
+            <mesh position={[-plankW * 0.32, plankH * 0.55, 0]}>
+              <boxGeometry args={[0.05, 0.4, 0.05]} />
+              <primitive object={postMaterial} attach="material" />
+            </mesh>
+            <mesh position={[plankW * 0.32, plankH * 0.55, 0]}>
+              <boxGeometry args={[0.05, 0.4, 0.05]} />
+              <primitive object={postMaterial} attach="material" />
+            </mesh>
+          </>
+        )}
       </group>
     </group>
   );

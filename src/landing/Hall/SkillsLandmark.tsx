@@ -25,6 +25,12 @@ useGLTF.preload(LANDMARK_GLB);
  *  `emissiveMap` at 0.55 intensity so the surface self-glows with the
  *  baked colour, immune to runtime scene-lighting wash. Authored-
  *  emission surfaces keep their authored emission boosted 5× /2×.
+ *
+ *  Click routing: this landmark serves two destinations. The ground-level
+ *  cliff + waterfall + plunge pool → /hall/skills. The floating mini-
+ *  island (shed/fence/sheep, ~world Y=25+) is the south end of the resume
+ *  satellite's bridge cluster → /hall/resume. Threshold y=15 splits them
+ *  (cliff peak tops out at ~y=13).
  */
 
 interface SkillsLandmarkProps {
@@ -46,7 +52,7 @@ const SkillsLandmark: React.FC<SkillsLandmarkProps> = ({ position }) => {
       position={position}
       onClick={(e) => {
         e.stopPropagation();
-        navigate("/hall/skills");
+        navigate(e.point.y > 15 ? "/hall/resume" : "/hall/skills");
       }}
       onPointerOver={(e) => {
         e.stopPropagation();

@@ -15,7 +15,9 @@ import ProjectsTerminalOrb from "./ProjectsTerminalOrb.tsx";
 import SkillsLandmark from "./SkillsLandmark.tsx";
 import SkillsForgeOrb from "./SkillsForgeOrb.tsx";
 import BlogLandmark from "./BlogLandmark.tsx";
+import BlogTomeOrb from "./BlogTomeOrb.tsx";
 import ResumeLandmark from "./ResumeLandmark.tsx";
+import ResumeScrollOrb from "./ResumeScrollOrb.tsx";
 import ContactLandmark from "./ContactLandmark.tsx";
 import ContactBeaconOrb from "./ContactBeaconOrb.tsx";
 import Signboard from "./Signboard.tsx";
@@ -28,12 +30,12 @@ interface SceneProps {
 
 /** Archipelago hub scene — Genshin-inspired stylized (locked 2026-05-15).
  *
- *  Sumeru cyan-magic-night palette: painted painterly sky, single soft
- *  cool key + warm fill, hub disc + landmarks + cartoon-water connections
- *  layer. Replaces the prior photoreal-AAA-with-AAA-water-stack scene —
- *  upper island, waterfall mist plane, particle spray, and the
- *  separately-mounted TSL waterfall are all retired in favour of meshes
- *  that ship inside `connections.glb` rendered with the cartoon shader.
+ *  Mounts the painted skybox + lighting rig + hub disc + foliage + the
+ *  six per-section landmarks (about / projects / skills / blog / resume /
+ *  contact) under the Inazuma sakura-dusk + Sumeru cyan-magic-night
+ *  aesthetic. No separate cross-landmark water layer is mounted yet —
+ *  the river-of-life chevron (skills → projects → about) is locked in
+ *  design but unimplemented.
  */
 const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
   return (
@@ -106,33 +108,88 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         text="SKILLS"
         scale={1.5}
       />
-      {/* /blog landmark — Liyue stone book pedestal at POI[3]
-          (deep back-left of the hub). Wooden sign sits hub-side. */}
+      {/* /blog landmark — Mondstadt cottage bookhouse + Sumeru-Akademiya
+          magical-library accents + continuous ridge backdrop at POI[3].
+          Front-yard centerpiece: stone-book-stack pedestal with floating
+          tome + ring of rune pillars + Akademiya sigil disc above. The
+          cyan-magic BlogTomeOrb hovers above the floating tome — the
+          click target for navigation. Wooden sign sits on the +Z
+          (camera-facing) side. */}
       <BlogLandmark
         position={[HALL_POI_POSITIONS[3][0], 0, HALL_POI_POSITIONS[3][2]]}
       />
+      {/* Orb hovers above the pedestal's floating tome. Blender-local
+          orb pad authored at (0, -9, 4.70); glTF Y-up swap → (0, 4.70, 9)
+          → world (POI[3].x, 4.70, POI[3].z + 9). */}
+      <BlogTomeOrb
+        position={[
+          HALL_POI_POSITIONS[3][0],
+          4.7,
+          HALL_POI_POSITIONS[3][2] + 9,
+        ]}
+      />
+      {/* Sign sits LEFT of the orb so its right-pointing arrow (→ in the
+          painted text) directs the eye toward the floating orb. Slight
+          rotationY=+0.3 angles the sign face toward the orbital camera
+          while pointing the arrow direction toward the orb at +X. */}
       <Signboard
         position={[
-          HALL_POI_POSITIONS[3][0] + 2.5,
+          HALL_POI_POSITIONS[3][0] - 3.0,
           0,
-          HALL_POI_POSITIONS[3][2] + 3.0,
+          HALL_POI_POSITIONS[3][2] + 10.0,
         ]}
-        rotationY={-0.6}
+        rotationY={0.3}
         text="BLOG"
       />
-      {/* /resume landmark — Liyue carved-stone stele at POI[4] (east
-          rim adjacent to the house). */}
+      {/* /resume landmark — Sumeru Akademiya floating satellite NORTH-EAST
+          of skills' floating mini-island, 3m higher than its top surface.
+          POI[4] = (-15, 28, -55); skills' mini-island center world (-5,
+          ~22, -21) with top surface Y = 25.1 and ~20m radius. Resume
+          satellite is offset 10m east of skills' west edge and 14m
+          north of its north edge.
+          Floating cliff disc carries an octagonal Akademiya hall with
+          cyan crystal columns, dome roof, and a writing desk at hall
+          centre holding a rune-glowing floating scroll (the orb's
+          anchor). Ring of cyan crystal spires + floating Akademiya
+          tomes + sigil discs + drifting papers surrounds the hall. A
+          Sumeru stone arch bridge descends south from the resume
+          satellite (Y=27.5) to skills' mini-island top (Y=25.1),
+          spanning ~10m and dropping 2.6m. Warm-yellow lanterns provide
+          chromatic counterpoint to the cyan dominant. Landmark group
+          is mounted at world Y = POI - 0.5 so the GLB's local origin
+          (the island top surface) sits ~0.5 m below the POI marker. */}
       <ResumeLandmark
-        position={[HALL_POI_POSITIONS[4][0], 0, HALL_POI_POSITIONS[4][2]]}
+        position={[
+          HALL_POI_POSITIONS[4][0],
+          HALL_POI_POSITIONS[4][1] - 0.5,
+          HALL_POI_POSITIONS[4][2],
+        ]}
       />
+      {/* Orb hovers ~1m above the Akademiya floating scroll on the desk.
+          Scroll is at landmark-local Blender (0, 0, 1.51) → world Y=19.01;
+          orb at POI Y + 2.0 = 20.0 → 1m above scroll. */}
+      <ResumeScrollOrb
+        position={[
+          HALL_POI_POSITIONS[4][0],
+          HALL_POI_POSITIONS[4][1] + 2.0,
+          HALL_POI_POSITIONS[4][2],
+        ]}
+      />
+      {/* Floating sign — plank only, no post/chain risers. Positioned SW of
+          the resume orb at world (-22, 30, -52) so its painted →
+          arrow points NE directly at the orb at world (-15, 30, -55).
+          rotationY = 0.404 rad (~23°) → plank face points SE so the
+          texture is readable from the canonical camera at (+25, 40, 35). */}
       <Signboard
         position={[
-          HALL_POI_POSITIONS[4][0] - 2.8,
-          0,
-          HALL_POI_POSITIONS[4][2] + 2.6,
+          HALL_POI_POSITIONS[4][0] - 7.0,
+          HALL_POI_POSITIONS[4][1] + 2.0,
+          HALL_POI_POSITIONS[4][2] + 3.0,
         ]}
-        rotationY={0.7}
+        rotationY={0.404}
         text="RESUME"
+        scale={2.4}
+        floating
       />
       {/* /contact landmark — Inazuma shrine compound at POI[5] (south
           landing). Twin floating cliffs: main cliff carries the full
@@ -155,13 +212,20 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
           → world (0, 2.8, 45.6) after POI[5] offset. Orb sits a bit
           higher so it's clearly above the flame. */}
       <ContactBeaconOrb position={[0, 4.2, 45.6]} />
+      {/* Contact signboard — ground-mounted post, west of the beacon orb
+          at world (0, 4.2, 45.6). Sign post base at world (-12, 0, 45)
+          so the painted → arrow direction (cos 0, 0, -sin 0) = (1, 0, 0)
+          aims east toward the orb. Plank face direction (sin 0, 0, cos 0)
+          = (0, 0, 1) points south, toward the SW canonical camera at
+          (-20, 22, 65) — slight angle keeps the texture readable from
+          the default pose. */}
       <Signboard
         position={[
-          HALL_POI_POSITIONS[5][0] - 3.0,
+          HALL_POI_POSITIONS[5][0] - 12.0,
           0,
-          HALL_POI_POSITIONS[5][2] - 3.0,
+          HALL_POI_POSITIONS[5][2] + 7.0,
         ]}
-        rotationY={Math.PI / 2}
+        rotationY={0}
         text="CONTACT"
         scale={1.5}
       />

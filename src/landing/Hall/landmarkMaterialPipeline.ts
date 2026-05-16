@@ -10,12 +10,15 @@ import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
  *  full rationale + bake-side standards. Two recipes:
  *
  *    1. `applyStandardLandmarkMaterials` — lit, 3-tier emission. Used by
- *       Skills, Projects, Contact, About. Optional vertex-noise injection +
- *       dynamic shadows for cartoony/playful landmarks (About uses both).
+ *       every shipping landmark (Skills, Projects, Contact, About, Blog,
+ *       Resume). Optional vertex-noise injection + dynamic shadows for
+ *       cartoony/playful landmarks (About uses both).
  *
- *    2. `applyUnlitLandmarkMaterials` — unlit, baked-only. Used by Blog +
- *       Resume — simpler stone-stele assets where the bake already carries
- *       all the shading info.
+ *    2. `applyUnlitLandmarkMaterials` — unlit, baked-only. Retained for
+ *       cases where a landmark ships ONLY baked stone-stele content with
+ *       no authored-emission accents. No current callers; kept available
+ *       for future simple-asset landmarks where the lit recipe would be
+ *       unnecessary overhead.
  *
  *  Per-landmark divergence from these two recipes is a smell. If you find
  *  yourself adding "safety belts" (sRGB forcing, force-opaque overrides,
