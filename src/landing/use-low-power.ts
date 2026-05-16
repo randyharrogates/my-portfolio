@@ -47,6 +47,13 @@ export function useDocumentHidden(): boolean {
   return hidden;
 }
 
+/** One-shot mobile-viewport check (≤ 800px). Read once at mount by consumers
+ *  via useMemo — does not respond to resize, matching the AmbientCanvas pattern. */
+export function isMobileViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth <= 800;
+}
+
 /** Tracks the viewport aspect ratio (width / height) and re-renders on
  *  resize / orientationchange. Used to swap the 3D camera pose between
  *  landscape and portrait framings. */
