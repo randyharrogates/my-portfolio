@@ -7,7 +7,7 @@ const SpeechToText: React.FC = () => {
   return (
     <div className="stt-wrap">
       <div className="stt-title-row">
-        <span className="stt-num">05</span>
+        <span className="stt-num">07</span>
         <h2 className="stt-title">
           <span className="hl-orange">Speech-to-Text</span> Application
         </h2>

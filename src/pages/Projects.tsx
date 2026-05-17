@@ -4,6 +4,8 @@ import React from "react";
 import { Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
 import "./Projects.css";
 
+import Twc from "./Twc.tsx";
+import Leeseidon from "./Leeseidon.tsx";
 import CreditMemo from "./CreditMemo.tsx";
 import KybPipeline from "./KybPipeline.tsx";
 import MultiAgentRag from "./MultiAgentRag.tsx";
@@ -14,6 +16,8 @@ import Ecommerce from "./Ecommerce.tsx";
 import HrmSystem from "./HrmSystem.tsx";
 
 const SUB_TABS = [
+  { slug: "twc",             label: "twc",             featured: true },
+  { slug: "leeseidon",       label: "leeseidon",       featured: true },
   { slug: "credit-memo",     label: "credit-memo",     featured: true },
   { slug: "kyb-pipeline",    label: "kyb-pipeline",    featured: true },
   { slug: "multi-agent-rag", label: "multi-agent-rag", featured: true },
@@ -55,7 +59,9 @@ const Projects: React.FC = () => {
       {/* Nested project routes */}
       <div className="projects-content">
         <Routes>
-          <Route index element={<Navigate to="credit-memo" replace />} />
+          <Route index element={<Navigate to="twc" replace />} />
+          <Route path="twc"             element={<Twc />} />
+          <Route path="leeseidon"       element={<Leeseidon />} />
           <Route path="credit-memo"     element={<CreditMemo />} />
           <Route path="kyb-pipeline"    element={<KybPipeline />} />
           <Route path="multi-agent-rag" element={<MultiAgentRag />} />

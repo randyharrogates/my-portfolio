@@ -8,7 +8,7 @@ const FineTuning: React.FC = () => {
     <div className="ft-wrap">
       {/* Title row — full width */}
       <div className="ft-title-row">
-        <span className="ft-num">04</span>
+        <span className="ft-num">06</span>
         <h2 className="ft-title">
           Fine-Tuning of a <span className="hl-orange">BERT-based Model</span> for NER on Medical Data
         </h2>
