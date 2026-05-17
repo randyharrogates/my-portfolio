@@ -7,7 +7,7 @@ const Ecommerce: React.FC = () => {
   return (
     <div className="ec-wrap">
       <div className="ec-title-row">
-        <span className="ec-num">07</span>
+        <span className="ec-num">09</span>
         <h2 className="ec-title">
           <span className="hl-orange">VietMala Eatery</span> Food Shop
         </h2>

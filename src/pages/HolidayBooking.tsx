@@ -7,7 +7,7 @@ const HolidayBooking: React.FC = () => {
   return (
     <div className="hb-wrap">
       <div className="hb-title-row">
-        <span className="hb-num">06</span>
+        <span className="hb-num">08</span>
         <h2 className="hb-title">
           <span className="hl-orange">Holiday Booking</span> Application
         </h2>
