@@ -9,7 +9,7 @@ const CreditMemo: React.FC = () => {
     <div className="cm-wrap">
       {/* Title row — full width */}
       <div className="cm-title-row">
-        <span className="cm-num">01</span>
+        <span className="cm-num">03</span>
         <h2 className="cm-title">
           Multi Agent <span className="hl-orange">Credit Memo</span> Research Suite
         </h2>

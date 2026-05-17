@@ -9,7 +9,7 @@ const KybPipeline: React.FC = () => {
     <div className="kyb-wrap">
       {/* Title row — full width */}
       <div className="kyb-title-row">
-        <span className="kyb-num">02</span>
+        <span className="kyb-num">04</span>
         <h2 className="kyb-title">
           KYB <span className="hl-orange">Brand Risk Management</span> Suite
         </h2>

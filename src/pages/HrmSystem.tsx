@@ -7,7 +7,7 @@ const HrmSystem: React.FC = () => {
   return (
     <div className="hrm-wrap">
       <div className="hrm-title-row">
-        <span className="hrm-num">08</span>
+        <span className="hrm-num">10</span>
         <h2 className="hrm-title">
           <span className="hl-orange">HR Management</span> System
         </h2>
