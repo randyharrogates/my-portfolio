@@ -5,6 +5,7 @@
 *.blend1
 *.blend2
 *.blend.bak
+*.blend.*-bak
 scenes/*.blend
 
 # Locally-captured reference screenshots (third-party copyright).
