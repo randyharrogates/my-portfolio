@@ -2,7 +2,8 @@
 
 import React from "react";
 import Island from "./Island.tsx";
-import Foliage from "./Foliage.tsx";
+import HubScatter from "./HubScatter.tsx";
+import CloudSea from "./CloudSea.tsx";
 import Atmosphere from "./Atmosphere.tsx";
 import Lighting from "./Lighting.tsx";
 import EnvironmentRig from "./EnvironmentRig.tsx";
@@ -21,31 +22,56 @@ import ResumeScrollOrb from "./ResumeScrollOrb.tsx";
 import ContactLandmark from "./ContactLandmark.tsx";
 import ContactBeaconOrb from "./ContactBeaconOrb.tsx";
 import Signboard from "./Signboard.tsx";
+import PoiLabels from "./PoiLabels.tsx";
+import { OrbPulseProvider } from "./OrbPulseProvider.tsx";
 import { HALL_POI_POSITIONS } from "../sections.ts";
 
 interface SceneProps {
   lowFidelity: boolean;
   staticMode: boolean;
+  /** Show POI labels above each landmark — gated on gear-panel setting. */
+  poiLabels?: boolean;
+  /** Pulse the 6 orbs (first-visit tutorial). */
+  bootActive?: boolean;
 }
 
 /** Archipelago hub scene — Genshin-inspired stylized (locked 2026-05-15).
  *
- *  Mounts the painted skybox + lighting rig + hub disc + foliage + the
- *  six per-section landmarks (about / projects / skills / blog / resume /
+ *  Mounts the painted skybox + lighting rig + hub disc + the six
+ *  per-section landmarks (about / projects / skills / blog / resume /
  *  contact) under the Inazuma sakura-dusk + Sumeru cyan-magic-night
- *  aesthetic. No separate cross-landmark water layer is mounted yet —
- *  the river-of-life chevron (skills → projects → about) is locked in
- *  design but unimplemented.
+ *  aesthetic. Disc-level foliage scatter was killed 2026-05-16 per the
+ *  Genshin pivot KILL list (no more pastel cone trees or grass tufts on
+ *  the hub); the new hub disc carries painted-stone topology only. The
+ *  river-of-life chevron (skills → projects → about) is carved into the
+ *  hub disc as dry channel geometry — the water surface on top remains
+ *  deferred to a future `connections.glb` pass.
  */
-const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
+const Scene: React.FC<SceneProps> = ({
+  lowFidelity,
+  staticMode,
+  poiLabels = false,
+  bootActive = false,
+}) => {
   return (
-    <>
+    <OrbPulseProvider bootActive={bootActive}>
       <Skybox />
       <EnvironmentRig />
       <fog attach="fog" args={["#1a0b30", 160, 360]} />
       <Lighting lowFidelity={lowFidelity} />
+      {/* Cloud sea — dense Genshin-style Sea of Clouds below+around the
+          disc. 330 (high) / 165 (low) cloud instances in 3 layers
+          (floor + side belt + upper stragglers). Drifts +x at 0.05 m/s
+          unless staticMode. Rendered behind disc (renderOrder=-1). */}
+      <CloudSea lowFidelity={lowFidelity} staticMode={staticMode} />
       <Island />
-      <Foliage />
+      {/* Hub scatter belt — Genshin forest ring at disc periphery (~692
+          instances of trees/grass/boulders/lanterns/ferns/etc, instanced
+          via InstancedMesh). Also carries the 5 pre-positioned floating
+          crystal-rock clusters above the contact cove + 5 cartoon-water
+          meshes (mini-pond + 2 streams + 2 mini-waterfalls). Authored
+          2026-05-17 in `blender/hall-master.blend`. */}
+      <HubScatter lowFidelity={lowFidelity} />
       {/* About landmark (front-centre POI). Pagoda style-clash carve-out
           per the 2026-05-15 pivot: house keeps its existing cartoon look;
           surrounding environment retargets to Genshin terrain in Phase 4. */}
@@ -230,8 +256,9 @@ const Scene: React.FC<SceneProps> = ({ lowFidelity, staticMode }) => {
         scale={1.5}
       />
       <PoiMarkers />
+      <PoiLabels enabled={poiLabels} />
       <Atmosphere lowFidelity={lowFidelity} staticMode={staticMode} />
-    </>
+    </OrbPulseProvider>
   );
 };
 

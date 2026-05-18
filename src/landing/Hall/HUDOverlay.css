@@ -162,7 +162,7 @@
 /* ── Keymap hint ───────────────────────────────────────────────── */
 .hall-hud__keys {
   position: absolute;
-  bottom: 1.4rem;
+  bottom: 3.4rem;
   left: 1.4rem;
   display: flex;
   gap: 0.45rem;
@@ -218,6 +218,9 @@
     padding: 0.3rem 0.5rem;
   }
   .hall-hud__label {
-    bottom: 5.2rem;
+    bottom: 6.4rem;
+  }
+  .hall-hud__footer {
+    bottom: 4rem;
   }
 }

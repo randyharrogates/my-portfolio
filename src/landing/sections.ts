@@ -461,6 +461,34 @@ export function buildHallTargetPoses(): Record<HallTargetId, HallTargetPose> {
   return out as Record<HallTargetId, HallTargetPose>;
 }
 
+/** Guided-tour step order (locked 2026-05-18). The "guided" view mode
+ *  walks the camera through these targets one at a time via a floating
+ *  next-button pill. Starts at the hub overview, then follows a
+ *  career-arc: who I am → what I built → what I know → the formal CV →
+ *  the writing → reach out. Ends back conceptually at "done" (the pill
+ *  exits guided mode). */
+export const HALL_GUIDED_TOUR_ORDER: HallTargetId[] = [
+  "hub",
+  "about",
+  "projects",
+  "skills",
+  "resume",
+  "blog",
+  "contact",
+];
+
+/** Human-readable caption for each guided-tour stop — shown in the
+ *  next-button pill ("next → case studies"). */
+export const HALL_GUIDED_TOUR_LABELS: Record<HallTargetId, string> = {
+  hub: "hub overview",
+  about: "about me",
+  projects: "case studies",
+  skills: "skills",
+  resume: "resume",
+  blog: "blog",
+  contact: "contact",
+};
+
 /** How "enclosed" each alcove pavilion is. Drives which shell meshes
  *  the React side renders + which material the walls use. Session 20:
  *  added so the open-concept refit can vary openness per theme.

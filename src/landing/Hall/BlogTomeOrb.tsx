@@ -4,6 +4,7 @@ import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useNavigate } from "react-router-dom";
+import { useOrbPulse } from "./OrbPulseProvider.tsx";
 import {
   float,
   length,
@@ -30,11 +31,14 @@ const TOME_ORB_COLOR = "#4ddfff";
 const BlogTomeOrb: React.FC<BlogTomeOrbProps> = ({ position }) => {
   const navigate = useNavigate();
   const groupRef = useRef<THREE.Group>(null);
+  const { pulseActive, markOrbHovered } = useOrbPulse();
 
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
     groupRef.current.position.y = position[1] + Math.sin(t * 1.3) * 0.20;
+    const scale = pulseActive ? 1 + 0.15 * Math.sin(t * 4) : 1;
+    groupRef.current.scale.setScalar(scale);
   });
 
   const innerMaterial = useMemo(() => {
@@ -78,6 +82,7 @@ const BlogTomeOrb: React.FC<BlogTomeOrbProps> = ({ position }) => {
       onPointerOver={(e) => {
         e.stopPropagation();
         document.body.style.cursor = "pointer";
+        markOrbHovered();
       }}
       onPointerOut={() => {
         document.body.style.cursor = "";

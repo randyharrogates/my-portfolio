@@ -57,6 +57,16 @@ interface CameraDirectorProps {
   dragEnabled?: boolean;
   /** Fly duration in seconds. Default 1.2s (cinematic but not sluggish). */
   flyDuration?: number;
+  /** Drag sensitivity multiplier (1.0 = baseline). User-configurable via
+   *  the gear panel; multiplied onto DRAG_SENS_MOUSE / DRAG_SENS_TOUCH. */
+  sensitivity?: number;
+  /** FOV override (degrees). When provided, applies on every idle frame
+   *  so the user's gear-panel adjustment takes effect immediately
+   *  without waiting for a fly. */
+  fovOverride?: number;
+  /** Auto-rotate behaviour. "hub-only" = current (drift on hub only).
+   *  "always" = drift on every target. "never" = no drift anywhere. */
+  autoRotate?: "hub-only" | "always" | "never";
 }
 
 const DEFAULT_FLY_DURATION = 1.2;
@@ -115,6 +125,9 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
   idleOrbitDisabled = false,
   dragEnabled = false,
   flyDuration = DEFAULT_FLY_DURATION,
+  sensitivity = 1.0,
+  fovOverride,
+  autoRotate = "hub-only",
 }) => {
   const { camera, gl } = useThree();
   const lookAtRef = useRef(new THREE.Vector3());
@@ -150,6 +163,13 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
   // Per-target offset bookkeeping. Idle-yaw drifts the camera around the hub.
   // userYaw / userPitch are accumulated drag deltas (radians) applied on top.
   const orbitRef = useRef({ idleYaw: 0, userYaw: 0, userPitch: 0 });
+  // Keep latest sensitivity in a ref so pointer-event listeners (set up
+  // once per dragEnabled-changed effect) read the current value without
+  // re-binding on every gear-panel change.
+  const sensitivityRef = useRef(sensitivity);
+  useEffect(() => {
+    sensitivityRef.current = sensitivity;
+  }, [sensitivity]);
   // Remembers the last (active, waypoints) pair we kicked off a fly for, so
   // we don't re-fly when only the waypoints prop clears.
   const lastFlyKeyRef = useRef<{
@@ -311,7 +331,10 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
         if (d < DRAG_THRESHOLD_PX) return;
         drag.moved = true;
       }
-      const sens = drag.pointerType === "touch" ? DRAG_SENS_TOUCH : DRAG_SENS_MOUSE;
+      const sensBase =
+        drag.pointerType === "touch" ? DRAG_SENS_TOUCH : DRAG_SENS_MOUSE;
+      const sens = sensBase * (sensitivityRef.current || 1);
+
       let yaw = drag.startUserYaw + dx * sens;
       let pitch = drag.startUserPitch + dy * sens;
 
@@ -415,7 +438,16 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
     const pose = targets[active];
     const orbit = orbitRef.current;
 
-    if (active === "hub" && !idleOrbitDisabled && !dragRef.current.active) {
+    // Idle drift honours the auto-rotate setting: "hub-only" = drift on
+    // the hub overview only, "always" = drift on every target, "never"
+    // = no drift anywhere.
+    let driftEnabled = false;
+    if (!idleOrbitDisabled && !dragRef.current.active) {
+      if (autoRotate === "always") driftEnabled = true;
+      else if (autoRotate === "hub-only") driftEnabled = active === "hub";
+      // "never" → driftEnabled stays false
+    }
+    if (driftEnabled) {
       orbit.idleYaw += delta * 0.045;
     }
 
@@ -453,6 +485,16 @@ const CameraDirector: React.FC<CameraDirectorProps> = ({
 
     lookAtRef.current.copy(tmpLook);
     camera.lookAt(tmpLook);
+
+    // Apply gear-panel FOV override if provided. Setting this on idle
+    // (not during fly) avoids fighting the fly's fov interpolation.
+    if (fovOverride !== undefined && "fov" in camera) {
+      const cam = camera as THREE.PerspectiveCamera;
+      if (Math.abs(cam.fov - fovOverride) > 0.01) {
+        cam.fov = fovOverride;
+        cam.updateProjectionMatrix();
+      }
+    }
   });
 
   return null;

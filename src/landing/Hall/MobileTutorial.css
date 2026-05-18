@@ -1,0 +1,173 @@
+.hall-mobile-tutorial {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 11, 0.92);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: #d7e3df;
+  animation: hall-mobile-tutorial-in 220ms ease-out both;
+  padding: 1.5rem;
+}
+
+@keyframes hall-mobile-tutorial-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.hall-mobile-tutorial__skip {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: transparent;
+  border: 1px solid rgba(232, 180, 90, 0.45);
+  color: #e8b45a;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.hall-mobile-tutorial__skip:hover,
+.hall-mobile-tutorial__skip:focus-visible {
+  background: rgba(232, 180, 90, 0.14);
+  color: #f4d8a8;
+  border-color: #e8b45a;
+  outline: none;
+}
+
+.hall-mobile-tutorial__card {
+  width: 100%;
+  max-width: 360px;
+  background: rgba(10, 13, 16, 0.94);
+  border: 1px solid rgba(122, 255, 240, 0.35);
+  padding: 1.6rem 1.4rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  text-align: center;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.hall-mobile-tutorial__icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(77, 208, 196, 0.06);
+  border: 1px solid rgba(122, 255, 240, 0.18);
+}
+
+.hall-mobile-tutorial__headline {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4dd0c4;
+  font-weight: 500;
+}
+
+.hall-mobile-tutorial__body {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #a7b5b0;
+  letter-spacing: 0.04em;
+  max-width: 28ch;
+}
+
+.hall-mobile-tutorial__dots {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.3rem;
+}
+
+.hall-mobile-tutorial__dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(122, 255, 240, 0.2);
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.hall-mobile-tutorial__dot.is-active {
+  background: #4dd0c4;
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(77, 208, 196, 0.5);
+}
+
+.hall-mobile-tutorial__cta-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+
+.hall-mobile-tutorial__back {
+  background: transparent;
+  border: 1px solid rgba(122, 255, 240, 0.25);
+  color: #a7b5b0;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.hall-mobile-tutorial__back:hover,
+.hall-mobile-tutorial__back:focus-visible {
+  background: rgba(77, 208, 196, 0.1);
+  color: #f1efe8;
+  outline: none;
+}
+
+.hall-mobile-tutorial__cta {
+  flex: 1;
+  background: rgba(77, 208, 196, 0.16);
+  border: 1px solid #4dd0c4;
+  color: #4dd0c4;
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.hall-mobile-tutorial__cta:hover,
+.hall-mobile-tutorial__cta:focus-visible {
+  background: rgba(77, 208, 196, 0.28);
+  color: #f1efe8;
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-mobile-tutorial {
+    animation: none;
+  }
+  .hall-mobile-tutorial__dot {
+    transition: none;
+  }
+}

@@ -22,8 +22,16 @@ import HUDOverlay from "./HUDOverlay.tsx";
 import Map from "./Map.tsx";
 import HallAudio from "./HallAudio.tsx";
 import {
+  HallSettingsProvider,
+  readViewModeFromUrl,
+  resolveReducedMotion,
+  useHallSettings,
+} from "./useHallSettings.ts";
+import type { HallViewMode } from "./useHallSettings.ts";
+import {
   HALL_ALCOVE_ORDER,
   HALL_BOOT_POSE,
+  HALL_GUIDED_TOUR_ORDER,
   buildHallTargetPoses,
 } from "../sections.ts";
 import type { HallTargetId, HallTargetPose, SectionId } from "../sections.ts";
@@ -79,10 +87,33 @@ function deriveTargetFromPath(pathname: string): HallTargetId {
  *  Phase 6 will add six satellite islands for the section routes.
  */
 const HallLanding: React.FC = () => {
+  return (
+    <HallSettingsProvider>
+      <HallLandingInner />
+    </HallSettingsProvider>
+  );
+};
+
+const HallLandingInner: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { settings, setViewMode } = useHallSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Honor `?view=orbit|guided` on first mount so deep-links land
+  // in the requested view mode. We only consume the URL once.
+  useEffect(() => {
+    const fromUrl = readViewModeFromUrl();
+    if (fromUrl && fromUrl !== settings.viewMode) {
+      setViewMode(fromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const reducedMotion = useReducedMotion();
+  const systemReducedMotion = useReducedMotion();
+  const reducedMotion = resolveReducedMotion(
+    systemReducedMotion,
+    settings.reducedMotionOverride
+  );
   const hidden = useDocumentHidden();
 
   // Phase 4.5 Stage 3 (2026-05-12): WebGPU is the only supported renderer
@@ -246,11 +277,12 @@ const HallLanding: React.FC = () => {
     });
   }, []);
 
-  // Keyboard navigation: 0 → hub, 1-6 → section, M → map,
-  // Esc → close map / return to workstation if at hub.
+  // Keyboard navigation: 0 → hub, 1-6 → section, M → map, Esc → close
+  // map / exit guided mode / return to workstation if at hub.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target && (e.target as HTMLElement).tagName === "INPUT") return;
+      if (e.target && (e.target as HTMLElement).tagName === "TEXTAREA") return;
       if (e.key === "m" || e.key === "M") {
         e.preventDefault();
         setMapOpen((v) => !v);
@@ -266,8 +298,12 @@ const HallLanding: React.FC = () => {
         return;
       }
       if (e.key === "Escape") {
-        if (mapOpen) {
+        if (settingsOpen) {
+          setSettingsOpen(false);
+        } else if (mapOpen) {
           setMapOpen(false);
+        } else if (settings.viewMode === "guided") {
+          setViewMode("orbit");
         } else if (active === "hub") {
           navigate("/");
         } else {
@@ -277,7 +313,7 @@ const HallLanding: React.FC = () => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, mapOpen, navigate, flyTo]);
+  }, [active, mapOpen, navigate, flyTo, settings.viewMode, setViewMode, settingsOpen]);
 
   const handleReturnToWorkstation = useCallback(() => {
     navigate("/");
@@ -287,6 +323,34 @@ const HallLanding: React.FC = () => {
     if (fidMode === "low") setFidMode("auto");
     else setFidMode("low");
   }, [fidMode, setFidMode]);
+
+  // Guided-tour controls. Entering guided mode flies to the hub
+  // overview (step 1); `next` steps through HALL_GUIDED_TOUR_ORDER one
+  // landmark at a time; finishing on the last stop exits back to orbit.
+  const handleViewModeChange = useCallback(
+    (m: HallViewMode) => {
+      setSettingsOpen(false);
+      setViewMode(m);
+      if (m === "guided") flyTo("hub");
+    },
+    [setViewMode, flyTo]
+  );
+
+  const handleGuidedNext = useCallback(() => {
+    const idx = HALL_GUIDED_TOUR_ORDER.indexOf(active);
+    const cur = idx >= 0 ? idx : 0;
+    if (cur >= HALL_GUIDED_TOUR_ORDER.length - 1) {
+      // Last stop — finish the tour, drop back to free orbit at the hub.
+      setViewMode("orbit");
+      flyTo("hub");
+      return;
+    }
+    flyTo(HALL_GUIDED_TOUR_ORDER[cur + 1]);
+  }, [active, flyTo, setViewMode]);
+
+  const handleGuidedExit = useCallback(() => {
+    setViewMode("orbit");
+  }, [setViewMode]);
 
   const hardCut = reducedMotion;
   const idleOrbitDisabled = reducedMotion || mapOpen;
@@ -327,7 +391,12 @@ const HallLanding: React.FC = () => {
         frameloop={hidden ? "never" : "always"}
       >
         <Suspense fallback={null}>
-          <Scene lowFidelity={lowFidelity} staticMode={staticMode} />
+          <Scene
+            lowFidelity={lowFidelity}
+            staticMode={staticMode}
+            poiLabels={settings.poiLabels}
+            bootActive={bootStarting}
+          />
           <CameraDirector
             targets={effectiveTargets}
             active={bootStarting ? "hub" : active}
@@ -335,6 +404,9 @@ const HallLanding: React.FC = () => {
             idleOrbitDisabled={idleOrbitDisabled}
             dragEnabled
             flyDuration={effectiveFlyDuration}
+            sensitivity={settings.sensitivity}
+            fovOverride={settings.fov}
+            autoRotate={settings.autoRotate}
           />
           {/* Postprocessing disabled on Stage 3 — TSL bloom + tone
               mapping under WebGPU was crushing the scene to near-black.
@@ -362,6 +434,15 @@ const HallLanding: React.FC = () => {
         audioMuted={muted}
         fps={fps}
         phase="interactive"
+        showFps={settings.fpsCounter}
+        viewMode={settings.viewMode}
+        settingsOpen={settingsOpen}
+        onCloseSettings={() => setSettingsOpen(false)}
+        onResetTutorials={() => {
+          /* resetAll() in the gear panel clears hall.tutorial.* keys
+             already; OrbPulseProvider + MobileTutorial respond to
+             resetEpoch in their own effects. No action needed here. */
+        }}
         onToggleMap={() => setMapOpen((v) => !v)}
         onToggleAudio={toggleMuted}
         onToggleFidelity={toggleFidelity}
@@ -370,6 +451,10 @@ const HallLanding: React.FC = () => {
         onEnterDoor={() => {
           /* no-op — entrance/door removed with cathedral */
         }}
+        onViewModeChange={handleViewModeChange}
+        onOpenSettings={() => setSettingsOpen((v) => !v)}
+        onGuidedNext={handleGuidedNext}
+        onGuidedExit={handleGuidedExit}
       />
 
       <Map

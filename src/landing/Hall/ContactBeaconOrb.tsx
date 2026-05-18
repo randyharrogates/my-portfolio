@@ -4,6 +4,7 @@ import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useNavigate } from "react-router-dom";
+import { useOrbPulse } from "./OrbPulseProvider.tsx";
 import {
   float,
   length,
@@ -32,11 +33,14 @@ const ORB_COLOR = "#4ddfff";
 const ContactBeaconOrb: React.FC<ContactBeaconOrbProps> = ({ position }) => {
   const navigate = useNavigate();
   const orbRef = useRef<THREE.Group>(null);
+  const { pulseActive, markOrbHovered } = useOrbPulse();
 
   useFrame((state) => {
     if (!orbRef.current) return;
     const t = state.clock.elapsedTime;
     orbRef.current.position.y = position[1] + Math.sin(t * 1.3 + 0.4) * 0.18;
+    const scale = pulseActive ? 1 + 0.15 * Math.sin(t * 4) : 1;
+    orbRef.current.scale.setScalar(scale);
   });
 
   const orbInnerMaterial = useMemo(() => {
@@ -80,6 +84,7 @@ const ContactBeaconOrb: React.FC<ContactBeaconOrbProps> = ({ position }) => {
       onPointerOver={(e) => {
         e.stopPropagation();
         document.body.style.cursor = "pointer";
+        markOrbHovered();
       }}
       onPointerOut={() => {
         document.body.style.cursor = "";
