@@ -113,7 +113,7 @@ const Scene: React.FC<SceneProps> = ({
           HALL_POI_POSITIONS[1][2] - 4.5,
         ]}
         rotationY={-0.6}
-        text="CASE STUDIES"
+        text="PROJECTS"
         scale={1.3}
       />
       {/* /skills landmark — Liyue cliff outcrop + multi-stream waterfall

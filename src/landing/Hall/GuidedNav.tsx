@@ -13,6 +13,8 @@ interface GuidedNavProps {
   active: HallTargetId;
   /** Advance to the next tour stop (or finish on the last stop). */
   onNext: () => void;
+  /** Step back to the previous tour stop. */
+  onPrev: () => void;
   /** Exit guided mode back to free orbit. */
   onExit: () => void;
 }
@@ -22,12 +24,18 @@ interface GuidedNavProps {
  *  controls the pace via the `next →` button. The step is derived from
  *  the camera's `active` target so number-key navigation stays in sync
  *  with the pill. */
-const GuidedNav: React.FC<GuidedNavProps> = ({ active, onNext, onExit }) => {
+const GuidedNav: React.FC<GuidedNavProps> = ({
+  active,
+  onNext,
+  onPrev,
+  onExit,
+}) => {
   const total = HALL_GUIDED_TOUR_ORDER.length;
   const rawIdx = HALL_GUIDED_TOUR_ORDER.indexOf(active);
   // If the camera is on a target that's somehow off-route, treat it as
   // the hub overview (step 0) so the pill still reads sensibly.
   const idx = rawIdx >= 0 ? rawIdx : 0;
+  const isFirst = idx <= 0;
   const isLast = idx >= total - 1;
   const nextTarget = isLast
     ? null
@@ -43,6 +51,16 @@ const GuidedNav: React.FC<GuidedNavProps> = ({ active, onNext, onExit }) => {
         aria-label="exit guided tour"
       >
         exit guide
+      </button>
+
+      <button
+        type="button"
+        className="hall-guidednav__prev"
+        onClick={onPrev}
+        disabled={isFirst}
+        aria-label="previous tour stop"
+      >
+        ← prev
       </button>
 
       <div className="hall-guidednav__progress">

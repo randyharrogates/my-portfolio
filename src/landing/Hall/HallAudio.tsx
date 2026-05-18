@@ -129,6 +129,8 @@ const HallAudio: React.FC<HallAudioProps> = ({
   const padStopRef = useRef<(() => void) | null>(null);
   const chordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chordIdxRef = useRef(0);
+  // Removes the "resume on next user gesture" fallback listeners.
+  const resumeKickRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (muted) {
@@ -138,6 +140,7 @@ const HallAudio: React.FC<HallAudioProps> = ({
         clearInterval(chordTimerRef.current);
         chordTimerRef.current = null;
       }
+      resumeKickRef.current?.();
       ctxRef.current?.suspend().catch(() => {});
       return;
     }
@@ -163,6 +166,35 @@ const HallAudio: React.FC<HallAudioProps> = ({
     const master = masterRef.current;
     if (!ctx || !master) return;
     ctx.resume().catch(() => {});
+
+    // Browsers gate AudioContext.resume() behind a user gesture. When the
+    // Hall loads with audio already ON, the context is constructed at
+    // mount with no prior gesture, so the resume() above is a silent
+    // no-op and never retried (this effect only re-fires on `muted`
+    // changes). Latch onto the next pointer/key/touch event so the
+    // ambient track starts on the visitor's first interaction.
+    if (!resumeKickRef.current && ctx.state !== "running") {
+      const events: Array<keyof WindowEventMap> = [
+        "pointerdown",
+        "keydown",
+        "touchstart",
+      ];
+      const kick = () => {
+        ctx
+          .resume()
+          .then(() => {
+            if (ctx.state === "running") resumeKickRef.current?.();
+          })
+          .catch(() => {});
+      };
+      events.forEach((ev) =>
+        window.addEventListener(ev, kick, { passive: true })
+      );
+      resumeKickRef.current = () => {
+        events.forEach((ev) => window.removeEventListener(ev, kick));
+        resumeKickRef.current = null;
+      };
+    }
 
     // Soft fade-in.
     const now = ctx.currentTime;
@@ -290,6 +322,7 @@ const HallAudio: React.FC<HallAudioProps> = ({
     return () => {
       padStopRef.current?.();
       if (chordTimerRef.current) clearInterval(chordTimerRef.current);
+      resumeKickRef.current?.();
       ctxRef.current?.close().catch(() => {});
     };
   }, []);

@@ -69,10 +69,45 @@
 }
 
 .hall-guidednav__current {
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: lowercase;
   color: #f1efe8;
+}
+
+.hall-guidednav__prev {
+  background: transparent;
+  border: 1px solid rgba(122, 160, 158, 0.5);
+  color: #9fb6b3;
+  font-family: inherit;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.hall-guidednav__prev:hover,
+.hall-guidednav__prev:focus-visible {
+  background: rgba(122, 160, 158, 0.16);
+  color: #f1efe8;
+  border-color: #9fb6b3;
+  outline: none;
+}
+
+.hall-guidednav__prev:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.hall-guidednav__prev:disabled:hover {
+  background: transparent;
+  color: #9fb6b3;
+  border-color: rgba(122, 160, 158, 0.5);
 }
 
 .hall-guidednav__next {
@@ -109,11 +144,15 @@
     min-width: 0;
   }
   .hall-guidednav__current {
-    font-size: 0.72rem;
+    font-size: 0.9rem;
   }
   .hall-guidednav__next {
     font-size: 0.68rem;
     padding: 0.5rem 0.7rem;
+  }
+  .hall-guidednav__prev {
+    font-size: 0.68rem;
+    padding: 0.5rem 0.6rem;
   }
   .hall-guidednav__exit {
     font-size: 0.62rem;

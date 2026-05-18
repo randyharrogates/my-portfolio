@@ -348,6 +348,13 @@ const HallLandingInner: React.FC = () => {
     flyTo(HALL_GUIDED_TOUR_ORDER[cur + 1]);
   }, [active, flyTo, setViewMode]);
 
+  const handleGuidedPrev = useCallback(() => {
+    const idx = HALL_GUIDED_TOUR_ORDER.indexOf(active);
+    const cur = idx >= 0 ? idx : 0;
+    if (cur <= 0) return;
+    flyTo(HALL_GUIDED_TOUR_ORDER[cur - 1]);
+  }, [active, flyTo]);
+
   const handleGuidedExit = useCallback(() => {
     setViewMode("orbit");
   }, [setViewMode]);
@@ -454,6 +461,7 @@ const HallLandingInner: React.FC = () => {
         onViewModeChange={handleViewModeChange}
         onOpenSettings={() => setSettingsOpen((v) => !v)}
         onGuidedNext={handleGuidedNext}
+        onGuidedPrev={handleGuidedPrev}
         onGuidedExit={handleGuidedExit}
       />
 

@@ -41,6 +41,8 @@ interface HUDOverlayProps {
   onOpenSettings: () => void;
   /** Advance the guided tour to the next stop. */
   onGuidedNext: () => void;
+  /** Step the guided tour back to the previous stop. */
+  onGuidedPrev: () => void;
   /** Exit guided mode back to free orbit. */
   onGuidedExit: () => void;
 }
@@ -66,6 +68,7 @@ const HUDOverlay: React.FC<HUDOverlayProps> = ({
   onViewModeChange,
   onOpenSettings,
   onGuidedNext,
+  onGuidedPrev,
   onGuidedExit,
 }) => {
   const labelTarget = hoveredId ?? active;
@@ -185,6 +188,7 @@ const HUDOverlay: React.FC<HUDOverlayProps> = ({
         <GuidedNav
           active={active}
           onNext={onGuidedNext}
+          onPrev={onGuidedPrev}
           onExit={onGuidedExit}
         />
       )}

@@ -4,8 +4,10 @@ import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useNavigate } from "react-router-dom";
+import { Billboard } from "@react-three/drei";
 import { useOrbPulse } from "./OrbPulseProvider.tsx";
 import {
+  abs,
   float,
   length,
   oneMinus,
@@ -13,6 +15,7 @@ import {
   pow,
   smoothstep,
   uniform,
+  uv,
 } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 
@@ -21,20 +24,27 @@ interface SkillsForgeOrbProps {
   position: [number, number, number];
 }
 
-const ORB_COLOR = "#9fe870";
+const ORB_COLOR = "#9fe870"; // skills accent (lime)
 
 /** Lime skills marker — a single glowing orb that hovers above the
- *  Blender-baked pedestal column + lime screen (`skl_pedestal_screen`
- *  in landmark-skills.glb). Per user 2026-05-13: every static asset
- *  must be a Blender bake, so the previous procedural podium (stone
- *  cylinder + brass trim + emissive screen disc) was stripped. All
- *  that remains here is the orb itself — it's the click target that
- *  jumps to /skills.
- */
+ *  Blender-baked pedestal column. Clicking jumps to /skills.
+ *
+ *  Shares the radiating-glow language with the other landmark orbs:
+ *  camera-facing billboard planes with a true `uv`-based radial gradient
+ *  (a soft circular aura) plus an expanding sonar ring. Sphere shells
+ *  can't carry a gradient — every fragment sits at one radius — so the
+ *  glow is built on billboard planes. */
 const SkillsForgeOrb: React.FC<SkillsForgeOrbProps> = ({ position }) => {
   const navigate = useNavigate();
   const orbRef = useRef<THREE.Group>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
   const { pulseActive, markOrbHovered } = useOrbPulse();
+
+  // Continuous radiate pulse — breathes the glow brightness so the orb
+  // reads as an energy source even after the first-visit scale pulse ends.
+  const uRadiate = useMemo(() => uniform(1), []);
+  // Drives the expanding sonar-ring billboard: opacity fades as it grows.
+  const uRingOpacity = useMemo(() => uniform(0), []);
 
   useFrame((state) => {
     if (!orbRef.current) return;
@@ -42,37 +52,64 @@ const SkillsForgeOrb: React.FC<SkillsForgeOrbProps> = ({ position }) => {
     orbRef.current.position.y = position[1] + Math.sin(t * 1.3 + 1.2) * 0.18;
     const scale = pulseActive ? 1 + 0.15 * Math.sin(t * 4) : 1;
     orbRef.current.scale.setScalar(scale);
+    uRadiate.value = 1 + 0.4 * Math.sin(t * 2.2);
+    // Sonar ring: the billboard plane scales 1×→3× over 2.6s then
+    // restarts, fading out as it grows so the orb visibly radiates.
+    const cycle = (t / 2.6) % 1;
+    if (ringRef.current) {
+      ringRef.current.scale.setScalar(1 + cycle * 2.0);
+    }
+    uRingOpacity.value = (1 - cycle) * 1.4;
   });
 
-  const orbInnerMaterial = useMemo(() => {
+  /** Solid inner ball — bright enough to clear the 0.85 bloom threshold
+   *  (see Postprocessing.tsx) so the core itself reads as lit. */
+  const innerMaterial = useMemo(() => {
     const uColor = uniform(new THREE.Color(ORB_COLOR));
     const r = length(positionLocal);
-    // Core-lift kept restrained (0.25) so the centre reads as
-    // saturated lime, not washed white.
     const coreLift = oneMinus(smoothstep(float(0.0), float(0.85), r));
-    const lifted = uColor.add(coreLift.mul(0.25));
+    const lifted = uColor.add(coreLift.mul(uRadiate.mul(0.55))).mul(1.55);
     const mat = new MeshBasicNodeMaterial();
     mat.colorNode = lifted;
     mat.fog = false;
     return mat;
-  }, []);
+  }, [uRadiate]);
 
-  const orbHaloMaterial = useMemo(() => {
+  /** Soft circular aura — radial gradient across the billboard plane's
+   *  UVs, brightest at the centre and fading to nothing by the rim. */
+  const glowMaterial = useMemo(() => {
     const uColor = uniform(new THREE.Color(ORB_COLOR));
-    const r = length(positionLocal);
-    const falloff = pow(
-      oneMinus(smoothstep(float(0.6), float(1.0), r)),
-      1.6
-    );
+    const d = length(uv().sub(0.5)); // 0 at centre, 0.5 at edge midpoints
+    const glow = pow(oneMinus(smoothstep(float(0.0), float(0.5), d)), 1.7);
     const mat = new MeshBasicNodeMaterial();
-    mat.colorNode = uColor.add(falloff.mul(0.3));
-    mat.opacityNode = falloff.mul(0.75);
+    mat.colorNode = uColor.add(glow.mul(uRadiate.mul(0.9)));
+    mat.opacityNode = glow.mul(uRadiate.mul(0.95));
     mat.transparent = true;
     mat.depthWrite = false;
     mat.blending = THREE.AdditiveBlending;
+    mat.side = THREE.DoubleSide;
     mat.fog = false;
     return mat;
-  }, []);
+  }, [uRadiate]);
+
+  /** Expanding sonar ring — a thin bright band on the billboard plane,
+   *  hollow inside and out. The plane is scaled up over time. */
+  const ringMaterial = useMemo(() => {
+    const uColor = uniform(new THREE.Color(ORB_COLOR));
+    const d = length(uv().sub(0.5));
+    const band = oneMinus(
+      smoothstep(float(0.0), float(0.08), abs(d.sub(float(0.4))))
+    );
+    const mat = new MeshBasicNodeMaterial();
+    mat.colorNode = uColor.add(band.mul(1.2));
+    mat.opacityNode = band.mul(uRingOpacity);
+    mat.transparent = true;
+    mat.depthWrite = false;
+    mat.blending = THREE.AdditiveBlending;
+    mat.side = THREE.DoubleSide;
+    mat.fog = false;
+    return mat;
+  }, [uRingOpacity]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
@@ -94,13 +131,19 @@ const SkillsForgeOrb: React.FC<SkillsForgeOrbProps> = ({ position }) => {
       }}
     >
       <mesh>
-        <sphereGeometry args={[0.50, 22, 16]} />
-        <primitive object={orbInnerMaterial} attach="material" />
+        <sphereGeometry args={[0.5, 22, 16]} />
+        <primitive object={innerMaterial} attach="material" />
       </mesh>
-      <mesh>
-        <sphereGeometry args={[1.30, 22, 16]} />
-        <primitive object={orbHaloMaterial} attach="material" />
-      </mesh>
+      <Billboard>
+        <mesh raycast={() => null} renderOrder={2}>
+          <planeGeometry args={[3.1, 3.1]} />
+          <primitive object={glowMaterial} attach="material" />
+        </mesh>
+        <mesh ref={ringRef} raycast={() => null} renderOrder={3}>
+          <planeGeometry args={[1.55, 1.55]} />
+          <primitive object={ringMaterial} attach="material" />
+        </mesh>
+      </Billboard>
     </group>
   );
 };
