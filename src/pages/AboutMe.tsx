@@ -184,6 +184,20 @@ const AboutMe: React.FC = () => {
 
         {/* ── Right column ── */}
         <div className="intro-right">
+          {/* Leadership & Advocacy */}
+          <div className="callout-box">
+            <div className="callout-label">Leadership &amp; Advocacy</div>
+            <p>
+              Mentored multiple cohorts of apprentices in{" "}
+              <span className="hl-orange">NLP and LLM techniques</span>, from fine-tuning basics
+              through production multi-agent design. Championed{" "}
+              <span className="hl-green">AI-assisted development</span> across engineering,
+              design, and product teams, driving broad adoption of Claude Code and agentic
+              workflows. Regularly bridges the gap between what AI can do in a demo and what it
+              takes to ship it reliably in production.
+            </p>
+          </div>
+
           {/* Core stack */}
           <div className="callout-box">
             <div className="callout-label">Core Stack</div>

@@ -15,7 +15,7 @@ const SKILL_GROUPS: SkillGroup[] = [
     key: "genai",
     label: "genai & llms",
     color: "green",
-    items: ["LangGraph", "LangChain", "OpenAI", "Anthropic", "LangFuse", "PyTorch", "HuggingFace", "Pydantic", "SpaCy", "Kedro"],
+    items: ["LangGraph", "LangChain", "OpenAI", "Anthropic", "LangFuse", "PyTorch", "HuggingFace", "Pydantic", "SpaCy", "Kedro", "MCP Server Development", "Anthropic Skills Authoring", "Cache-Augmented Generation (CAG)"],
   },
   {
     key: "solution_design",
@@ -39,7 +39,7 @@ const SKILL_GROUPS: SkillGroup[] = [
     key: "cloud",
     label: "cloud & infra",
     color: "orange",
-    items: ["AWS", "Azure", "Docker", "Kubernetes", "Terraform", "GCP", "Azure Service Bus"],
+    items: ["AWS", "Azure", "Docker", "Kubernetes", "Terraform", "GCP", "Azure Service Bus", "Cloudflare Workers", "D1"],
   },
   {
     key: "databases",
@@ -63,7 +63,7 @@ const SKILL_GROUPS: SkillGroup[] = [
     key: "mlops",
     label: "mlops & evaluation",
     color: "green",
-    items: ["LLM Evaluation", "Model Monitoring", "RunAI", "A/B Testing"],
+    items: ["LLM Evaluation", "Model Monitoring", "RunAI", "A/B Testing", "LLM-as-a-user Testing (Playwright)"],
   },
 ];
 

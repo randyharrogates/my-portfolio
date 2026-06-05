@@ -16,6 +16,173 @@ interface Post {
 
 const posts: Post[] = [
   {
+    id: "llm-as-a-judge",
+    date: "2026-05-19",
+    title: "LLM-as-a-judge in the Hot Path: Production Lessons",
+    tags: ["GenAI", "Evaluation", "Production"],
+    summary:
+      "Running LLM-as-a-judge synchronously in a production request path forces hard tradeoffs between latency and signal quality. Here's what we measured about threshold calibration, latency budgets, and when to route the judge off the critical path.",
+    sourceUrl: "",
+    sourceLabel: "",
+    body: (
+      <>
+        <p className="blog-body">
+          The standard advice for{" "}
+          <span className="hl-orange">LLM-as-a-judge</span> is to run it offline, as an eval
+          harness that gates deployments. That is correct advice, and you should do it. But some
+          production workflows need a quality gate in the request path itself: a final check before
+          the output reaches the user, with enough signal to suppress or reroute a bad response.
+          This is where things get interesting and where the textbook advice breaks down.
+        </p>
+
+        <h4 className="blog-subheading">Why Synchronous Judging</h4>
+        <p className="blog-body">
+          In document-processing pipelines where the output feeds directly into a downstream
+          automated workflow, a silent bad output is far more costly than a visible one. An
+          LLM-generated credit memo with a hallucinated figure can propagate through three
+          downstream systems before a human notices. A synchronous judge that catches 80% of those
+          cases before they escape is worth the latency. The question is: how much latency, at
+          what threshold, and which model?
+        </p>
+
+        <h4 className="blog-subheading">Threshold Selection</h4>
+        <div className="callout-box">
+          <div className="callout-label">The False-Positive Trap</div>
+          <p>
+            A judge with a generous pass threshold misses bad outputs. A judge with a strict
+            threshold triggers on acceptable outputs and creates support load. We found that
+            calibrating on <span className="hl-orange">a hand-labeled validation set of 200 examples</span>{" "}
+            (50 clear passes, 100 borderline, 50 clear failures) was necessary to set a threshold
+            that respected both error types. Operating from first principles produced a threshold
+            that was either 15% too strict or 20% too lenient, depending on the prompt wording.
+          </p>
+        </div>
+
+        <h4 className="blog-subheading">Latency Tradeoffs</h4>
+        <p className="blog-body">
+          A synchronous judge adds one additional LLM call to the critical path.{" "}
+          <span className="hl-blue">Haiku-class models</span> add around 200ms at the 95th
+          percentile; <span className="hl-blue">Sonnet-class models</span> add 800ms to 1.5s. For
+          most document workflows, 800ms is acceptable. For conversational interfaces it is not.
+          We used a{" "}
+          <span className="hl-green">tiered routing strategy</span>: low-confidence primary outputs
+          (where the primary model already flagged uncertainty via logprobs or structured reasoning)
+          go to the Sonnet judge; high-confidence outputs go to the Haiku judge. This cut median
+          judging latency by 45% without measurably degrading catch rate.
+        </p>
+
+        <div className="callout-box">
+          <div className="callout-label">Eval in CI</div>
+          <p>
+            The judge itself needs to be evaluated. A prompt change in the judge can shift the
+            threshold without you noticing until a production incident. We added a{" "}
+            <span className="hl-purple">judge eval step in CI</span>: on every pull request touching
+            the judge prompt, the pipeline runs the validation set and blocks merge if the pass rate
+            on known-good examples drops below 90% or the catch rate on known-bad examples drops
+            below 80%. This adds ~3 minutes to CI but has caught three regressions in prompt
+            wording that would otherwise have shipped.
+          </p>
+        </div>
+
+        <div className="callout-box">
+          <div className="callout-label">When to Skip the Judge</div>
+          <p>
+            LLM-as-a-judge in the hot path is not always the right answer. For structured outputs
+            validated by Pydantic schemas, the schema IS the judge and a second LLM call adds only
+            latency. For low-stakes conversational outputs, the cost-benefit rarely closes. The
+            judge earns its latency budget only when: (1) the output is complex prose with
+            factual claims, (2) silent errors are materially more costly than visible ones, and
+            (3) a human review loop is not operationally feasible on every response.
+          </p>
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "mcp-server-production",
+    date: "2026-04-14",
+    title: "Building an MCP Server for a Production App",
+    tags: ["MCP", "AI Engineering", "Production"],
+    summary:
+      "The MCP spec tells you how to define tools. It does not tell you how to handle JWT expiry mid-session, how to expose binary downloads over a JSON protocol, or how to design 14 tool domains so an LLM actually picks the right one. Here is what we worked out.",
+    sourceUrl: "",
+    sourceLabel: "",
+    body: (
+      <>
+        <p className="blog-body">
+          When the team decided to expose our platform API as an{" "}
+          <span className="hl-orange">MCP server</span>, the documentation covered the basics:
+          define tools, return results, handle errors. What it did not cover was any of the
+          problems that appear when you run this in production against a real enterprise SaaS
+          platform with JWT auth, large binary payloads, and 14+ distinct API domains. This post
+          covers the three problems that took the most iteration to solve.
+        </p>
+
+        <h4 className="blog-subheading">The Re-Auth Problem</h4>
+        <p className="blog-body">
+          MCP connections in agentic workflows are long-lived. An agent that starts a multi-step
+          task at 9am may still be running tool calls at 11am. JWTs expire, typically in 15 to 60
+          minutes. If your server naively forwards the token and the platform returns a 401, the
+          MCP client sees a tool error and the agent either halts or retries without knowing why.
+        </p>
+        <div className="callout-box">
+          <div className="callout-label">Transparent Re-Auth Pattern</div>
+          <p>
+            We solved this with a <span className="hl-green">transparent re-auth interceptor</span>:
+            the server catches 401s from the upstream API, silently calls the platform's token
+            refresh endpoint using the stored refresh token, updates the session, and retries the
+            original request before surfacing any response to the LLM. From the agent's perspective,
+            the tool call succeeded. Sessions are persisted in{" "}
+            <span className="hl-blue">Redis</span> so MCP reconnects do not trigger a fresh login
+            and do not lose in-flight context.
+          </p>
+        </div>
+
+        <h4 className="blog-subheading">Tool Schema Design at Scale</h4>
+        <p className="blog-body">
+          With 14 API domains (documents, users, workflows, reports, integrations...), naive
+          exposure produces a tool list that overwhelms the LLM's tool-selection mechanism.
+          We went through three schema iterations:
+        </p>
+        <p className="blog-body">
+          Version 1: flat list of 60+ tools with generic names like{" "}
+          <span className="hl-orange">get_item</span> and{" "}
+          <span className="hl-orange">create_record</span>. The LLM picked randomly between
+          ambiguous tools and required heavy prompt steering.{" "}
+          Version 2: domain-prefixed names (<span className="hl-blue">documents__list</span>,{" "}
+          <span className="hl-blue">documents__upload</span>) with action-oriented descriptions
+          written from the LLM's perspective ("Use this to retrieve a paginated list of documents
+          in a folder"). Tool-selection accuracy improved substantially.{" "}
+          Version 3: description length discipline: 15 to 25 words per description, no nested
+          clauses. Shorter descriptions outperformed longer ones for tool routing in every test.
+        </p>
+
+        <h4 className="blog-subheading">Binary Transfers over JSON</h4>
+        <p className="blog-body">
+          MCP is a JSON protocol, which creates friction for file uploads and downloads.{" "}
+          <span className="hl-purple">Upload</span>: we route large files through a small HTTP
+          sidecar endpoint that accepts multipart form data and returns a file ID; the MCP upload
+          tool passes that ID to the platform API. This avoids encoding multi-megabyte files as
+          base64 in the JSON message stream.{" "}
+          <span className="hl-purple">Download</span>: binary assets (PDFs, reports) are streamed
+          from the platform API, base64-encoded, and returned as a typed MCP result with the
+          correct MIME type. Any MCP client can reconstruct the file without custom transport logic.
+        </p>
+
+        <div className="callout-box">
+          <div className="callout-label">Bottom Line</div>
+          <p>
+            Building a production MCP server is a substantially different problem from building
+            an MCP demo. The protocol handles the happy path. Auth lifecycle, binary data, and
+            tool schema design at scale all require patterns the spec does not provide. The three
+            solutions above (transparent re-auth, domain-prefixed schema discipline, and sidecar
+            uploads) are now stable and have been running in production for several months.
+          </p>
+        </div>
+      </>
+    ),
+  },
+  {
     id: "multi-agent-orchestration",
     date: "2026-03-12",
     title: "Multi-Agent Orchestration Patterns in Production",

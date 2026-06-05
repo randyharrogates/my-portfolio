@@ -103,6 +103,22 @@ const Leeseidon: React.FC = () => {
             tax engines — runs in Web Workers off the main thread.
           </p>
 
+          {/* Cloudflare callout */}
+          <div className="callout-box">
+            <div className="callout-label">Why Cloudflare Workers + D1</div>
+            <p>
+              Leeseidon's backend runs on{" "}
+              <span className="hl-orange">Cloudflare Workers</span> with{" "}
+              <span className="hl-blue">D1</span> (SQLite at the edge) rather than a traditional
+              server. The rationale: a privacy-first app that stores only ciphertext has no need
+              for server-side compute near the data, but it does need globally low-latency sync
+              for cross-device reads. Workers deploy to 300+ edge locations automatically, D1
+              replicates reads globally with no ops overhead, and the zero-cold-start model means
+              sync responses arrive in under 50ms for most users regardless of geography. The
+              whole backend runs at Cloudflare's free tier for personal use.
+            </p>
+          </div>
+
           {/* Solution Impact */}
           <div className="callout-box">
             <div className="callout-label">Solution Impact</div>

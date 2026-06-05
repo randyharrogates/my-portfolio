@@ -14,6 +14,8 @@ import FineTuning from "./FineTuning.tsx";
 import HolidayBooking from "./HolidayBooking.tsx";
 import Ecommerce from "./Ecommerce.tsx";
 import HrmSystem from "./HrmSystem.tsx";
+import McpServer from "./McpServer.tsx";
+import ResumeBuilder from "./ResumeBuilder.tsx";
 
 const SUB_TABS = [
   { slug: "twc",             label: "twc",             featured: true },
@@ -26,6 +28,8 @@ const SUB_TABS = [
   { slug: "holiday-booking", label: "holiday-booking"  },
   { slug: "ecommerce",       label: "ecommerce"        },
   { slug: "hrm-system",      label: "hrm-system"       },
+  { slug: "mcp-server",      label: "mcp-server",      featured: true },
+  { slug: "resume-builder",  label: "resume-builder",  featured: true },
 ];
 
 const Projects: React.FC = () => {
@@ -70,6 +74,8 @@ const Projects: React.FC = () => {
           <Route path="holiday-booking" element={<HolidayBooking />} />
           <Route path="ecommerce"       element={<Ecommerce />} />
           <Route path="hrm-system"      element={<HrmSystem />} />
+          <Route path="mcp-server"      element={<McpServer />} />
+          <Route path="resume-builder"  element={<ResumeBuilder />} />
         </Routes>
       </div>
     </div>
