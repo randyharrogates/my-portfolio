@@ -16,6 +16,9 @@ import Ecommerce from "./Ecommerce.tsx";
 import HrmSystem from "./HrmSystem.tsx";
 import McpServer from "./McpServer.tsx";
 import ResumeBuilder from "./ResumeBuilder.tsx";
+import Verona from "./Verona.tsx";
+import Jarvis from "./Jarvis.tsx";
+import Kestrel from "./Kestrel.tsx";
 
 const SUB_TABS = [
   { slug: "twc",             label: "twc",             featured: true },
@@ -30,6 +33,9 @@ const SUB_TABS = [
   { slug: "hrm-system",      label: "hrm-system"       },
   { slug: "mcp-server",      label: "mcp-server",      featured: true },
   { slug: "resume-builder",  label: "resume-builder",  featured: true },
+  { slug: "verona",          label: "verona",          featured: true },
+  { slug: "jarvis",          label: "jarvis",          featured: true },
+  { slug: "kestrel",         label: "kestrel",         featured: true },
 ];
 
 const Projects: React.FC = () => {
@@ -76,6 +82,9 @@ const Projects: React.FC = () => {
           <Route path="hrm-system"      element={<HrmSystem />} />
           <Route path="mcp-server"      element={<McpServer />} />
           <Route path="resume-builder"  element={<ResumeBuilder />} />
+          <Route path="verona"          element={<Verona />} />
+          <Route path="jarvis"          element={<Jarvis />} />
+          <Route path="kestrel"         element={<Kestrel />} />
         </Routes>
       </div>
     </div>
