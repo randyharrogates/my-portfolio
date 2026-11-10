@@ -1,12 +1,13 @@
 /** @format */
 
 import type { PortfolioData, TechItem } from "./portfolio-types.ts";
+import { SOFTWARE_YEARS } from "../site/years.ts";
 
 export const portfolioData: PortfolioData = {
   identity: {
     name: "Randy Chan",
     role: "AI Software Engineer",
-    yoe: 8,
+    yoe: SOFTWARE_YEARS,
     location: "Singapore",
     status: "available",
     belief: "I believe AI is the future of software development.",

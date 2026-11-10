@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { CURRENT_YEAR } from "./years.ts";
 export default function ContactBand() {
   const email = useRef<HTMLElement>(null);
   const [note, setNote] = useState("Email is fastest.");
@@ -75,7 +76,7 @@ export default function ContactBand() {
       </section>
       <footer>
         <div className="wrap">
-          <span>© 2026 Randy Chan · Singapore</span>
+          <span>© {CURRENT_YEAR} Randy Chan · Singapore</span>
           <span>
             Built with Claude Code and Codex. Every claim here is on my CV.
           </span>

@@ -18,6 +18,7 @@ import WorkPage from "./site/WorkPage.tsx";
 import CasePage from "./site/CasePage.tsx";
 import AboutPage from "./site/AboutPage.tsx";
 import ResumePage from "./site/ResumePage.tsx";
+import { SOFTWARE_YEARS } from "./site/years.ts";
 
 import Blog from "./pages/Blog.tsx";
 // Eager-loaded loader (not lazy) — it's the Suspense fallback for the
@@ -179,7 +180,7 @@ const TerminalApp: React.FC = () => {
                 linkedin
               </a>
             </footer>
-            <span>ai software engineer · 8+ yoe</span>
+            <span>ai software engineer · {SOFTWARE_YEARS}+ yoe</span>
           </div>
         </div>
       </div>

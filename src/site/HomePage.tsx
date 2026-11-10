@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { PILLARS } from "./data.ts";
 import { destination } from "./shared.tsx";
+import { SOFTWARE_YEARS, WORKING_YEARS } from "./years.ts";
 export default function HomePage() {
   return (
     <div data-page="home">
@@ -44,10 +45,10 @@ export default function HomePage() {
             </figure>
             <div className="facts">
               <div className="fact">
-                <b>8+ years</b>in software, since 2019
+                <b>{SOFTWARE_YEARS}+ years</b>in software, since 2019
               </div>
               <div className="fact">
-                <b>14 years</b>total working experience
+                <b>{WORKING_YEARS} years</b>total working experience
               </div>
               <div className="fact wide">
                 <b>Claude Code + Codex</b>in parallel, every day

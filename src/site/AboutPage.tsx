@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { LOOP, CAREER } from "./data.ts";
 import { jump } from "./shared.tsx";
+import { SOFTWARE_YEARS, WORKING_YEARS } from "./years.ts";
 export default function AboutPage() {
   return (
     <div data-page="about">
@@ -126,7 +127,10 @@ export default function AboutPage() {
           <section className="asec" id="sec-career">
             <div className="asec-head">
               <h2>Career</h2>
-              <p>8+ years in software, 14 years working in total.</p>
+              <p>
+                {SOFTWARE_YEARS}+ years in software, {WORKING_YEARS} years working in
+                total.
+              </p>
             </div>
             <div className="two">
               <div className="rows" id="careerRows">

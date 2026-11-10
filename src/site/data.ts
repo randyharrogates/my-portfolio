@@ -1,3 +1,4 @@
+import { SOFTWARE_YEARS } from "./years.ts";
 export interface Theme {
   id: string;
   name: string;
@@ -1058,7 +1059,7 @@ export const QA: Answer[] = [
     q: "What is his background?",
     tag: "1 source",
     trace: ["read    cv · roles (8)"],
-    a: "8+ years in software since 2019: platforms for small businesses, NCS, clinical NLP at AI Singapore, AI products in fintech, and now Head of Technology and AI at The Assembly Place. Before that, seven years in the Singapore Army.",
+    a: `${SOFTWARE_YEARS}+ years in software since 2019: platforms for small businesses, NCS, clinical NLP at AI Singapore, AI products in fintech, and now Head of Technology and AI at The Assembly Place. Before that, seven years in the Singapore Army.`,
     src: "CV · Experience",
   },
 ];
