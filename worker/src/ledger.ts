@@ -8,6 +8,7 @@ export interface LedgerEnv {
   MONTHLY_BUDGET_USD: string;
   DAILY_BUDGET_USD: string;
   RUNS_PER_DAY: string;
+  QUESTIONS_PER_DAY: string;
 }
 
 // One global instance holds the budget and the visitor counters. A Durable Object
@@ -20,8 +21,11 @@ export class Ledger extends DurableObject<LedgerEnv> {
       dailyMicro: Math.round(Number(this.env.DAILY_BUDGET_USD) * 1e6),
     };
   }
-  private limitCfg(): LimitConfig {
-    return { runsPerDay: Number(this.env.RUNS_PER_DAY), burstMs: 10_000, inflightMs: 120_000 };
+  // Runs and follow-up questions are counted separately (different keys, different caps).
+  private limitCfg(kind: "run" | "question"): LimitConfig {
+    return kind === "run"
+      ? { runsPerDay: Number(this.env.RUNS_PER_DAY), burstMs: 10_000, inflightMs: 120_000 }
+      : { runsPerDay: Number(this.env.QUESTIONS_PER_DAY), burstMs: 5_000, inflightMs: 60_000 };
   }
   private async budget(now: number): Promise<BudgetState> {
     return (await this.ctx.storage.get<BudgetState>("budget")) ?? emptyBudget(now);
@@ -31,14 +35,14 @@ export class Ledger extends DurableObject<LedgerEnv> {
   }
 
   // Start of a run: visitor limits first, then "is there any budget at all".
-  async begin(keys: string[], minMicro: number): Promise<Begin | { ok: false; reason: "budget"; retryAfterSec: number }> {
+  async begin(keys: string[], minMicro: number, kind: "run" | "question" = "run"): Promise<Begin | { ok: false; reason: "budget"; retryAfterSec: number }> {
     const now = Date.now();
     const b = await this.budget(now);
     const left = remaining(b, this.budgetCfg(), now);
     await this.ctx.storage.put("budget", b);
     if (Math.min(left.month, left.day) < minMicro) return { ok: false, reason: "budget", retryAfterSec: 3600 };
     const l = await this.limits(now);
-    const res = begin(l, this.limitCfg(), keys, now);
+    const res = begin(l, this.limitCfg(kind), keys, now);
     await this.ctx.storage.put("limits", l);
     return res;
   }

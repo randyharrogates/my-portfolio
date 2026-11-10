@@ -1,7 +1,7 @@
 // The one seam between the pipeline and a language model. The pipeline only ever
 // asks for a JSON object matching a schema, with a hard output cap.
 
-export type Step = "gate" | "planner" | "retriever" | "critic" | "writer";
+export type Step = "gate" | "planner" | "retriever" | "critic" | "writer" | "answer";
 
 export interface ModelRequest {
   step: Step;

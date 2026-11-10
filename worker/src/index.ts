@@ -1,4 +1,6 @@
 import corpusJson from "../corpus/corpus.json";
+import { MAX_QUESTION_CHARS, MAX_TURNS_REMEMBERED, MIN_QUESTION_CHARS, runAsk } from "./ask.ts";
+import type { AskEvent, AskOutcome, Turn } from "./ask.ts";
 import { Bm25 } from "./bm25.ts";
 import { dayOf } from "./budget.ts";
 import { devModel } from "./devmodel.ts";
@@ -27,6 +29,7 @@ interface Env {
   MONTHLY_BUDGET_USD: string;
   DAILY_BUDGET_USD: string;
   RUNS_PER_DAY: string;
+  QUESTIONS_PER_DAY: string;
   OPENAI_API_KEY?: string; // secret
   TURNSTILE_SECRET: string; // secret
   VISITOR_SECRET: string; // secret
@@ -41,6 +44,8 @@ const MAX_BODY_BYTES = 16_384;
 // Below this there is no point starting a run (roughly the gate plus planner calls).
 const MIN_RUN_MICRO = 1_500;
 const CACHE_TTL_SEC = 24 * 3600;
+// Roughly one answer call: below this a question is refused before any work.
+const MIN_ASK_MICRO = 400;
 
 function cors(env: Env, origin: string | null): Record<string, string> | null {
   const allowed = env.ALLOWED_ORIGINS.split(",").map((s) => s.trim());
@@ -84,7 +89,17 @@ function pickModel(env: Env): Model | null {
   return env.ENVIRONMENT === "dev" ? devModel() : null;
 }
 
-type Frame = Event | { type: "outcome"; outcome: Outcome; cached: boolean; runsLeft: number | null };
+// `reportId` is what a follow-up question quotes to say which report it is about.
+type Frame =
+  | Event
+  | AskEvent
+  | { type: "outcome"; outcome: Outcome; cached: boolean; runsLeft: number | null; reportId: string | null }
+  | { type: "outcome"; outcome: AskOutcome; questionsLeft: number };
+
+interface Stored {
+  events: Event[];
+  outcome: Outcome;
+}
 
 const sse = (frames: Frame[]) => frames.map((f) => `data: ${JSON.stringify(f)}\n\n`).join("");
 
@@ -111,18 +126,67 @@ export default {
       const live = enabled && (await ledger.live(MIN_RUN_MICRO));
       return json(200, { live, corpus: corpus.hash.slice(0, 12) }, corsHeaders);
     }
-    if (request.method !== "POST" || url.pathname !== "/run") return json(404, { error: "not_found" }, corsHeaders);
+    if (request.method !== "POST" || (url.pathname !== "/run" && url.pathname !== "/ask")) return json(404, { error: "not_found" }, corsHeaders);
 
     // 3. Size and shape of the request.
     if (Number(request.headers.get("Content-Length") ?? "0") > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
     const raw = await request.text();
     if (raw.length > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
-    let body: { jd?: unknown; turnstileToken?: unknown };
+    let body: { jd?: unknown; turnstileToken?: unknown; reportId?: unknown; question?: unknown };
     try {
       body = JSON.parse(raw);
     } catch {
       return json(400, { error: "bad_json" }, corsHeaders);
     }
+    const price: Price = {
+      inputPerM: Number(env.PRICE_INPUT_PER_M),
+      cachedPerM: Number(env.PRICE_CACHED_PER_M),
+      outputPerM: Number(env.PRICE_OUTPUT_PER_M),
+    };
+    const meter = { reserve: (m: number) => ledger.reserve(m), settle: (id: string, m: number) => ledger.settle(id, m) };
+    const sseHeaders = { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-store" };
+
+    // A follow-up question about a report this Worker produced in the last day.
+    if (url.pathname === "/ask") {
+      const reportId = typeof body.reportId === "string" && /^[0-9a-f]{64}$/.test(body.reportId) ? body.reportId : "";
+      const question = typeof body.question === "string" ? body.question.trim() : "";
+      if (!reportId) return json(400, { error: "bad_report" }, corsHeaders);
+      if (question.length < MIN_QUESTION_CHARS || question.length > MAX_QUESTION_CHARS)
+        return json(400, { error: "question_length", min: MIN_QUESTION_CHARS, max: MAX_QUESTION_CHARS }, corsHeaders);
+      if (!enabled || !model) return json(503, { error: "live_runs_off", fallback: "replay" }, corsHeaders);
+      // Only a visitor who already passed the human check on /run holds a signed token.
+      const visitor = await verifyVisitorToken(env.VISITOR_SECRET, request.headers.get("X-Visitor"));
+      if (!visitor) return json(401, { error: "no_visitor" }, corsHeaders);
+      const stored = await env.CACHE.get<Stored>(`fit:${corpus.hash.slice(0, 12)}:${reportId}`, "json");
+      if (!stored || stored.outcome.status !== "done") return json(410, { error: "report_expired" }, corsHeaders);
+      const report = stored.outcome.report;
+
+      const qKeys = [`q:v:${visitor}`, `q:ip:${await hashIp(env.VISITOR_SECRET, ip, dayOf(Date.now()))}`];
+      const begun = await ledger.begin(qKeys, MIN_ASK_MICRO, "question");
+      if (!begun.ok) {
+        if (begun.reason === "budget") return json(503, { error: "live_runs_off", fallback: "replay" }, corsHeaders);
+        return json(429, { error: begun.reason }, { ...corsHeaders, "Retry-After": String(begun.retryAfterSec) });
+      }
+      // Conversation memory lives here, per visitor and report, never in the request.
+      const memoryKey = `chat:${reportId}:${visitor}`;
+      const history = (await env.CACHE.get<Turn[]>(memoryKey, "json")) ?? [];
+      return stream(ctx, sseHeaders, async (send) => {
+        let outcome: AskOutcome = { status: "failed" };
+        try {
+          outcome = await runAsk(question, report, history, { model, index, byId, price, meter, emit: send });
+          if (outcome.status === "answered") {
+            const turn: Turn = { q: question, a: outcome.answer.text, chunkIds: outcome.answer.evidence.map((e) => e.chunkId) };
+            await env.CACHE.put(memoryKey, JSON.stringify([...history, turn].slice(-MAX_TURNS_REMEMBERED)), { expirationTtl: CACHE_TTL_SEC });
+          }
+        } catch {
+          // an unexpected error still ends the stream with a clear outcome
+        } finally {
+          await ledger.end(qKeys);
+          send({ type: "outcome", outcome, questionsLeft: begun.runsLeft });
+        }
+      });
+    }
+
     const jd = typeof body.jd === "string" ? body.jd.trim() : "";
     if (jd.length < MIN_JD_CHARS || jd.length > MAX_JD_CHARS) return json(400, { error: "jd_length", min: MIN_JD_CHARS, max: MAX_JD_CHARS }, corsHeaders);
 
@@ -148,9 +212,10 @@ export default {
     };
 
     // 7. Cache: the same job description within a day costs nothing and uses no run.
-    const cacheKey = `fit:${corpus.hash.slice(0, 12)}:${await sha256Hex(normalizeJd(jd))}`;
-    const hit = await env.CACHE.get<{ events: Event[]; outcome: Outcome }>(cacheKey, "json");
-    if (hit) return new Response(sse([...hit.events, { type: "outcome", outcome: hit.outcome, cached: true, runsLeft: null }]), { headers: streamHeaders });
+    const reportId = await sha256Hex(normalizeJd(jd));
+    const cacheKey = `fit:${corpus.hash.slice(0, 12)}:${reportId}`;
+    const hit = await env.CACHE.get<Stored>(cacheKey, "json");
+    if (hit) return new Response(sse([...hit.events, { type: "outcome", outcome: hit.outcome, cached: true, runsLeft: null, reportId }]), { headers: streamHeaders });
 
     // 8. Per-visitor limits and the budget check, in the ledger.
     const keys = [`v:${visitorId}`, `ip:${await hashIp(env.VISITOR_SECRET, ip, dayOf(Date.now()))}`];
@@ -161,45 +226,49 @@ export default {
     }
 
     // 9. Run, streaming each event as it happens.
-    const price: Price = {
-      inputPerM: Number(env.PRICE_INPUT_PER_M),
-      cachedPerM: Number(env.PRICE_CACHED_PER_M),
-      outputPerM: Number(env.PRICE_OUTPUT_PER_M),
-    };
-    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
-    const writer = writable.getWriter();
-    const enc = new TextEncoder();
-    const events: Event[] = [];
-    let closed = false;
-    const send = (f: Frame) => {
-      if (!closed) writer.write(enc.encode(sse([f]))).catch(() => (closed = true));
-    };
-
-    ctx.waitUntil(
-      (async () => {
-        let outcome: Outcome = { status: "failed", step: "gate" };
-        try {
-          outcome = await runPipeline(jd, {
-            model,
-            index,
-            byId,
-            price,
-            meter: { reserve: (m) => ledger.reserve(m), settle: (id, m) => ledger.settle(id, m) },
-            emit: (e) => {
-              events.push(e);
-              send(e);
-            },
-          });
-          if (outcome.status === "done") await env.CACHE.put(cacheKey, JSON.stringify({ events, outcome }), { expirationTtl: CACHE_TTL_SEC });
-        } catch {
-          // an unexpected error still ends the stream with a clear outcome
-        } finally {
-          await ledger.end(keys);
-          send({ type: "outcome", outcome, cached: false, runsLeft: started.runsLeft });
-          await writer.close().catch(() => {});
+    return stream(ctx, streamHeaders, async (send) => {
+      const events: Event[] = [];
+      let outcome: Outcome = { status: "failed", step: "gate" };
+      let stored = false;
+      try {
+        outcome = await runPipeline(jd, {
+          model,
+          index,
+          byId,
+          price,
+          meter,
+          emit: (e) => {
+            events.push(e);
+            send(e);
+          },
+        });
+        if (outcome.status === "done") {
+          await env.CACHE.put(cacheKey, JSON.stringify({ events, outcome } satisfies Stored), { expirationTtl: CACHE_TTL_SEC });
+          stored = true;
         }
-      })(),
-    );
-    return new Response(readable, { headers: streamHeaders });
+      } catch {
+        // an unexpected error still ends the stream with a clear outcome
+      } finally {
+        await ledger.end(keys);
+        send({ type: "outcome", outcome, cached: false, runsLeft: started.runsLeft, reportId: stored ? reportId : null });
+      }
+    });
   },
 } satisfies ExportedHandler<Env>;
+
+// Runs `work` in the background and streams every frame it sends as one SSE message.
+function stream(ctx: ExecutionContext, headers: Record<string, string>, work: (send: (f: Frame) => void) => Promise<void>): Response {
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+  const writer = writable.getWriter();
+  const enc = new TextEncoder();
+  let closed = false;
+  const send = (f: Frame) => {
+    if (!closed) writer.write(enc.encode(sse([f]))).catch(() => (closed = true));
+  };
+  ctx.waitUntil(
+    work(send)
+      .catch(() => {})
+      .finally(() => writer.close().catch(() => {})),
+  );
+  return new Response(readable, { headers });
+}

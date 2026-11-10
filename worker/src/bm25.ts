@@ -5,7 +5,7 @@ import type { Chunk } from "./types.ts";
 
 const STOP = new Set(
   // function words, plus the filler every job advert shares ("experience", "strong", "ability")
-  "a an and are as at be by for from has have in is it its of on or that the this to was were will with you your we our they their i he his experience experienced required requirement requirements strong ability able work working using use plus role team teams years year including such etc preferred must should knowledge understanding familiarity proven skills skill"
+  "a an and are as at be by for from has have in is it its of on or that the this to was were will with you your we our they their i he his what which who when where why how did does do done can could would should any more about tell me him randy chan that one ones show shown give build builds built building make makes made making create created creating develop developed developing experience experienced required requirement requirements strong ability able work working using use plus role team teams years year including such etc preferred must should knowledge understanding familiarity proven skills skill"
     .split(" "),
 );
 

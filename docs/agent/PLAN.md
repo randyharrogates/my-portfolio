@@ -169,3 +169,13 @@ official `openai` SDK's model types), and that quality is good enough once the e
   as an estimate from token counts at list price. It replaces "no dollar figures" in section 1.
 - **Designed, not built:** follow-up questions about a finished report (the input at the foot of the
   conversation pane). It needs a second endpoint and its own per-report cap.
+- **Step 2c, follow-up chat (done, 2026-11-10):** report first, then questions. `POST /ask {reportId, question}`
+  streams one search plus at most one model call (`ask.ts`). The reply is ordered scope, quotes, prose, so
+  the code checks scope and grounds the quotes before any prose is streamed; an out-of-scope question or an
+  answer with no grounded quote gets a fixed reply. Memory is server-side in KV per visitor and report (last
+  4 turns, 24 h), and the previous turn's cited excerpts stay on the table for vague follow-ups. Limits:
+  `QUESTIONS_PER_DAY = 5` per visitor and per IP, counted apart from runs, 5 s apart, 8 to 300 characters,
+  same budget ledger. `/ask` needs the signed visitor token that `/run` issues after the human check, and a
+  report this Worker stored in the last day (`reportId` arrives in the run's final frame). 59 tests;
+  exercised under `wrangler dev` (401 without a token, 410 unknown report, 429 too fast, memory carried,
+  off-topic refusal, 429 at the sixth question). **Not yet run against a real model.**

@@ -5,7 +5,7 @@
 import { dayOf } from "./budget.ts";
 
 export interface LimitConfig {
-  runsPerDay: number;
+  runsPerDay: number; // per key: runs, or questions when the keys are question keys
   burstMs: number; // minimum gap between run starts for one key
   inflightMs: number; // a run that never reports back stops blocking after this
 }

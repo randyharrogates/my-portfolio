@@ -23,6 +23,14 @@ export function devModel(): ScriptedModel {
       return m ? { verdict: "partial", evidence: [{ excerpt_id: m[1], quote: m[2].slice(0, 120) }] } : { verdict: "gap", evidence: [] };
     },
     critic: () => ({ items: [] }),
+    answer: (r) => {
+      const q = /<question>\n([\s\S]*)\n<\/question>/.exec(r.user)?.[1] ?? "";
+      const m = /<excerpt id="([^"]+)"[^>]*>\n([^\n]+)/.exec(r.user);
+      if (/weather|joke|ignore (all|previous)/i.test(q)) return { in_scope: false, evidence: [], answer: "" };
+      return m
+        ? { in_scope: true, evidence: [{ excerpt_id: m[1], quote: m[2].slice(0, 120) }], answer: "Development stand-in answer: the quote below is the first search hit, not a model's judgement." }
+        : { in_scope: true, evidence: [], answer: "" };
+    },
     writer: () => ({ summary: "Development stand-in summary: verdicts below come from keyword search only, not from a model." }),
   });
 }
