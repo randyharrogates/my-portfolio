@@ -138,5 +138,21 @@ not an estimate.
 - Harness panel shows token usage per run, not cost.
 - Model: OpenAI's cheap GPT-6 tier, not Claude Haiku.
 
-Still to confirm before coding: the exact OpenAI model id and price, and whether the OpenAI project
-budget is a hard stop.
+Still to confirm: the model's price on OpenAI's own pricing page (the id `gpt-6-luna` is listed in the
+official `openai` SDK's model types), and that quality is good enough once the evaluation set runs.
+
+## 10. Build log
+
+- **Step 1 (done):** corpus builder, lexical retrieval, quote grounding check. `worker/corpus`, `worker/src/bm25.ts`, `quote.ts`.
+- **Step 2 (done, 2026-11-10):** pipeline (`pipeline.ts`, `prompts.ts`), hard budget (`budget.ts`), visitor
+  limits (`limits.ts`), anonymous identity (`visitor.ts`), the ledger Durable Object, the Worker entry and
+  the OpenAI adapter. 43 tests with a scripted model; `tsc` clean; smoke-tested under `wrangler dev`
+  (origin check, Turnstile, a full run over SSE, cache replay, burst 429, daily cap 429, edge rate limit).
+  **Not yet run against a real model, and not deployed.**
+- **Changed from the plan:** the visitor id travels in an `X-Visitor` header kept in `localStorage`, not a
+  cookie. The site and the Worker are on different origins, so a cookie would be third-party and browsers
+  block those. Free-text "notes" from the model were dropped from the report: a requirement shows a
+  verdict and exact quotes only, and the summary is screened and falls back to one computed in code.
+- **To deploy later:** create the KV namespace and put its id in `wrangler.toml`; set the secrets
+  `OPENAI_API_KEY`, `TURNSTILE_SECRET`, `VISITOR_SECRET` with `wrangler secret put`; set
+  `AGENT_ENABLED = "true"`.

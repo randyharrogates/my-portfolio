@@ -1,0 +1,6 @@
+# Copy to .dev.vars (git-ignored) for `npx wrangler dev --env dev`.
+# Leave OPENAI_API_KEY out to use the keyless stand-in model.
+# OPENAI_API_KEY=
+# Cloudflare's published always-pass Turnstile test secret (local testing only):
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+VISITOR_SECRET=local-dev-only-change-me

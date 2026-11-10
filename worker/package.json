@@ -2,9 +2,22 @@
   "name": "portfolio-fit-worker",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "corpus": "node corpus/build.ts",
-    "test": "node --test test/*.test.ts"
+    "corpus": "node --no-warnings corpus/build.ts",
+    "test": "node --no-warnings --test test/*.test.ts",
+    "typecheck": "tsc -p .",
+    "check": "npm run typecheck && npm test",
+    "dev": "wrangler dev --env dev"
+  },
+  "dependencies": {
+    "openai": "^7.55.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261110.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.160.0"
   }
 }

@@ -4,9 +4,9 @@ import type { Chunk } from "./types.ts";
 // Worker for every requirement, so it has to be cheap and deterministic.
 
 const STOP = new Set(
-  "a an and are as at be by for from has have in is it its of on or that the this to was were will with you your we our they their i he his".split(
-    " ",
-  ),
+  // function words, plus the filler every job advert shares ("experience", "strong", "ability")
+  "a an and are as at be by for from has have in is it its of on or that the this to was were will with you your we our they their i he his experience experienced required requirement requirements strong ability able work working using use plus role team teams years year including such etc preferred must should knowledge understanding familiarity proven skills skill"
+    .split(" "),
 );
 
 // Terms that job descriptions and the corpus spell differently.
