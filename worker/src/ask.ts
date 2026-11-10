@@ -6,12 +6,14 @@
 import type { Bm25 } from "./bm25.ts";
 import { cost, worstCase } from "./model.ts";
 import type { Model, ModelRequest, Price, Usage } from "./model.ts";
-import { isClean } from "./pipeline.ts";
+import { cleanInput, isClean, isSafeProse, looksLikeInjection } from "./guard.ts";
 import type { EvidenceOut, Meter, Report } from "./pipeline.ts";
 import { MAX_OUTPUT, SCHEMAS, SYSTEM, answerUser } from "./prompts.ts";
 import { quoteIsGrounded } from "./quote.ts";
 import { JsonStringStream, ScreenedText } from "./stream.ts";
+import type { Action } from "./suggest.ts";
 import type { Chunk } from "./types.ts";
+import { SAY } from "./voice.ts";
 
 export const MIN_QUESTION_CHARS = 8;
 export const MAX_QUESTION_CHARS = 300;
@@ -33,6 +35,7 @@ export interface Answer {
   kind: AnswerKind;
   text: string;
   evidence: EvidenceOut[];
+  actions: Action[]; // chips the page offers under this answer
 }
 
 export type AskOutcome = { status: "answered"; answer: Answer } | { status: "budget_exhausted" } | { status: "failed" };
@@ -57,14 +60,16 @@ export interface AskDeps {
   now?: () => number;
 }
 
-export const NOT_SHOWN = "Nothing in the published case studies or CV shows this. That is not proof either way: it is only what this site can back with a quote.";
-export const OFF_TOPIC = "This page only answers questions about Randy's published work and how it fits this role.";
+export const NOT_SHOWN = SAY.notShown;
+export const OFF_TOPIC = SAY.offTopic;
+const notShown = (): Answer => ({ kind: "not_shown", text: NOT_SHOWN, evidence: [], actions: ["email"] });
+const offTopic = (): Answer => ({ kind: "off_topic", text: OFF_TOPIC, evidence: [], actions: [] });
 
 const rec = (v: unknown): Record<string, unknown> | null =>
   typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 
 export async function runAsk(questionRaw: string, report: Report, history: Turn[], deps: AskDeps): Promise<AskOutcome> {
-  const question = questionRaw.trim().slice(0, MAX_QUESTION_CHARS);
+  const question = cleanInput(questionRaw).slice(0, MAX_QUESTION_CHARS);
   const now = deps.now ?? Date.now;
   const t0 = now();
   const emit = (e: AskEventBody) => deps.emit({ ...e, t: now() - t0 });
@@ -74,6 +79,10 @@ export async function runAsk(questionRaw: string, report: Report, history: Turn[
     emit({ type: "usage", ...total });
     return { status: "answered", answer };
   };
+
+  // 0. A question that addresses the model instead of asking about the work is
+  // refused in code: no search, no model call, nothing spent.
+  if (looksLikeInjection(question)) return finish(offTopic());
 
   // 1. Search, in code. Excerpts cited in the previous turn stay on the table, so
   // "tell me more about that" has something to stand on.
@@ -85,7 +94,7 @@ export async function runAsk(questionRaw: string, report: Report, history: Turn[
   }
   emit({ type: "retrieved", chunks: found.map((c) => ({ id: c.id, title: c.title })) });
   emit({ type: "step", step: "search", label: "Searching the case studies and CV", state: "done", ms: now() - t0 });
-  if (found.length === 0) return finish({ kind: "not_shown", text: NOT_SHOWN, evidence: [] }); // no model call spent
+  if (found.length === 0) return finish(notShown()); // no model call spent
 
   // 2. One model call: is it in scope, which quotes answer it, and the answer in prose.
   const req: ModelRequest = {
@@ -124,7 +133,7 @@ export async function runAsk(questionRaw: string, report: Report, history: Turn[
   let rawText = "";
   let mayStream: boolean | undefined;
   const extract = new JsonStringStream("answer");
-  const screened = new ScreenedText(isClean, (text) => emit({ type: "delta", text }));
+  const screened = new ScreenedText(isSafeProse, (text) => emit({ type: "delta", text }));
   const onText = (d: string) => {
     rawText += d;
     const piece = extract.push(d);
@@ -167,14 +176,14 @@ export async function runAsk(questionRaw: string, report: Report, history: Turn[
   }
 
   // 3. The authoritative answer, decided in code.
-  if (out.in_scope !== true) return finish({ kind: "off_topic", text: OFF_TOPIC, evidence: [] });
+  if (out.in_scope !== true) return finish(offTopic());
   const evidence = ground(out.evidence, true);
-  if (evidence.length === 0) return finish({ kind: "not_shown", text: NOT_SHOWN, evidence: [] });
+  if (evidence.length === 0) return finish(notShown());
   const s = typeof out.answer === "string" ? out.answer.trim() : "";
-  if (s && s.length <= MAX_ANSWER_CHARS && isClean(s)) {
+  if (s && s.length <= MAX_ANSWER_CHARS && isSafeProse(s)) {
     screened.flush(s);
-    return finish({ kind: "grounded", text: s, evidence }, screened.sent === s);
+    return finish({ kind: "grounded", text: s, evidence, actions: [] }, screened.sent === s);
   }
   // The prose failed the screen: the checked quotes still stand on their own.
-  return finish({ kind: "grounded", text: "The published work says this, in its own words:", evidence });
+  return finish({ kind: "grounded", text: SAY.quotesOnly, evidence, actions: ["email"] });
 }

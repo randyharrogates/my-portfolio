@@ -9,6 +9,8 @@ import type { Model, Price } from "./model.ts";
 import { OpenAIModel } from "./openai.ts";
 import { MAX_JD_CHARS, runPipeline } from "./pipeline.ts";
 import type { Event, Outcome } from "./pipeline.ts";
+import { reportActions, suggestions } from "./suggest.ts";
+import type { Action } from "./suggest.ts";
 import type { Chunk, Corpus } from "./types.ts";
 import { hashIp, issueVisitorToken, verifyVisitorToken } from "./visitor.ts";
 
@@ -60,8 +62,16 @@ function cors(env: Env, origin: string | null): Record<string, string> | null {
   };
 }
 
+// On every response: nothing here is a document, so it may not be sniffed, framed, or run anything.
+const SECURE: Record<string, string> = {
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+  "Referrer-Policy": "no-referrer",
+};
+
 const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers } });
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...SECURE, ...headers } });
 
 const normalizeJd = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
@@ -93,8 +103,12 @@ function pickModel(env: Env): Model | null {
 type Frame =
   | Event
   | AskEvent
-  | { type: "outcome"; outcome: Outcome; cached: boolean; runsLeft: number | null; reportId: string | null }
-  | { type: "outcome"; outcome: AskOutcome; questionsLeft: number };
+  | { type: "outcome"; outcome: Outcome; cached: boolean; runsLeft: number | null; reportId: string | null; suggestions: string[]; actions: Action[] }
+  | { type: "outcome"; outcome: AskOutcome; questionsLeft: number; suggestions: string[] };
+
+// The chips under a finished report: follow-up questions and page actions, computed in code.
+const chips = (outcome: Outcome) =>
+  outcome.status === "done" ? { suggestions: suggestions(outcome.report), actions: reportActions(outcome.report) } : { suggestions: [], actions: [] as Action[] };
 
 interface Stored {
   events: Event[];
@@ -128,7 +142,8 @@ export default {
     }
     if (request.method !== "POST" || (url.pathname !== "/run" && url.pathname !== "/ask")) return json(404, { error: "not_found" }, corsHeaders);
 
-    // 3. Size and shape of the request.
+    // 3. Size and shape of the request. JSON only: a plain HTML form cannot send it.
+    if (!(request.headers.get("Content-Type") ?? "").toLowerCase().startsWith("application/json")) return json(415, { error: "json_only" }, corsHeaders);
     if (Number(request.headers.get("Content-Length") ?? "0") > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
     const raw = await request.text();
     if (raw.length > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
@@ -144,7 +159,7 @@ export default {
       outputPerM: Number(env.PRICE_OUTPUT_PER_M),
     };
     const meter = { reserve: (m: number) => ledger.reserve(m), settle: (id: string, m: number) => ledger.settle(id, m) };
-    const sseHeaders = { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-store" };
+    const sseHeaders = { ...corsHeaders, ...SECURE, "Content-Type": "text/event-stream" };
 
     // A follow-up question about a report this Worker produced in the last day.
     if (url.pathname === "/ask") {
@@ -182,7 +197,8 @@ export default {
           // an unexpected error still ends the stream with a clear outcome
         } finally {
           await ledger.end(qKeys);
-          send({ type: "outcome", outcome, questionsLeft: begun.runsLeft });
+          const asked = [...history.map((t) => t.q), question];
+          send({ type: "outcome", outcome, questionsLeft: begun.runsLeft, suggestions: outcome.status === "answered" ? suggestions(report, asked) : [] });
         }
       });
     }
@@ -205,9 +221,7 @@ export default {
       visitorToken = issued.token;
     }
     const streamHeaders: Record<string, string> = {
-      ...corsHeaders,
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-store",
+      ...sseHeaders,
       ...(visitorToken ? { "X-Visitor": visitorToken } : {}),
     };
 
@@ -215,7 +229,7 @@ export default {
     const reportId = await sha256Hex(normalizeJd(jd));
     const cacheKey = `fit:${corpus.hash.slice(0, 12)}:${reportId}`;
     const hit = await env.CACHE.get<Stored>(cacheKey, "json");
-    if (hit) return new Response(sse([...hit.events, { type: "outcome", outcome: hit.outcome, cached: true, runsLeft: null, reportId }]), { headers: streamHeaders });
+    if (hit) return new Response(sse([...hit.events, { type: "outcome", outcome: hit.outcome, cached: true, runsLeft: null, reportId, ...chips(hit.outcome) }]), { headers: streamHeaders });
 
     // 8. Per-visitor limits and the budget check, in the ledger.
     const keys = [`v:${visitorId}`, `ip:${await hashIp(env.VISITOR_SECRET, ip, dayOf(Date.now()))}`];
@@ -250,7 +264,7 @@ export default {
         // an unexpected error still ends the stream with a clear outcome
       } finally {
         await ledger.end(keys);
-        send({ type: "outcome", outcome, cached: false, runsLeft: started.runsLeft, reportId: stored ? reportId : null });
+        send({ type: "outcome", outcome, cached: false, runsLeft: started.runsLeft, reportId: stored ? reportId : null, ...chips(outcome) });
       }
     });
   },

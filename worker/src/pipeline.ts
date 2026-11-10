@@ -3,12 +3,16 @@
 // calls per run, each with a hard output cap and a budget reservation.
 
 import type { Bm25 } from "./bm25.ts";
+import { cleanInput, isClean, isSafeProse, looksLikeInjection } from "./guard.ts";
 import { cost, worstCase } from "./model.ts";
 import type { Model, ModelRequest, Price, Step, Usage } from "./model.ts";
 import { MAX_OUTPUT, SCHEMAS, SYSTEM, criticUser, gateUser, plannerUser, retrieverUser, writerUser } from "./prompts.ts";
 import { quoteIsGrounded } from "./quote.ts";
 import { JsonStringStream, ScreenedText } from "./stream.ts";
 import type { Chunk } from "./types.ts";
+import { SAY } from "./voice.ts";
+
+export { isClean };
 
 export const MAX_JD_CHARS = 6000;
 export const MAX_REQUIREMENTS = 6;
@@ -88,21 +92,16 @@ class StepFailed extends Error {
   }
 }
 
-// Claims the site must never make, whatever a model writes.
-const FORBIDDEN = [/10,?000\+?\s*users/i, /\bvllm\b/i, /\bllama\b/i, /\b[89]\d{3}[ -]?\d{4}\b/, /@\w+\.(com|sg)\b/i];
-export const isClean = (text: string) => !FORBIDDEN.some((re) => re.test(text));
-
 const rec = (v: unknown): Record<string, unknown> | null =>
   typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 
 export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
-  const jd = jdRaw.slice(0, MAX_JD_CHARS);
+  const jd = cleanInput(jdRaw).slice(0, MAX_JD_CHARS);
   const total = { calls: 0, input: 0, cached: 0, output: 0, costMicro: 0 };
   const now = deps.now ?? Date.now;
   const t0 = now();
   const emit = (e: EventBody) => deps.emit({ ...e, t: now() - t0 });
   const say = (text: string) => emit({ type: "say", text });
-  const n = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
 
   async function call(
     step: Step,
@@ -147,29 +146,29 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
   }
 
   try {
-    // 0. Gate: is this a job description at all?
+    // 0. Gate: is this a job description at all? Text that addresses the model
+    // instead of describing a job is refused here, in code, before any call is paid for.
+    if (looksLikeInjection(jd)) return { status: "not_a_job_description" };
     const gate = await call("gate", "Checking the input", gateUser(jd));
     if (gate.is_job_description !== true) return { status: "not_a_job_description" };
-    say("This is a job description. Reading the role.");
+    say(SAY.isJob);
 
     // 1. Planner
     const plan = await call("planner", "Reading the role", plannerUser(jd));
-    const role = typeof plan.role === "string" && plan.role.trim() ? plan.role.trim().slice(0, 120) : "this role";
+    const roleText = typeof plan.role === "string" ? plan.role.replace(/[<>`\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) : "";
+    const role = roleText && isSafeProse(roleText) ? roleText : "this role";
     const requirements = (Array.isArray(plan.requirements) ? plan.requirements : [])
       .map(rec)
-      .filter((r): r is Record<string, unknown> => r !== null && typeof r.text === "string" && r.text.trim().length > 0)
+      .filter((r): r is Record<string, unknown> => r !== null && typeof r.text === "string" && r.text.trim().length > 0 && isSafeProse(r.text))
       .slice(0, MAX_REQUIREMENTS)
       .map((r, i) => ({
         id: `r${i + 1}`,
-        text: (r.text as string).trim().slice(0, 240),
+        text: (r.text as string).replace(/[<>`\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 240),
         importance: r.importance === "nice" ? ("nice" as const) : ("must" as const),
       }));
     if (requirements.length === 0) throw new StepFailed("planner");
     emit({ type: "plan", role, requirements });
-    say(
-      `I picked the ${n(requirements.length, "requirement")} the advert stresses most. ` +
-        `${requirements.length === 1 ? "A retriever is" : `${requirements.length} retrievers are`} now searching the case studies and CV${requirements.length === 1 ? "" : " in parallel"}.`,
-    );
+    say(SAY.planned(requirements.length));
     let droppedQuotes = 0;
 
     // 2. Retrievers, in parallel. Search is code; the model only judges what search found.
@@ -222,11 +221,7 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
       }),
     );
     const withEvidence = results.filter((r) => r.verdict !== "gap").length;
-    say(
-      `Evidence found for ${withEvidence} of ${results.length}.` +
-        (droppedQuotes ? ` ${n(droppedQuotes, "quote")} did not match ${droppedQuotes === 1 ? "its" : "their"} source and ${droppedQuotes === 1 ? "was" : "were"} dropped.` : "") +
-        (withEvidence ? " A critic is now challenging the evidence." : ""),
-    );
+    say(SAY.retrieved(withEvidence, results.length, droppedQuotes));
 
     const asItems = () =>
       results.map((r) => ({ id: r.id, requirement: r.text, verdict: r.verdict, quotes: r.evidence.map((e) => e.quote) }));
@@ -245,26 +240,25 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
         emit({ type: "dropped", id: r.id, reason: "critic_lowered" });
         emit({ type: "verdict", id: r.id, verdict: r.verdict, evidence: r.evidence });
       }
-      say(lowered ? `The critic lowered ${n(lowered, "verdict")}. Writing the summary.` : "The critic kept every verdict. Writing the summary.");
+      say(SAY.critic(lowered));
     }
 
     // 4. Writer. Its prose is the one thing not checked quote by quote, so it is
     // screened and, if it fails, replaced by a summary computed from the verdicts.
     const strong = results.filter((r) => r.verdict === "strong").length;
     const partial = results.filter((r) => r.verdict === "partial").length;
-    const gaps = results.length - strong - partial;
-    const fallback = `Of ${results.length} requirements for ${role}, the published work shows strong evidence for ${strong}, partial evidence for ${partial}, and none for ${gaps}.`;
+    const fallback = SAY.fallbackSummary(results.length, strong, partial, role);
     let summary = fallback;
     // The summary streams to the page as it is written, a few words behind and only
     // while it passes the screen. The `summary` event that follows is authoritative.
     const extract = new JsonStringStream("summary");
-    const screened = new ScreenedText(isClean, (text) => emit({ type: "delta", text }));
+    const screened = new ScreenedText(isSafeProse, (text) => emit({ type: "delta", text }));
     try {
       const written = await call("writer", "Writing the summary", writerUser(role, asItems()), {
         onText: (d) => screened.push(extract.push(d)),
       });
       const s = typeof written.summary === "string" ? written.summary.trim() : "";
-      if (s && s.length <= 700 && isClean(s)) {
+      if (s && s.length <= 700 && isSafeProse(s)) {
         summary = s;
         screened.flush(s);
       }

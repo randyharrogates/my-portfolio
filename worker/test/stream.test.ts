@@ -105,7 +105,7 @@ test("a summary that fails the screen is replaced and its bad part never streame
   const streamed = events.filter((e) => e.type === "delta").map((e) => e.text).join("");
   assert.ok(!/10,000|users/.test(streamed));
   const final = events.find((e) => e.type === "summary");
-  assert.ok(final?.type === "summary" && !final.streamed && final.text === outcome.report.summary && /^Of 1 requirements/.test(final.text));
+  assert.ok(final?.type === "summary" && !final.streamed && final.text === outcome.report.summary && /^Of 1 requirement for/.test(final.text));
 });
 
 test("every event is timestamped in order, and steps carry time, tokens and cost", async () => {
@@ -124,8 +124,8 @@ test("every event is timestamped in order, and steps carry time, tokens and cost
   assert.deepEqual(
     events.filter((e) => e.type === "say").map((e) => e.type === "say" && e.text),
     [
-      "This is a job description. Reading the role.",
-      "I picked the 1 requirement the advert stresses most. A retriever is now searching the case studies and CV.",
+      "That's a job description. Reading the role.",
+      "I picked the one requirement the advert stresses most. A retriever is now searching my case studies and CV.",
       "Evidence found for 1 of 1. A critic is now challenging the evidence.",
       "The critic kept every verdict. Writing the summary.",
     ],
