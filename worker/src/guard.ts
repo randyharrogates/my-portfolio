@@ -41,9 +41,22 @@ export const isClean = (text: string) => !FORBIDDEN.some((re) => re.test(text));
 // prompt leaking, and no commitments made on his behalf.
 const UNSAFE_PROSE = [
   /https?:\/\/|\bwww\.|[<>]|\]\(|`/i,
-  /\bstep:\s|excerpt[_ ]id|in_scope|json schema|system prompt|\bmy (instructions|rules|guidelines)\b|as an ai\b|language model/i,
+  /\bstep:\s|\bexcerpts?\b|in_scope|json schema|system prompt|\bmy (instructions|rules|guidelines)\b|as an ai\b|language model/i,
   /\b(salary|salaries|remuneration|notice period|day rate|available to start|start date)\b|[$€£]\s?\d|\b(sgd|usd)\s?\d/i,
   /\bi (accept|agree to|promise|guarantee|commit to|will join|can start)\b/i,
 ];
 
 export const isSafeProse = (text: string) => isClean(text) && !UNSAFE_PROSE.some((re) => re.test(text));
+
+// Applies to the running summary of a conversation. It is never shown, only put back
+// into a later prompt as data, so it may name a topic prose may not (a question about
+// pay, say). It may not carry a forbidden claim, a link, or text addressed to the model.
+export const isSafeMemory = (text: string) => isClean(text) && !looksLikeInjection(text) && !/https?:\/\/|\bwww\./i.test(text);
+
+// Cuts at the end of a sentence where there is one, so a clipped text still reads whole.
+export const clip = (s: string, max: number) => {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("; "));
+  return end > max / 2 ? cut.slice(0, end + 1) : cut.slice(0, cut.lastIndexOf(" "));
+};

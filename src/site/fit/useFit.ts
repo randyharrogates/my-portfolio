@@ -10,7 +10,7 @@ import { initial, reduce } from "./state.ts";
 import type { FitState } from "./state.ts";
 import type { Frame, Replay } from "./types.ts";
 
-const SESSION_KEY = "fit.session.v2"; // v2: the saved state gained the agent graph
+const SESSION_KEY = "fit.session.v3"; // v3: graph nodes record their tool calls
 const SESSION_TTL_MS = 24 * 3600 * 1000;
 const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 

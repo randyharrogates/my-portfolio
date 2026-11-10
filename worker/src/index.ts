@@ -1,6 +1,7 @@
 // The HTTP entry. Every request passes the same gate (origin, burst limit), then
-// one of three routes: GET /status, POST /run (a job description in, a streamed
-// report out) and POST /ask (a follow-up question about a stored report).
+// one of four routes: GET /status, POST /run (a job description in, a streamed
+// report out), POST /ask (a follow-up question about a stored report) and
+// POST /mcp (the read-only search, published to MCP clients).
 
 import corpusJson from "../corpus/corpus.json";
 import { MAX_QUESTION_CHARS, MIN_QUESTION_CHARS, emptyMemory, runAsk } from "./ask.ts";
@@ -9,6 +10,7 @@ import { Bm25 } from "./bm25.ts";
 import { dayOf } from "./budget.ts";
 import { devModel } from "./devmodel.ts";
 import { Ledger } from "./ledger.ts";
+import { handleMcp } from "./mcp.ts";
 import type { Kind } from "./ledger.ts";
 import type { Meter } from "./metered.ts";
 import type { Model, Price } from "./model.ts";
@@ -72,7 +74,7 @@ function cors(env: Env, origin: string | null): Headers | null {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Visitor",
+    "Access-Control-Allow-Headers": "Content-Type, X-Visitor, Mcp-Protocol-Version",
     "Access-Control-Expose-Headers": "X-Visitor, Retry-After",
     "Access-Control-Max-Age": "600",
     Vary: "Origin",
@@ -261,7 +263,12 @@ export default {
     const url = new URL(request.url);
 
     // 1. Origin. Browsers from other sites, and anything with no Origin, stop here.
-    const corsHeaders = cors(env, request.headers.get("Origin"));
+    // The one exception: MCP clients are programs, not pages, and send no Origin.
+    // /mcp reads public text and makes no model call, so there is nothing to protect
+    // from them beyond the burst limit. A browser on another site is still refused.
+    const origin = request.headers.get("Origin");
+    const isMcp = url.pathname === "/mcp";
+    const corsHeaders = cors(env, origin) ?? (isMcp && !origin ? {} : null);
     if (!corsHeaders) return json(403, { error: "origin_not_allowed" });
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
@@ -277,8 +284,9 @@ export default {
     if (request.method === "GET" && url.pathname === "/status") {
       return json(200, { live: enabled && (await ledger.live(MIN_MICRO.run)), corpus: CORPUS_ID }, corsHeaders);
     }
+    if (isMcp && request.method !== "POST") return json(405, { error: "post_only" }, { ...corsHeaders, Allow: "POST" });
     const route = request.method === "POST" ? { "/run": handleRun, "/ask": handleAsk }[url.pathname] : undefined;
-    if (!route) return json(404, { error: "not_found" }, corsHeaders);
+    if (!route && !isMcp) return json(404, { error: "not_found" }, corsHeaders);
 
     // 4. Size and shape of the request. JSON only: a plain HTML form cannot send it.
     if (!(request.headers.get("Content-Type") ?? "").toLowerCase().startsWith("application/json")) return json(415, { error: "json_only" }, corsHeaders);
@@ -291,7 +299,11 @@ export default {
     } catch {
       body = null;
     }
-    if (typeof body !== "object" || body === null || Array.isArray(body)) return json(400, { error: "bad_json" }, corsHeaders);
+    if (isMcp) {
+      const reply = handleMcp(body, { index, byId, version: CORPUS_ID });
+      return reply.body === null ? new Response(null, { status: reply.status, headers: { ...SECURE, ...corsHeaders } }) : json(reply.status, reply.body, corsHeaders);
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body) || !route) return json(400, { error: "bad_json" }, corsHeaders);
     if (!enabled) return liveOff({ cors: corsHeaders });
 
     return route(

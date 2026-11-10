@@ -63,12 +63,14 @@ interface JobCase {
   title: string;
   jd: string;
   replay?: boolean;
-  expect: { status: string; minStrong?: number; maxStrong?: number; minGaps?: number; gapAbout?: string[]; noInvented?: boolean };
+  expect: { status: string; minStrong?: number; maxStrong?: number; minGaps?: number; gapAbout?: string[]; noInvented?: boolean; cleanText?: boolean };
 }
 interface QuestionCase {
   id: string;
   q: string;
   expect: string;
+  must?: string; // a pattern the answer has to contain
+  mustNot?: string; // a pattern the answer may never contain
 }
 const cases = JSON.parse(readFileSync(here("./cases.json"), "utf8")) as { jobs: JobCase[]; questions: QuestionCase[] };
 const only = (flag: string) => process.argv.find((a: string, i: number) => process.argv[i - 1] === flag)?.split(",");
@@ -92,6 +94,7 @@ function checkJob(c: JobCase, outcome: Outcome): string[] {
   }
   if (c.expect.noInvented && strong > 1) fails.push(`${strong} strong verdicts on a role with invented requirements`);
   if (!isSafeProse(r.summary)) fails.push("summary failed the prose screen");
+  if (c.expect.cleanText) for (const t of [r.role, ...r.results.map((x) => x.text)]) if (!isSafeProse(t)) fails.push(`unsafe text reached the report: ${t.slice(0, 60)}`);
   return fails;
 }
 
@@ -99,6 +102,8 @@ function checkAnswer(c: QuestionCase, a: Answer): string[] {
   const fails: string[] = [];
   const text = a.text.toLowerCase();
   if (!isSafeProse(a.text)) fails.push("answer failed the prose screen");
+  if (c.must && !new RegExp(c.must, "i").test(a.text)) fails.push(`answer does not mention /${c.must}/`);
+  if (c.mustNot && new RegExp(c.mustNot, "i").test(a.text)) fails.push(`answer contains /${c.mustNot}/`);
   switch (c.expect) {
     case "grounded":
       if (a.kind !== "grounded" || a.evidence.length === 0) fails.push(`kind ${a.kind} with ${a.evidence.length} quotes, expected a grounded answer`);
@@ -176,7 +181,20 @@ if (firstReport && questions.length) {
   let memory = emptyMemory();
   for (const c of questions) {
     let costMicro = 0;
-    const outcome = await runAsk(c.q, firstReport, memory, { model, index, byId, price, meter, onError, emit: (e) => void (e.type === "usage" && (costMicro = e.costMicro)) });
+    let read = { input: 0, cached: 0 };
+    const tools: string[] = [];
+    const outcome = await runAsk(c.q, firstReport, memory, {
+      model,
+      index,
+      byId,
+      price,
+      meter,
+      onError,
+      emit: (e) => {
+        if (e.type === "usage") (costMicro = e.costMicro), (read = { input: e.input, cached: e.cached });
+        if (e.type === "retry") tools.push(e.search);
+      },
+    });
     if (outcome.status !== "answered") {
       console.log(`FAIL ${c.id.padEnd(20)} ${outcome.status}`);
       failed++;
@@ -187,10 +205,11 @@ if (firstReport && questions.length) {
     memory = outcome.memory;
     const fails = checkAnswer(c, outcome.answer);
     failed += Number(fails.length > 0);
-    console.log(`${fails.length ? "FAIL" : "ok  "} ${c.id.padEnd(20)} ${outcome.answer.kind} · ${outcome.answer.evidence.length} quotes · ${usd(costMicro)}\n       ${outcome.answer.text}`);
+    console.log(`${fails.length ? "FAIL" : "ok  "} ${c.id.padEnd(20)} ${outcome.answer.kind} · ${outcome.answer.evidence.length} quotes · ${usd(costMicro)} · ${read.input ? Math.round((read.cached / read.input) * 100) : 0}% of input cached · memory ${memory.turns.length} kept, ${memory.compacted} summarised${tools.length ? ` · tool search_portfolio("${tools[0]}")` : ""}\n       ${outcome.answer.text}`);
     for (const f of fails) console.log(`       ${f}`);
-    results.push({ id: c.id, q: c.q, answer: outcome.answer, fails });
+    results.push({ id: c.id, q: c.q, answer: outcome.answer, tools, fails });
   }
+  console.log(`\nmemory at the end: ${memory.turns.length} turns word for word, ${memory.compacted} summarised as:\n       ${memory.summary}`);
 }
 
 mkdirSync(here("./results/"), { recursive: true });

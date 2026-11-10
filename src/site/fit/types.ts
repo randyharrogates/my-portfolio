@@ -37,7 +37,7 @@ type RunStatus = "done" | "not_a_job_description" | "budget_exhausted" | "failed
 type AskStatus = "answered" | "budget_exhausted" | "failed";
 
 export type Frame = { t?: number } & (
-  | { type: "step"; step: string; id?: string; round?: number; state: "start" | "done" | "failed"; usage?: Usage; ms?: number; costMicro?: number }
+  | { type: "step"; step: string; id?: string; round?: number; state: "start" | "done" | "failed"; usage?: Usage; ms?: number; costMicro?: number; tool?: string } // `tool`: the function the model called
   | { type: "say"; text: string }
   | { type: "plan"; role: string; requirements: { id: string; text: string; importance: string; search?: string }[] }
   | { type: "retrieved"; id: string; round?: number; chunks: { id: string; title: string }[] }

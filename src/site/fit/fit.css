@@ -1,8 +1,14 @@
 /* Role fit. Spacing uses the site's φ scale (--s1..--s8). The agent graph and the story split 1.618 : 1;
    folded, the graph is a rail one φ step wide and the report and chat split 1.618 : 1. */
-.rc-site .fit{--ok:#17703F; --ok-bg:rgba(30,138,85,.12); --amber:#8A5A12; --amber-bg:rgba(183,121,31,.14); --live-bg:rgba(51,70,211,.1)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A}}
-:root[data-theme="dark"] .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A}
+/* Surfaces are never flat, one treatment each: the page a blueprint grid that fades out below the heading,
+   the working panes (bar, graph, preview) a dot grid, and every card a grainy gradient. All three stay faint. */
+.rc-site .fit{--ok:#17703F; --ok-bg:rgba(30,138,85,.12); --amber:#8A5A12; --amber-bg:rgba(183,121,31,.14); --live-bg:rgba(51,70,211,.1); --tint:rgba(51,70,211,.05);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='144' height='144'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  position:relative}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A; --tint:rgba(139,147,248,.07)}}
+:root[data-theme="dark"] .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A; --tint:rgba(139,147,248,.07)}
+.rc-site .fit::before{content:""; position:absolute; inset:0 0 auto; height:610px; pointer-events:none; opacity:.7; background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size:34px 34px; -webkit-mask-image:radial-gradient(ellipse 72% 100% at 50% 0, #000, transparent 72%); mask-image:radial-gradient(ellipse 72% 100% at 50% 0, #000, transparent 72%)}
+.rc-site .fit > .page{position:relative}
 .rc-site .fit-wrap{max-width:1376px}
 .rc-site .fit-muted{font-size:13px; color:var(--muted)}
 .rc-site .fit-row{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap}
@@ -23,7 +29,7 @@
 .rc-site .fit-refusal h2{font-size:20px}
 .rc-site .fit-replays{display:flex; flex-direction:column; gap:var(--s3)}
 .rc-site .fit-replays > div{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--s3)}
-.rc-site .fit-replays button{text-align:left; font:inherit; color:inherit; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); cursor:pointer; display:flex; flex-direction:column; gap:var(--s1); transition:transform .12s var(--ease-out), border-color .2s}
+.rc-site .fit-replays button{text-align:left; font:inherit; color:inherit; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); cursor:pointer; display:flex; flex-direction:column; gap:var(--s1); animation:fitIn .3s var(--ease-out) backwards; transition:transform .12s var(--ease-out), border-color .2s}
 .rc-site .fit-replays button:hover{border-color:var(--accent)} .rc-site .fit-replays button:active{transform:scale(.97)}
 .rc-site .fit-replays button span{font-size:13px; color:var(--muted)}
 
@@ -32,7 +38,8 @@
 .rc-site .fit-barline b{font-weight:500; color:var(--ink); font-variant-numeric:tabular-nums}
 .rc-site .fit-barline b.ticking{color:var(--accent)}
 .rc-site .fit-barline .fit-bar{flex:1 1 89px; max-width:233px; margin-left:auto}
-.rc-site .fit-state{display:inline-flex; align-items:center; gap:var(--s2)}
+.rc-site .fit-again{min-height:34px; padding:0 var(--s3); font-family:var(--f-body); animation:fitPop .25s var(--ease-out)}
+.rc-site .fit-state{display:inline-flex; align-items:center; gap:var(--s2); animation:fitSwap .25s var(--ease-out)}
 .rc-site .fit-state.live{color:var(--accent)} .rc-site .fit-state.ok{color:var(--ok)}
 .rc-site .fit-spin{display:inline-block; width:13px; height:13px; box-sizing:border-box; border-radius:50%; border:2px solid var(--live-bg); border-top-color:var(--accent); animation:fitSpin .9s linear infinite; vertical-align:-2px; flex:none}
 .rc-site .fit-bar{height:5px; border-radius:5px; background:var(--line); overflow:hidden}
@@ -52,12 +59,14 @@
 .rc-site .fit-stage.open .fit-report, .rc-site .fit-stage.open .fit-chat{flex:1 1 100%}
 .rc-site .fit-stage.open .fit-chat{max-height:calc(100vh - 233px)}
 .rc-site .fit-stage.running .fit-chat, .rc-site .fit-stage.open.done.side-report .fit-chat, .rc-site .fit-stage.open.done.side-chat .fit-report{display:none}
-.rc-site .fit-tabs{display:none}
-.rc-site .fit-seg{display:inline-grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:var(--s1); background:var(--line); border-radius:13px; padding:var(--s1)}
+.rc-site .fit-seg{position:relative; display:inline-grid; grid-template-columns:repeat(var(--n),minmax(0,1fr)); background:var(--line); border-radius:13px; padding:var(--s1)}
 .rc-site .fit-seg.wide{display:grid; flex:1 1 100%}
-.rc-site .fit-seg button, .rc-site .fit-tabs button{font:500 14px var(--f-body); color:var(--muted); background:transparent; border:0; border-radius:8px; min-height:44px; padding:0 var(--s3); cursor:pointer; transition:background .2s var(--ease-io), color .2s, transform .12s var(--ease-out)}
-.rc-site .fit-seg button[aria-selected="true"], .rc-site .fit-tabs button[aria-selected="true"]{font-weight:600; color:var(--ink); background:var(--surface)}
-.rc-site .fit-seg button:active, .rc-site .fit-tabs button:active, .rc-site .fit .chip:active, .rc-site .fit .btn:active:not(:disabled){transform:scale(.97)}
+.rc-site .fit-tabs{display:none}
+/* the thumb slides between options and stretches about 12% on the way */
+.rc-site .fit-thumb{position:absolute; top:var(--s1); bottom:var(--s1); left:var(--s1); width:calc((100% - 2 * var(--s1)) / var(--n)); border-radius:8px; background:var(--surface); box-shadow:0 2px 8px rgba(15,21,34,.1); transform:translateX(calc(var(--to) * 100%)); animation:fitSlide .25s var(--ease-io)}
+.rc-site .fit-seg button{position:relative; font:500 14px var(--f-body); color:var(--muted); background:transparent; border:0; border-radius:8px; min-height:44px; padding:0 var(--s3); cursor:pointer; transition:color .2s, transform .12s var(--ease-out)}
+.rc-site .fit-seg button[aria-selected="true"]{font-weight:600; color:var(--ink)}
+.rc-site .fit-seg button:active, .rc-site .fit .chip:active, .rc-site .fit .btn:active:not(:disabled), .rc-site .fit-x:active, .rc-site .fit-src:active, .rc-site .fit-rail:active .fit-rail-open{transform:scale(.97)}
 
 /* graph */
 .rc-site .fit-graph-full{display:flex; flex-direction:column; animation:fitIn .3s var(--ease-out)}
@@ -83,7 +92,8 @@
 .rc-site .fit-node:active{transform:scale(.97)}
 .rc-site .fit-node.ghost{border-style:dashed; align-items:center; cursor:default; font-family:var(--f-mono); font-size:12px; color:var(--muted); background:transparent}
 .rc-site .fit-loop-label{position:absolute; font-family:var(--f-mono); font-size:12px; color:var(--amber); animation:fitIn .3s var(--ease-out)}
-.rc-site .fit-detail{margin:0 var(--s4) var(--s4); padding:var(--s3) var(--s4); background:var(--surface); border:1px solid var(--accent); border-radius:13px; display:flex; flex-direction:column; gap:var(--s2); animation:fitPop .2s var(--ease-out); transform-origin:top center}
+.rc-site .fit-detail{margin:0 var(--s4) var(--s4); padding:var(--s3) var(--s4); background:var(--surface); border:1px solid var(--accent); border-radius:13px; display:flex; flex-direction:column; gap:var(--s2); animation:fitPop .2s var(--ease-out)}
+.rc-site .fit-detail.leaving{animation:fitPopOut .16s ease-in forwards}
 .rc-site .fit-detail dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:var(--s1) var(--s3); font-size:14px}
 .rc-site .fit-detail dt{font-family:var(--f-mono); font-size:12px; color:var(--muted); padding-top:2px} .rc-site .fit-detail dd{margin:0; overflow-wrap:anywhere}
 .rc-site .fit-x{width:44px; height:44px; margin:-13px -13px -13px 0; border:0; background:transparent; color:var(--muted); font-size:21px; cursor:pointer; border-radius:8px}
@@ -103,6 +113,7 @@
 .rc-site .fit-preview li{display:flex; flex-direction:column; gap:1px; padding:var(--s2) var(--s3); background:var(--surface); border:1px dashed var(--line); border-radius:13px; animation:fitIn .35s var(--ease-out) backwards}
 .rc-site .fit-preview li.loop{border-color:var(--amber)} .rc-site .fit-preview li.loop b{color:var(--amber)}
 .rc-site .fit-preview > p{padding:0 var(--s4) var(--s4); margin:0}
+.rc-site .fit-preview code{font-family:var(--f-mono); font-size:12px; overflow-wrap:anywhere}
 .rc-site .fit-now{display:flex; align-items:center; gap:var(--s2); font-size:15px; color:var(--muted); margin:0; animation:fitIn .3s var(--ease-out)}
 
 /* conversation */
@@ -135,24 +146,28 @@
 .rc-site .fit-card.pending, .rc-site .fit-card.retrying{border-color:var(--accent)} .rc-site .fit-card.gap{border-style:dashed; box-shadow:none}
 .rc-site .fit-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:var(--s3); flex-wrap:wrap}
 .rc-site .fit-card h3{font-size:19px; line-height:1.25; flex:1 1 260px}
-.rc-site .fit-badge{font-family:var(--f-mono); font-size:12px; border:1px solid var(--line); border-radius:21px; padding:3px 10px; white-space:nowrap; color:var(--muted)}
+.rc-site .fit-badge{font-family:var(--f-mono); font-size:12px; line-height:21px; border:1px solid var(--line); border-radius:21px; padding:0 var(--s2); white-space:nowrap; color:var(--muted)}
 .rc-site .fit-badge.strong{color:var(--ok); background:var(--ok-bg); border-color:transparent}
 .rc-site .fit-badge.partial{color:var(--amber); background:var(--amber-bg); border-color:transparent}
 .rc-site .fit-badge.gap{color:var(--ink)}
 .rc-site .fit-badge.live{color:var(--accent); background:var(--live-bg); border-color:transparent}
-.rc-site .fit-badge.pulse{animation:fitPulse .6s var(--ease-out)}
-.rc-site .fit-quote{margin:0; display:flex; flex-direction:column; gap:var(--s2); animation:fitIn .3s var(--ease-out)}
+/* a verdict landing pulses once */
+.rc-site .fit-badge.strong, .rc-site .fit-badge.partial, .rc-site .fit-badge.gap{animation:fitPulse .6s var(--ease-out)}
+.rc-site .fit-quote{margin:0; display:flex; flex-direction:column; gap:var(--s2); animation:fitIn .3s var(--ease-out) backwards}
 .rc-site .fit-quote blockquote{margin:0; padding:var(--s3) var(--s4); background:var(--bg); border-radius:8px; font-size:15px; line-height:1.55}
 .rc-site .fit-quote.small blockquote{padding:var(--s2) var(--s3); font-size:13px}
 .rc-site .fit-quote figcaption{display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center; font-family:var(--f-mono); font-size:12px; color:var(--muted)}
 .rc-site .fit-quote .ok{color:var(--ok)}
-.rc-site .fit-src{border:1px solid var(--line); border-radius:5px; padding:3px 8px; text-decoration:none; min-height:24px}
+.rc-site .fit-src{border:1px solid var(--line); border-radius:5px; padding:0 var(--s2); line-height:21px; text-decoration:none; transition:transform .12s var(--ease-out), border-color .2s} .rc-site a.fit-src:hover{border-color:var(--accent)}
 .rc-site .fit-reading{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:12px; color:var(--muted)}
 .rc-site .fit-skel{height:13px; width:92%; border-radius:5px; background:linear-gradient(90deg,var(--line) 25%,var(--bg) 50%,var(--line) 75%); background-size:200% 100%; animation:fitSweep 1.6s var(--ease-io) infinite}
 .rc-site .fit-skel.short{width:64%}
 .rc-site .fit-flags .ok{color:var(--ok)}
 .rc-site .fit-flags{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); font-family:var(--f-mono); font-size:12px; color:var(--amber)}
 .rc-site .fit-foot{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap}
+
+/* cards: one grainy gradient each, faint enough to read on */
+.rc-site .fit-card, .rc-site .fit-form, .rc-site .fit-chat, .rc-site .fit-tally > div, .rc-site .fit-replays button, .rc-site .fit-refusal, .rc-site .fit-detail{background-image:var(--grain), linear-gradient(160deg, var(--tint), transparent 55%)}
 
 .rc-site .fit-turnstile:empty{display:none}
 
@@ -162,12 +177,15 @@
 @keyframes fitSpin{to{transform:rotate(360deg)}}
 @keyframes fitPulse{50%{transform:scale(1.08)}}
 @keyframes fitPop{from{opacity:0; transform:scale(.95)}}
+@keyframes fitPopOut{to{opacity:0; transform:scale(.95)}}
+@keyframes fitSwap{from{opacity:0; filter:blur(5px)}}
+@keyframes fitSlide{from{transform:translateX(calc(var(--from) * 100%))} 50%{transform:translateX(calc((var(--from) + var(--to)) * 50%)) scaleX(1.12)}}
 @keyframes fitFlow{to{stroke-dashoffset:-14}}
 @keyframes fitRing{50%{box-shadow:0 0 0 8px var(--live-bg)}}
 
 /* one pane at a time on a phone */
 @media (max-width: 959px){
-  .rc-site .fit-tabs{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s1); background:var(--line); border-radius:13px; padding:var(--s1); margin-bottom:var(--s3); position:sticky; top:var(--s6); z-index:2}
+  .rc-site .fit-tabs{display:grid; margin-bottom:var(--s3); position:sticky; top:var(--s6); z-index:2}
   .rc-site .fit-stage, .rc-site .fit-main, .rc-site .fit-stage.folded .fit-main{display:block}
   .rc-site .fit-seg.wide{display:none}
   .rc-site .fit-stage .fit-graph, .rc-site .fit-stage .fit-report, .rc-site .fit-stage .fit-chat{display:none; position:static; max-height:none}
@@ -177,6 +195,7 @@
   .rc-site .fit-stage[data-tab="Chat"].running .fit-main::after{content:"Questions open when the report is done."; color:var(--muted); font-size:14px}
   .rc-site .fit-barline .fit-bar{display:none}
   .rc-site .fit-src{min-height:44px; display:inline-flex; align-items:center}
+  .rc-site .fit-again{min-height:44px}
   .rc-site .fit-fold{display:none}
   .rc-site .fit-board-scroll{padding:var(--s3) var(--s2)}
   .rc-site .fit-node.small{padding:2px} .rc-site .fit-node.small span{display:none}

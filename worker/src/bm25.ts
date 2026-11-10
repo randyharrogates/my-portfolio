@@ -76,12 +76,13 @@ export interface Hit {
 }
 
 const PROFILE = /^cv:(summary|skills):/;
+export const isProfile = (c: Chunk) => PROFILE.test(c.id);
 
 export class Bm25 {
   private docs: { chunk: Chunk; tf: Map<string, number>; len: number }[];
   private df = new Map<string, number>();
   private avgLen: number;
-  private profile: Chunk[];
+  readonly profile: Chunk[]; // the CV lines every model step is offered, whatever was searched for
 
   constructor(chunks: Chunk[]) {
     this.docs = chunks.map((chunk) => {
@@ -94,7 +95,7 @@ export class Bm25 {
     });
     const total = this.docs.reduce((n, d) => n + d.len, 0);
     this.avgLen = this.docs.length ? total / this.docs.length : 0;
-    this.profile = this.docs.map((d) => d.chunk).filter((c) => PROFILE.test(c.id));
+    this.profile = this.docs.map((d) => d.chunk).filter(isProfile);
   }
 
   // `PER_GROUP` caps how many chunks one project or CV role can contribute, so

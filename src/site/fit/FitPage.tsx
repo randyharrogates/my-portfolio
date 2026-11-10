@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { jump } from "../shared.tsx";
-import { isLive } from "./api.ts";
+import { API, isLive } from "./api.ts";
 import { NODE_NAMES, cost, seconds } from "./state.ts";
 import type { Card, ChatItem, FitState, Graph, GraphNode, Refusal } from "./state.ts";
 import type { Action, Evidence, Replay } from "./types.ts";
@@ -28,9 +28,9 @@ function Source({ evidence }: { evidence: Evidence }) {
   return <span className="fit-src">{evidence.title}</span>;
 }
 
-function Quote({ evidence, small }: { evidence: Evidence; small?: boolean }) {
+function Quote({ evidence, small, delay = 0 }: { evidence: Evidence; small?: boolean; delay?: number }) {
   return (
-    <figure className={"fit-quote" + (small ? " small" : "")}>
+    <figure className={"fit-quote" + (small ? " small" : "")} style={{ animationDelay: `${delay}ms` }}>
       <blockquote>“{evidence.quote}”</blockquote>
       <figcaption><span className="ok">✓ quote matches source</span><Source evidence={evidence} /></figcaption>
     </figure>
@@ -54,6 +54,20 @@ function Elapsed({ running, ms }: { running: boolean; ms: number }) {
 function ActionChip({ action }: { action: Action }) {
   if (action === "email") return <button type="button" className="chip" onClick={() => jump("emailText")}>Email me</button>;
   return action === "resume" ? <Link className="chip" to="/resume">Open my résumé</Link> : <Link className="chip" to="/work">Browse the case studies</Link>;
+}
+
+// A segmented switch whose thumb slides between options, stretching a little as it moves.
+function Seg<T extends string>({ options, value, onChange, label, className = "" }: { options: readonly T[]; value: T; onChange: (v: T) => void; label: string; className?: string }) {
+  const index = options.indexOf(value);
+  const last = useRef(index);
+  const from = last.current;
+  useEffect(() => { last.current = index; }, [index]);
+  return (
+    <div className={`fit-seg ${className}`} role="tablist" aria-label={label} style={{ "--n": options.length, "--from": from, "--to": index } as React.CSSProperties}>
+      <i key={index} className="fit-thumb" aria-hidden="true" />
+      {options.map((o) => <button key={o} type="button" role="tab" aria-selected={o === value} onClick={() => onChange(o)}>{o}</button>)}
+    </div>
+  );
 }
 
 /* ---------- the agent graph ---------- */
@@ -110,7 +124,7 @@ function edges(graph: Graph, boxes: Record<string, Box>, d: Dims): { d: string; 
   const back = (from: Box, to: Box) => `M${d.main.x} ${from.y + 32} H${d.loopX} V${to.y + 32} H${d.main.x - 6}`;
   if (graph.kind === "chat") {
     graph.nodes.slice(1).forEach((n) => out.push({ d: `M${d.mid} ${boxes[n.key].y - 48} V${boxes[n.key].y}`, state: into(n) }));
-    if (graph.looped) out.push({ d: back(boxes.verify, boxes.search), state: graph.looping ? "live" : "done", loop: true });
+    if (graph.looped) out.push({ d: back(boxes.answer, boxes.search), state: graph.looping ? "live" : "done", loop: true });
     return out;
   }
   out.push({ d: `M${d.mid} 88 V136`, state: into(at("orchestrator")) });
@@ -130,8 +144,8 @@ function status(n: GraphNode, graph: Graph, s: FitState): string {
   const card = s.cards.find((c) => c.id === n.key);
   if (card) {
     if (n.state === "running") return card.retry ? "searching again" : card.chunks.length ? `reading ${card.chunks.length}` : "searching";
-    if (!card.verdict) return n.state === "failed" ? "failed" : n.state === "done" ? "with the verifier" : "queued";
-    return card.verdict === "gap" ? "no evidence" : `${card.verdict} · ${plural(card.evidence.length, "quote")}`;
+    if (!card.verdict) return n.state === "failed" ? "failed" : n.state === "done" ? "verifying" : "queued";
+    return card.verdict === "gap" ? "no evidence" : `${card.verdict} · ${card.evidence.length}`;
   }
   const lowered = s.cards.filter((c) => c.lowered).length;
   const sentBack = s.cards.filter((c) => c.retry).length;
@@ -140,9 +154,9 @@ function status(n: GraphNode, graph: Graph, s: FitState): string {
       return n.state === "running" ? "reading the text" : n.state === "done" ? "a real job advert" : NODE_NAMES.gate.does;
     case "orchestrator":
       if (n.state === "running") return graph.round > 1 ? "deciding what to retry" : "planning the work";
-      return n.state === "done" ? `${plural(s.cards.length, "requirement")}${sentBack ? ` · ${sentBack} sent back` : ""}` : "plans the work";
+      return n.state === "done" ? `${s.cards.length} planned${sentBack ? ` · ${sentBack} retried` : ""}` : "plans the work";
     case "verifier":
-      if (n.state === "running") return graph.round > 1 ? "checking the new quotes" : "checking every citation";
+      if (n.state === "running") return graph.round > 1 ? "checking new quotes" : "checking citations";
       return n.state === "done" ? (lowered ? `lowered ${lowered}` : "kept every verdict") : "checks every citation";
     case "writer":
       return n.state === "running" ? "writing the summary" : n.state === "done" ? "summary written" : "waits for the verifier";
@@ -150,11 +164,14 @@ function status(n: GraphNode, graph: Graph, s: FitState): string {
       return "asked";
     case "memory":
       if (n.state === "running") return "compacting";
-      return s.context ? `${plural(s.context.kept, "turn")} kept${s.context.compacted ? ` · ${s.context.compacted} summarised` : ""}` : "skipped";
+      if (!s.context) return "skipped";
+      if (s.context.kept + s.context.compacted === 0) return "first question";
+      return `${plural(s.context.kept, "turn")} kept${s.context.compacted ? ` · ${s.context.compacted} summarised` : ""}`;
     case "search":
       return n.state === "running" ? "searching my pages" : n.state === "done" && s.context ? plural(s.context.excerpts, "excerpt") : "waits";
     case "answer":
-      return n.state === "running" ? "writing" : n.state === "done" ? "written" : "waits";
+      if (n.state === "running") return graph.looped ? "reading the new excerpts" : "writing";
+      return n.state === "done" ? (n.tools.length ? "searched, then wrote" : "written") : "waits";
     case "verify":
       return n.state === "running" ? "checking quotes" : n.state === "done" ? "quotes checked" : "waits";
     default:
@@ -177,7 +194,14 @@ function detail(n: GraphNode, graph: Graph, s: FitState): { title: string; rows:
   const name = NODE_NAMES[n.key]?.name ?? n.key;
   const rows: [string, string][] = [["Job", NODE_NAMES[n.key]?.does ?? ""]];
   if (n.state !== "waiting") rows.push(["Now", status(n, graph, s)]);
-  if (n.key === "orchestrator") for (const c of s.cards.filter((x) => x.retry)) rows.push([`Sent ${c.id} back`, c.retry!.search]);
+  const sentBack = s.cards.filter((c) => c.retry);
+  const called: Record<string, string> = {
+    dispatch_retrievers: `dispatch_retrievers(${plural(s.cards.length, "requirement")}): one retriever started for each`,
+    redirect_retrievers: `redirect_retrievers(${sentBack.length} sent back for a second search)`,
+    search_portfolio: `search_portfolio("${graph.search ?? ""}")`,
+  };
+  for (const tool of n.tools) rows.push(["Tool call", called[tool] ?? tool]);
+  for (const c of n.key === "orchestrator" ? sentBack : []) rows.push([`Sent ${c.id} back`, c.retry!.search]);
   if (n.key === "verifier") for (const c of s.cards) for (const k of c.checks.filter((x) => x.support !== "yes")) rows.push([`${c.id}, round ${k.round}`, k.reason || k.support]);
   if (n.key === "memory" && s.context) rows.push(["Context", `${plural(s.context.kept, "turn")} word for word, ${s.context.compacted} older folded into a summary`]);
   if (n.key === "verify" && s.context?.dropped) rows.push(["Dropped", plural(s.context.dropped, "quote") + " not found in the source"]);
@@ -189,8 +213,17 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
   const W = d.W;
   const boxes = layout(graph, d);
   const pct = (b: Box) => ({ left: `${(b.x / W) * 100}%`, top: `${(b.y / H) * 100}%`, width: `${(b.w / W) * 100}%`, height: `${(b.h / H) * 100}%` });
-  const picked = graph.nodes.find((n) => n.key === selected);
+  // The detail panel grows out of the node that was clicked and shrinks back into it,
+  // so it stays mounted for the length of its exit.
+  const [shown, setShown] = useState<string | null>(selected);
+  useEffect(() => {
+    if (selected !== null) return setShown(selected);
+    const timer = window.setTimeout(() => setShown(null), 160);
+    return () => window.clearTimeout(timer);
+  }, [selected]);
+  const picked = graph.nodes.find((n) => n.key === (selected ?? shown));
   const info = picked ? detail(picked, graph, state) : null;
+  const origin = picked && boxes[picked.key] ? `${((boxes[picked.key].x + boxes[picked.key].w / 2) / W) * 100}% 0` : "50% 0";
   return (
     <>
       <div className="fit-board-scroll">
@@ -204,7 +237,7 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
           {graph.kind === "run" && !graph.nodes.some(isRetriever) && (
             <span className="fit-node ghost" style={pct({ x: d.mid - 170, y: RETRIEVER_Y, w: 340, h: RETRIEVER_H })}>retrievers join once the plan is made</span>
           )}
-          {graph.looped && <span className="fit-loop-label" style={{ left: `${((d.loopX + 12) / W) * 100}%`, top: `${((graph.kind === "run" ? 204 : 300) / H) * 100}%` }}>{graph.looping ? "searching again" : "second search done"}</span>}
+          {graph.looped && <span className="fit-loop-label" style={{ left: `${((d.loopX + 12) / W) * 100}%`, top: `${((graph.kind === "run" ? 204 : 316) / H) * 100}%` }}>{graph.kind === "chat" ? "tool call: search" : graph.looping ? "searching again" : "second search done"}</span>}
           {graph.nodes.map((n, i) => {
             const card = state.cards.find((c) => c.id === n.key);
             return (
@@ -224,7 +257,7 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
         </div>
       </div>
       {info && picked ? (
-        <div className="fit-detail" key={picked.key}>
+        <div className={"fit-detail" + (selected === null ? " leaving" : "")} key={picked.key} style={{ transformOrigin: origin }}>
           <div className="fit-row"><b>{info.title}</b><button type="button" className="fit-x" aria-label="Close detail" onClick={() => onSelect(null)}>×</button></div>
           <dl>{info.rows.map(([k, v], i) => <React.Fragment key={i}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
           <span className="fit-usage">{picked.calls ? `${plural(picked.calls, "call")} · ${seconds(picked.ms)} · ${count(picked.tokens)} tokens · est. ${cost(picked.costMicro)}` : picked.state === "waiting" ? "not started" : "done in code, no model call"}</span>
@@ -270,10 +303,7 @@ function GraphPane({ state, open, onToggle }: { state: FitState; open: boolean; 
             <div><span className="eyebrow">Agent graph · {graph.kind === "chat" ? "last question" : "report run"}</span><b>{graph.looped ? `Looped back · round ${graph.round} of 2` : "Round 1"}</b></div>
             <div className="fit-row">
               {state.question && (
-                <div className="fit-seg" role="tablist" aria-label="Which loop">
-                  <button type="button" role="tab" aria-selected={graph.kind === "run"} onClick={() => { setWhich("run"); setSelected(null); }}>Report</button>
-                  <button type="button" role="tab" aria-selected={graph.kind === "chat"} onClick={() => { setWhich("chat"); setSelected(null); }}>Question</button>
-                </div>
+                <Seg options={["Report", "Question"] as const} value={graph.kind === "chat" ? "Question" : "Report"} label="Which loop" onChange={(v) => { setWhich(v === "Question" ? "chat" : "run"); setSelected(null); }} />
               )}
               <button type="button" className="btn fit-fold" onClick={onToggle}>Fold</button>
             </div>
@@ -291,7 +321,7 @@ function GraphPane({ state, open, onToggle }: { state: FitState; open: boolean; 
 
 const BADGE: Record<string, [string, string]> = { strong: ["●", "strong"], partial: ["◐", "partial"], gap: ["○", "gap"] };
 
-function ReportCard({ card, index }: { card: Card; index: number }) {
+function ReportCard({ card, index, checking }: { card: Card; index: number; checking: boolean }) {
   const [mark, label] = card.verdict ? BADGE[card.verdict] : ["", ""];
   const kind = card.importance === "nice" ? "nice-to-have" : "must-have";
   const searching = card.retry && card.retry.improved === undefined;
@@ -304,11 +334,11 @@ function ReportCard({ card, index }: { card: Card; index: number }) {
         ) : card.verdict ? (
           <span className={"fit-badge " + card.verdict}>{mark} {label} · {kind}</span>
         ) : (
-          <span className="fit-badge live">{card.chunks.length ? `reading ${plural(card.chunks.length, "excerpt")}` : "searching"}</span>
+          <span className="fit-badge live">{checking ? "with the verifier" : card.chunks.length ? `reading ${plural(card.chunks.length, "excerpt")}` : "searching"}</span>
         )}
       </div>
       {!card.verdict && <><div className="fit-skel" /><div className="fit-skel short" /></>}
-      {card.evidence.map((e) => <Quote key={e.chunkId + e.quote} evidence={e} />)}
+      {card.evidence.map((e, i) => <Quote key={e.chunkId + e.quote} evidence={e} delay={i * 30} />)}
       {card.verdict === "gap" && !searching && <p className="fit-muted">Nothing in my case studies or CV shows this.</p>}
       {(card.dropped > 0 || card.lowered || card.retry?.improved !== undefined) && (
         <p className="fit-flags">
@@ -341,7 +371,7 @@ const Report = memo(function Report({ state, onReset }: { state: FitState; onRes
           <div className="gap"><b>{tally("gap")}</b><span>gap</span></div>
         </div>
       )}
-      {state.cards.map((c, i) => <ReportCard key={c.id} card={c} index={i} />)}
+      {state.cards.map((c, i) => <ReportCard key={c.id} card={c} index={i} checking={state.run.nodes.some((n) => n.key === c.id && n.state === "done")} />)}
       {state.phase === "done" && (
         <div className="fit-foot">
           <span className="fit-muted">Every quote is checked in code against the page it cites before it is shown.</span>
@@ -407,7 +437,7 @@ const Chat = memo(function Chat({ state, onAsk }: { state: FitState; onAsk: (q: 
         <div className="fit-context">
           <div className="fit-row"><span>context · {count(ctx.input)} tokens</span><span>{Math.round((ctx.cached / ctx.input) * 100)}% from cache</span></div>
           <div className="fit-bar" role="img" aria-label={`${Math.round((ctx.cached / ctx.input) * 100)} percent of the context came from the prompt cache`}><i style={{ width: `${(ctx.cached / ctx.input) * 100}%` }} /></div>
-          <span>{plural(ctx.kept, "turn")} kept word for word{ctx.compacted ? ` · ${plural(ctx.compacted, "older turn")} summarised` : ""}{ctx.justCompacted ? " · compacted just now" : ""}</span>
+          <span>{ctx.kept + ctx.compacted === 0 ? "first question: no earlier turns to carry" : `${plural(ctx.kept, "turn")} kept word for word`}{ctx.compacted ? ` · ${plural(ctx.compacted, "older turn")} summarised` : ""}{ctx.justCompacted ? " · compacted just now" : ""}</span>
         </div>
       )}
       <form className="fit-ask" onSubmit={(e) => { e.preventDefault(); send(question); }}>
@@ -425,16 +455,18 @@ const Chat = memo(function Chat({ state, onAsk }: { state: FitState; onAsk: (q: 
 
 /* ---------- the bar: one line of status for the whole page ---------- */
 
-function Bar({ state }: { state: FitState }) {
+function Bar({ state, onReset }: { state: FitState; onReset: () => void }) {
   const running = state.phase === "running";
+  const now = running ? "agents working" : state.asking ? "answering" : "report done";
   return (
     <div className="fit-barline" role="status">
-      <span className={"fit-state " + (running ? "live" : "ok")}>{running ? <><i className="fit-spin" aria-hidden="true" />agents working</> : state.asking ? <><i className="fit-spin" aria-hidden="true" />answering</> : "✓ report done"}</span>
+      <span key={now} className={"fit-state " + (running || state.asking ? "live" : "ok")}>{running || state.asking ? <i className="fit-spin" aria-hidden="true" /> : "✓ "}{now}</span>
       <span><Elapsed running={running} ms={state.elapsedMs} /> elapsed</span>
       <span><b>{count(state.totals.input + state.totals.output)}</b> tokens</span>
       <span><b>{cost(state.totals.costMicro)}</b> est.</span>
       <span><b>{state.totals.calls} of {MAX_CALLS}</b> calls</span>
       <div className="fit-bar" role="img" aria-label={`${state.totals.calls} of ${MAX_CALLS} model calls used`}><i style={{ width: `${Math.min(100, (state.totals.calls / MAX_CALLS) * 100)}%` }} /></div>
+      {state.phase === "done" && !state.asking && <button type="button" className="btn fit-again" onClick={onReset}>New run</button>}
     </div>
   );
 }
@@ -457,8 +489,7 @@ const REFUSALS: Record<Refusal, [string, string]> = {
 
 const PREVIEW = ["gate", "orchestrator", "retriever", "verifier", "writer"];
 
-function Start({ state, live, replays, onRun, onReplay }: { state: FitState; live: boolean; replays: Replay[]; onRun: (jd: string) => void; onReplay: (r: Replay) => void }) {
-  const [jd, setJd] = useState("");
+function Start({ state, live, replays, jd, setJd, onRun, onReplay }: { state: FitState; live: boolean; replays: Replay[]; jd: string; setJd: (jd: string) => void; onRun: (jd: string) => void; onReplay: (r: Replay) => void }) {
   const [wait, setWait] = useState(0);
   useEffect(() => setWait(state.retryAfterSec > 60 ? 0 : state.retryAfterSec), [state.retryAfterSec, state.refusal]);
   useEffect(() => {
@@ -484,7 +515,7 @@ function Start({ state, live, replays, onRun, onReplay }: { state: FitState; liv
         )}
         <form className="fit-form" onSubmit={(e) => { e.preventDefault(); if (ready) onRun(jd.trim()); }}>
           <label htmlFor="fit-jd">Job description</label>
-          <textarea id="fit-jd" rows={9} maxLength={MAX_JD} value={jd} onChange={(e) => setJd(e.target.value)} placeholder="Paste the full advert here: responsibilities and requirements work best." />
+          <textarea id="fit-jd" rows={9} maxLength={MAX_JD} value={jd} onChange={(e) => setJd(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && ready) onRun(jd.trim()); }} placeholder="Paste the full advert here: responsibilities and requirements work best." />
           <div className="fit-row">
             <span className="mono">{count(length)} of {count(MAX_JD)} characters · minimum {MIN_JD}{state.runsLeft !== null ? ` · ${state.runsLeft} of ${RUNS_PER_DAY} runs left today` : ""}</span>
             <button className="btn primary" type="submit" disabled={!ready}>{wait > 0 ? `Retry in ${wait}s` : live ? "Check the fit" : "Live runs are off"}</button>
@@ -495,8 +526,8 @@ function Start({ state, live, replays, onRun, onReplay }: { state: FitState; liv
           <div className="fit-replays">
             <span className="eyebrow">Or replay a recorded run · uses none of your runs</span>
             <div>
-              {replays.map((r) => (
-                <button key={r.id} type="button" onClick={() => onReplay(r)}><b>{r.title}</b><span>{r.result}</span></button>
+              {replays.map((r, i) => (
+                <button key={r.id} type="button" style={{ animationDelay: `${i * 30}ms` }} onClick={() => onReplay(r)}><b>{r.title}</b><span>{r.result}</span></button>
               ))}
             </div>
           </div>
@@ -510,6 +541,7 @@ function Start({ state, live, replays, onRun, onReplay }: { state: FitState; liv
           ))}
           <li className="loop"><b>↺ Loop</b><span className="fit-muted">weak evidence goes back for one more search, once</span></li>
         </ol>
+        <p className="fit-muted">Tool use: the orchestrator starts and redirects the retrievers with function calls, and in chat the model decides for itself when to call the search tool.{API && <> The same search is open to any MCP client at <code>{API}/mcp</code>.</>}</p>
         <p className="fit-muted">At most {MAX_CALLS} model calls per run, {RUNS_PER_DAY} runs and {QUESTIONS_PER_DAY} questions a day per visitor, and a fixed monthly budget.</p>
       </aside>
     </div>
@@ -525,6 +557,8 @@ export default function FitPage() {
   const [live, setLive] = useState(false);
   const [replays, setReplays] = useState<Replay[]>([]);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Graph");
+  // The pasted text outlives a run, so a refused or finished run hands it back for editing.
+  const [jd, setJd] = useState("");
   // The graph opens by itself for a run and folds when it ends. A visitor's own
   // choice wins from the moment they make one, until the next run.
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -552,18 +586,13 @@ export default function FitPage() {
         <div className="wrap fit-wrap">
           {working ? (
             <>
-              <Bar state={state} />
-              <div className="fit-tabs" role="tablist" aria-label="Views">
-                {TABS.map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}
-              </div>
+              <Bar state={state} onReset={reset} />
+              <Seg className="fit-tabs" options={TABS} value={tab} label="Views" onChange={setTab} />
               <div className={`fit-stage ${open ? "open" : "folded"} ${done ? "done" : "running"} side-${side}`} data-tab={tab}>
                 <GraphPane state={state} open={open} onToggle={() => setChoice(!open)} />
                 <div className="fit-main">
                   {open && done && (
-                    <div className="fit-seg wide" role="tablist" aria-label="Beside the graph">
-                      <button type="button" role="tab" aria-selected={side === "report"} onClick={() => setSide("report")}>Report</button>
-                      <button type="button" role="tab" aria-selected={side === "chat"} onClick={() => setSide("chat")}>Chat</button>
-                    </div>
+                    <Seg className="wide" options={["Report", "Chat"] as const} value={side === "chat" ? "Chat" : "Report"} label="Beside the graph" onChange={(v) => setSide(v === "Chat" ? "chat" : "report")} />
                   )}
                   <Report state={state} onReset={reset} />
                   <Chat state={state} onAsk={ask} />
@@ -571,7 +600,7 @@ export default function FitPage() {
               </div>
             </>
           ) : (
-            <Start state={state} live={live} replays={replays} onRun={start} onReplay={replay} />
+            <Start state={state} live={live} replays={replays} jd={jd} setJd={setJd} onRun={start} onReplay={replay} />
           )}
           <div ref={widget} className="fit-turnstile" />
         </div>

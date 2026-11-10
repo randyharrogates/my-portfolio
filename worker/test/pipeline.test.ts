@@ -221,3 +221,17 @@ test("one failing retriever is a gap for that requirement, not a failed run", as
   assert.ok(outcome.status === "done");
   assert.equal(outcome.report.results.filter((r) => r.verdict === "strong").length, 1);
 });
+
+test("tool use: the orchestrator's two moves are required function calls; no other step of a run has a tool", async () => {
+  const { model, events } = await run({ ...honest, verifier: () => ({ items: [{ id: "r1", supported: "no", reason: "The quote is about something else." }] }) });
+  const tools = Object.fromEntries(model.calls.map((c) => [c.step, c.tool ? `${c.tool.name}:${c.toolChoice}` : "none"]));
+  assert.deepEqual(tools, { gate: "none", orchestrator: "dispatch_retrievers:required", retriever: "none", verifier: "none", replan: "redirect_retrievers:required", writer: "none" });
+  const called = events.filter((e) => e.type === "step" && e.state === "done" && e.tool).map((e) => (e.type === "step" ? e.tool : ""));
+  assert.deepEqual(called, ["dispatch_retrievers", "redirect_retrievers"]);
+});
+
+test("a tool definition is counted in the worst-case reservation", () => {
+  const base: ModelRequest = { step: "answer", system: SYSTEM, user: "u", schemaName: "answer", schema: {}, maxOutputTokens: 100 };
+  const withTool = { ...base, tool: { name: "t", description: "d".repeat(300), parameters: {} } };
+  assert.ok(worstCase(withTool, price) > worstCase(base, price));
+});

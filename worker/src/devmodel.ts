@@ -30,8 +30,8 @@ export function devModel(): ScriptedModel {
       const m = /<excerpt id="([^"]+)"[^>]*>\n([^\n]+)/.exec(r.user);
       if (/weather|joke|ignore (all|previous)/i.test(q)) return { in_scope: false, evidence: [], answer: "" };
       return m
-        ? { in_scope: true, evidence: [{ excerpt_id: m[1], quote: m[2].slice(0, 120) }], search_again: "", answer: "Development stand-in answer: the quote below is the first search hit, not a model's judgement." }
-        : { in_scope: true, evidence: [], search_again: "", answer: "" };
+        ? { in_scope: true, evidence: [{ excerpt_id: m[1], quote: m[2].slice(0, 120) }], answer: "Development stand-in answer: the quote below is the first search hit, not a model's judgement." }
+        : { in_scope: true, evidence: [], answer: "" };
     },
     writer: () => ({ summary: "Development stand-in summary: verdicts below come from keyword search only, not from a model." }),
   });

@@ -98,7 +98,7 @@ not an estimate.
   static on GitHub Pages, so it stays up; `/fit` falls back to replay mode.
 - **The key never reaches the browser.** It is a Worker secret. CORS allows only the portfolio origin.
   CORS does not stop scripts, which is why Turnstile and the quotas exist.
-- **Prompt injection.** The JD is untrusted input. Agents have no tools except retrieval over the public
+- **Prompt injection.** The JD is untrusted input. The only tools are read-only retrieval over the public
   corpus, so the worst outcome is a silly report. Structured outputs, the quote check in code, and the
   gate step limit that. The report is rendered as text, never as HTML.
 - **Free-chatbot abuse.** The gate step stops anything that is not a job description, at about 300 tokens.
@@ -220,11 +220,32 @@ official `openai` SDK's model types), and that quality is good enough once the e
     sent back, 15 calls (`MAX_CALLS`). New evidence replaces old only if it is stronger after the same checks.
   - *Questions:* memory, search, answer, verify, with one more search when nothing was grounded. Memory keeps
     the last 2 turns word for word and folds older ones into a summary (one small call when it compacts).
-    10 questions a day. Prompt caching: the stable part of the answer prompt comes first, but it is under the
-    provider's 1,024-token minimum, so the cached share reads 0% for now.
+    10 questions a day. Prompt caching read 0% here; step 6 found why and fixed it.
   - *Page:* layout A. The agent graph is the stage during a run and folds to a live rail when it ends; clicking
     the rail opens it at any time, for the report's loop or the last question's. Two panes at 1.618 : 1, one
     status bar for time, tokens, cost and calls.
   - *Real model:* 8 of 8 jobs and 12 of 12 questions pass; a run is about 19 s and $0.0017, up from 17 s and
     $0.0015 before the loop.
+- **Step 6, tool calling, MCP, cache and a second UAT (done, 2026-11-10):**
+  - *Tool use:* real function calling on the Responses API. The orchestrator's two moves are required calls
+    (`dispatch_retrievers`, `redirect_retrievers`); the answer step has one optional tool, `search_portfolio`,
+    and decides itself whether to call it. The search runs in code, its result goes back once, and no tool is
+    offered the second time, so the loop cannot run again. Arguments are validated, never trusted.
+  - *MCP:* `POST /mcp` is a stateless, read-only MCP server (`search_portfolio`, `get_excerpt`) over the same
+    corpus. It makes no model call, so it is open to clients with no Origin and to the site's own origin, under
+    the burst limit; a browser on another site is refused. Live runs still need Turnstile.
+  - *Agent to agent:* the retrievers are sub-agents the orchestrator starts by tool call and that report typed
+    results. There is no open agent endpoint (A2A): anyone could then spend the budget.
+  - *Prompt cache:* measured on the live model, it reuses a repeated `instructions` block of 1,024 tokens or
+    more and nothing in `input`. The answer step's rules and the CV profile excerpts moved there
+    (`answerRules`); about half of each question's input is now cached and a question costs about 40% less.
+  - *Memory:* compaction waits for 4 turns (one call every other question); a failed or unsafe summary keeps
+    the turns for the next attempt, bounded at 6; refused questions are not remembered; the summary is cut at
+    a sentence end. Questions are flattened to one plain line before they reach a prompt.
+  - *Planner:* told to cover every requirement up to 6, one skill each, required ones first, search never empty.
+  - *Page:* tool calls shown in the graph and node detail; cards say "with the verifier" while it checks; the
+    pasted text survives a refusal; a New run button in the bar; a sliding switch; detail panel grows from its
+    node and shrinks back; no flat surfaces (page grid, pane dot grid, card grain).
+  - *Real model:* 11 of 11 jobs and 24 of 24 questions pass, including markup, fenced-excerpt, encoded,
+    false-authority and non-English cases. A run is about 15 to 25 s and $0.002; a question about $0.0003.
 

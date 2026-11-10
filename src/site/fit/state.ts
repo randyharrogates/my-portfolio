@@ -27,6 +27,7 @@ export interface GraphNode {
   ms: number;
   tokens: number;
   costMicro: number;
+  tools: string[]; // the functions this node's model calls invoked
 }
 
 export interface Graph {
@@ -35,6 +36,7 @@ export interface Graph {
   round: number;
   looping: boolean; // the loop back is in progress
   looped: boolean; // the loop back was taken at least once
+  search?: string; // a question's loop: the keywords the model passed to the search tool
 }
 
 export type ChatItem =
@@ -79,20 +81,20 @@ export interface FitState {
   askNote: string; // time, tokens and cost of the answer being written
 }
 
-const node = (key: string, state: GraphNode["state"] = "waiting"): GraphNode => ({ key, state, calls: 0, ms: 0, tokens: 0, costMicro: 0 });
+const node = (key: string, state: GraphNode["state"] = "waiting"): GraphNode => ({ key, state, calls: 0, ms: 0, tokens: 0, costMicro: 0, tools: [] });
 const runGraph = (): Graph => ({ kind: "run", nodes: ["gate", "orchestrator", "verifier", "writer"].map((k) => node(k)), round: 1, looping: false, looped: false });
 const chatGraph = (): Graph => ({ kind: "chat", nodes: [node("question", "done"), node("memory", "running"), node("search"), node("answer"), node("verify")], round: 1, looping: false, looped: false });
 
 export const NODE_NAMES: Record<string, { name: string; does: string }> = {
   gate: { name: "Gate", does: "is this a job description?" },
-  orchestrator: { name: "Orchestrator", does: "plans the work and decides what to retry" },
+  orchestrator: { name: "Orchestrator", does: "plans the work and directs the retrievers by function call" },
   retriever: { name: "Retrievers", does: "search my pages and quote the evidence exactly" },
   verifier: { name: "Verifier", does: "checks every citation, can send one back" },
   writer: { name: "Writer", does: "streams the summary" },
   question: { name: "Question", does: "what you asked" },
   memory: { name: "Memory", does: "keeps the conversation small" },
   search: { name: "Search", does: "finds excerpts in my pages" },
-  answer: { name: "Answer", does: "writes from the quotes only" },
+  answer: { name: "Answer", does: "writes from the quotes only, or calls the search tool first" },
   verify: { name: "Verify", does: "checks each quote against its page" },
 };
 
@@ -161,7 +163,7 @@ function applyStep(s: FitState, f: StepFrame): FitState {
     setNode({ ...g, round: Math.max(g.round, f.round ?? 1) }, key, (n) =>
       f.state === "start"
         ? { ...n, state: "running" }
-        : { ...n, state: f.state, calls: n.calls + 1, ms: n.ms + (f.ms ?? 0), tokens: n.tokens + (f.usage ? f.usage.input + f.usage.output : 0), costMicro: n.costMicro + (f.costMicro ?? 0) },
+        : { ...n, state: f.state, calls: n.calls + 1, ms: n.ms + (f.ms ?? 0), tokens: n.tokens + (f.usage ? f.usage.input + f.usage.output : 0), costMicro: n.costMicro + (f.costMicro ?? 0), tools: f.tool ? [...n.tools, f.tool] : n.tools },
     );
   if (!s.asking) {
     let run = update(s.run);
@@ -171,7 +173,8 @@ function applyStep(s: FitState, f: StepFrame): FitState {
   }
   if (!s.question) return s;
   let question = update(s.question);
-  if (f.step === "answer" && f.state === "done") question = mark(question, "verify", "running");
+  // An answer step that ended in a tool call has written nothing to verify yet.
+  if (f.step === "answer" && f.state === "done" && !f.tool) question = mark(question, "verify", "running");
   const ctx = s.context;
   const context = f.step === "answer" && f.state === "done" && f.usage && ctx ? { ...ctx, input: ctx.input + f.usage.input, cached: ctx.cached + f.usage.cached } : ctx;
   const asked = question.nodes.reduce((sum, n) => ({ calls: sum.calls + n.calls, ms: sum.ms + n.ms, tokens: sum.tokens + n.tokens, costMicro: sum.costMicro + n.costMicro }), { calls: 0, ms: 0, tokens: 0, costMicro: 0 });
@@ -223,8 +226,8 @@ function applyFrame(prev: FitState, f: Frame): FitState {
     case "retry": {
       const id = f.id;
       if (id === undefined) {
-        // a question: the answer step asked for one more search
-        return s.question ? { ...s, question: mark(mark({ ...s.question, looping: true, looped: true, round: 2 }, "search", "running"), "verify", "done") } : s;
+        // a question: the answer step called the search tool
+        return s.question ? { ...s, question: mark({ ...s.question, looping: true, looped: true, round: 2, search: f.search }, "search", "running") } : s;
       }
       return { ...s, run: { ...s.run, looping: true, looped: true, round: 2 }, cards: patch(s.cards, id, (c) => ({ ...c, retry: { search: f.search, reason: f.reason ?? "" } })) };
     }
