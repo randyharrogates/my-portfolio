@@ -126,3 +126,15 @@ test("chips come from the verdicts: partial first, gaps left out, asked ones rem
   assert.deepEqual(suggestions(report, ["tell me more about: fine-tuning large language models"]), ["Tell me more about: Building MCP servers"]);
   assert.equal(reportActions(report)[0], "email");
 });
+
+test("burst: 20 requests per 10 seconds per key, refused ones do not extend the wait, memory stays bounded", async () => {
+  const { Burst } = await import("../src/burst.ts");
+  const b = new Burst(20, 10_000);
+  const results = Array.from({ length: 30 }, (_, i) => b.allow("ip", i * 10));
+  assert.equal(results.filter(Boolean).length, 20);
+  assert.equal(b.allow("other", 300), true);
+  assert.equal(b.allow("ip", 9_999), false);
+  assert.equal(b.allow("ip", 10_001), true);
+  for (let i = 0; i < 6000; i++) b.allow(`k${i}`, 20_000);
+  assert.ok((b as unknown as { hits: Map<string, number[]> }).hits.size <= 5000);
+});

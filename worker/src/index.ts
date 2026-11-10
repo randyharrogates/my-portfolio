@@ -8,6 +8,7 @@ import { MAX_QUESTION_CHARS, MIN_QUESTION_CHARS, emptyMemory, runAsk } from "./a
 import type { AskEvent, AskOutcome, Memory } from "./ask.ts";
 import { Bm25 } from "./bm25.ts";
 import { dayOf } from "./budget.ts";
+import { Burst } from "./burst.ts";
 import { devModel } from "./devmodel.ts";
 import { Ledger } from "./ledger.ts";
 import { handleMcp } from "./mcp.ts";
@@ -51,6 +52,7 @@ const byId = new Map<string, Chunk>(corpus.chunks.map((c) => [c.id, c]));
 const CORPUS_ID = corpus.hash.slice(0, 12);
 
 const MAX_BODY_BYTES = 16_384;
+const burst = new Burst(20, 10_000); // the same 20 per 10 seconds as the BURST binding
 // Below these there is no point starting: roughly the gate plus orchestrator calls, and one answer call.
 const MIN_MICRO: Record<Kind, number> = { run: 1_500, question: 400 };
 const DAY_SEC = 24 * 3600;
@@ -274,7 +276,7 @@ export default {
 
     // 2. Burst limit per IP, before any other work.
     const ip = request.headers.get("CF-Connecting-IP") ?? "0.0.0.0";
-    if (!(await env.BURST.limit({ key: ip })).success) return json(429, { error: "slow_down" }, { ...corsHeaders, "Retry-After": "10" });
+    if (!burst.allow(ip, Date.now()) || !(await env.BURST.limit({ key: ip })).success) return json(429, { error: "slow_down" }, { ...corsHeaders, "Retry-After": "10" });
 
     // 3. The kill switch, and whether a model is configured at all.
     const hasModel = Boolean(env.OPENAI_API_KEY) || env.ENVIRONMENT === "dev";
