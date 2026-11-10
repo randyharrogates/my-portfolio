@@ -1,0 +1,126 @@
+/* Role fit. Spacing uses the site's φ scale (--s1..--s8); panes split 1 : 1.618 : 1. */
+.rc-site .fit{--ok:#17703F; --ok-bg:rgba(30,138,85,.12); --amber:#8A5A12; --amber-bg:rgba(183,121,31,.14); --live-bg:rgba(51,70,211,.1)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A}}
+:root[data-theme="dark"] .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A}
+.rc-site .fit-wrap{max-width:1376px}
+.rc-site .fit-muted{font-size:13px; color:var(--muted)}
+.rc-site .fit-row{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap}
+.rc-site .fit-chips{display:flex; flex-wrap:wrap; gap:var(--s2)}
+.rc-site .fit .chip{min-height:44px; text-decoration:none; display:inline-flex; align-items:center; text-align:left; color:var(--ink)}
+.rc-site .fit .btn:disabled{opacity:.5; cursor:not-allowed}
+
+/* start */
+.rc-site .fit-start{display:flex; flex-wrap:wrap; gap:var(--s5); align-items:flex-start}
+.rc-site .fit-start > section{flex:1.618 1 520px; min-width:0; display:flex; flex-direction:column; gap:var(--s4)}
+.rc-site .fit-start > aside{flex:1 1 320px}
+.rc-site .fit-start h1{font-size:clamp(34px,5vw,55px); line-height:1.05; font-weight:800}
+.rc-site .fit-form{background:var(--surface); border:1px solid var(--line); border-radius:21px; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); box-shadow:0 21px 55px rgba(15,21,34,.12), 0 2px 8px rgba(15,21,34,.06)}
+.rc-site .fit-form label{font-weight:600}
+.rc-site .fit-form textarea{font:15px/1.55 var(--f-body); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:13px; padding:var(--s3); resize:vertical; min-height:210px; width:100%}
+.rc-site .fit-form .mono{font-size:12px; color:var(--muted)}
+.rc-site .fit-refusal{background:var(--surface); border:1px solid var(--warn); border-radius:13px; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s2); animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-refusal h2{font-size:20px}
+.rc-site .fit-replays{display:flex; flex-direction:column; gap:var(--s3)}
+.rc-site .fit-replays > div{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--s3)}
+.rc-site .fit-replays button{text-align:left; font:inherit; color:inherit; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); cursor:pointer; display:flex; flex-direction:column; gap:var(--s1); transition:transform .12s var(--ease-out), border-color .2s}
+.rc-site .fit-replays button:hover{border-color:var(--accent)} .rc-site .fit-replays button:active{transform:scale(.97)}
+.rc-site .fit-replays button span{font-size:13px; color:var(--muted)}
+
+/* panes */
+.rc-site .fit-panes{display:flex; flex-wrap:wrap; gap:var(--s4); align-items:flex-start}
+.rc-site .fit-pane{flex:1 1 300px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:21px; overflow:hidden}
+.rc-site .fit-pane > header{padding:var(--s4); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:var(--s3)}
+.rc-site .fit-pane > header > div, .rc-site .fit-chat > header{display:flex; flex-direction:column; gap:2px; align-items:flex-start}
+.rc-site .fit-report{flex:1.618 1 440px; min-width:0; display:flex; flex-direction:column; gap:var(--s4)}
+.rc-site .fit-trace{box-shadow:0 21px 55px rgba(15,21,34,.12), 0 2px 8px rgba(15,21,34,.06); position:sticky; top:var(--s7)}
+.rc-site .fit-tabs{display:none}
+
+/* conversation */
+.rc-site .fit-chat{display:flex; flex-direction:column; position:sticky; top:var(--s7); max-height:calc(100vh - var(--s8))}
+.rc-site .fit-log{padding:var(--s4); display:flex; flex-direction:column; gap:var(--s4); overflow-y:auto; overscroll-behavior:contain}
+.rc-site .fit-bubble{display:flex; flex-direction:column; gap:var(--s2); font-size:14px; line-height:1.5; animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-bubble small{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+.rc-site .fit-bubble.visitor{align-self:flex-end; max-width:88%; background:var(--ink); color:var(--bg); border-radius:13px 13px 5px 13px; padding:var(--s3); overflow-wrap:anywhere}
+.rc-site .fit-bubble.visitor small{color:inherit; opacity:.7}
+.rc-site .fit-bubble.plain > span{color:var(--muted)}
+.rc-site .fit-caret{display:inline-block; width:2px; height:1em; background:var(--accent); vertical-align:-2px; margin-left:2px; animation:fitBlink 1s steps(1) infinite}
+.rc-site .fit-ask{margin-top:auto; padding:var(--s3) var(--s4) var(--s4); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s2)}
+.rc-site .fit-ask label{font-family:var(--f-mono); font-size:12px; color:var(--muted)}
+.rc-site .fit-ask > div{display:flex; gap:var(--s2)}
+.rc-site .fit-ask input{flex:1; min-width:0; font:15px var(--f-body); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:0 var(--s3); min-height:44px}
+.rc-site .fit-ask .btn{min-height:44px; min-width:44px; justify-content:center}
+
+/* report */
+.rc-site .fit-title{display:flex; flex-direction:column; gap:var(--s2)}
+.rc-site .fit-title h1{font-size:34px; line-height:1.1; font-weight:800}
+.rc-site .fit-summary{font-size:17px; color:var(--muted); max-width:60ch}
+.rc-site .fit-tally{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s3)}
+.rc-site .fit-tally > div{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s3) var(--s4); display:flex; align-items:baseline; gap:var(--s2); font-size:14px; color:var(--muted)}
+.rc-site .fit-tally > div.gap{border-style:dashed}
+.rc-site .fit-tally b{font:700 34px/1 var(--f-display, inherit); color:var(--ink)}
+.rc-site .fit-tally b.strong{color:var(--ok)} .rc-site .fit-tally b.partial{color:var(--amber)}
+.rc-site .fit-card{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); box-shadow:0 2px 8px rgba(15,21,34,.06); animation:fitIn .35s var(--ease-out) backwards; transition:border-color .3s var(--ease-io)}
+.rc-site .fit-card.pending{border-color:var(--accent)} .rc-site .fit-card.gap{border-style:dashed; box-shadow:none}
+.rc-site .fit-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:var(--s3); flex-wrap:wrap}
+.rc-site .fit-card h3{font-size:19px; line-height:1.25; flex:1 1 260px}
+.rc-site .fit-badge{font-family:var(--f-mono); font-size:12px; border:1px solid var(--line); border-radius:21px; padding:3px 10px; white-space:nowrap; color:var(--muted)}
+.rc-site .fit-badge.strong{color:var(--ok); background:var(--ok-bg); border-color:transparent}
+.rc-site .fit-badge.partial{color:var(--amber); background:var(--amber-bg); border-color:transparent}
+.rc-site .fit-badge.gap{color:var(--ink)}
+.rc-site .fit-badge.live{color:var(--accent); background:var(--live-bg); border-color:transparent}
+.rc-site .fit-badge.pulse{animation:fitPulse .6s var(--ease-out)}
+.rc-site .fit-quote{margin:0; display:flex; flex-direction:column; gap:var(--s2); animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-quote blockquote{margin:0; padding:var(--s3) var(--s4); background:var(--bg); border-radius:8px; font-size:15px; line-height:1.55}
+.rc-site .fit-quote.small blockquote{padding:var(--s2) var(--s3); font-size:13px}
+.rc-site .fit-quote figcaption{display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center; font-family:var(--f-mono); font-size:12px; color:var(--muted)}
+.rc-site .fit-quote .ok{color:var(--ok)}
+.rc-site .fit-src{border:1px solid var(--line); border-radius:5px; padding:3px 8px; text-decoration:none; min-height:24px}
+.rc-site .fit-reading{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:12px; color:var(--muted)}
+.rc-site .fit-skel{height:13px; width:92%; border-radius:5px; background:linear-gradient(90deg,var(--line) 25%,var(--bg) 50%,var(--line) 75%); background-size:200% 100%; animation:fitSweep 1.6s var(--ease-io) infinite}
+.rc-site .fit-skel.short{width:64%}
+.rc-site .fit-flags{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); font-family:var(--f-mono); font-size:12px; color:var(--amber)}
+.rc-site .fit-foot{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap}
+
+/* trace */
+.rc-site .fit-meter{padding:var(--s4); border-bottom:1px solid var(--line); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2); background-image:radial-gradient(var(--line) 1px, transparent 1px); background-size:13px 13px}
+.rc-site .fit-meter > div{display:flex; flex-direction:column; font-size:12px; color:var(--muted)}
+.rc-site .fit-meter b{font:500 18px var(--f-mono); color:var(--ink); font-variant-numeric:tabular-nums}
+.rc-site .fit-meter b.ticking{color:var(--accent)}
+.rc-site .fit-steps{list-style:none; margin:0; padding:var(--s2) var(--s4) var(--s3); display:flex; flex-direction:column}
+.rc-site .fit-steps > li{display:flex; gap:var(--s3); padding:var(--s3) 0; border-bottom:1px solid var(--line); transition:opacity .3s var(--ease-io)}
+.rc-site .fit-steps > li:last-child{border-bottom:0}
+.rc-site .fit-steps > li.waiting{opacity:.6}
+.rc-site .fit-steps > li > div{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
+.rc-site .fit-steps b{font-size:15px}
+.rc-site .fit-steps .fit-row span, .rc-site .fit-usage{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+.rc-site .fit-mark{width:21px; height:21px; border-radius:50%; border:1px solid var(--line); font-family:var(--f-mono); font-size:11px; color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none}
+.rc-site .fit-steps li.done > .fit-mark{background:var(--ok-bg); color:var(--ok); border-color:transparent}
+.rc-site .fit-steps li.failed > .fit-mark{background:var(--amber-bg); color:var(--amber); border-color:transparent}
+.rc-site .fit-steps li.running > .fit-mark{border:2px solid var(--live-bg); border-top-color:var(--accent); animation:fitSpin .9s linear infinite}
+.rc-site .fit-subs{list-style:none; margin:var(--s2) 0; padding:0; display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+.rc-site .fit-subs li{display:flex; justify-content:space-between; gap:var(--s2); animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-subs li.running span:first-child{color:var(--accent)} .rc-site .fit-subs li.done span:first-child{color:var(--ok)}
+.rc-site .fit-guard{padding:var(--s4); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s2); font-size:14px}
+.rc-site .fit-cap{padding:var(--s4); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s1); font-size:12px; color:var(--muted)}
+.rc-site .fit-bar{height:8px; border-radius:5px; background:var(--line); overflow:hidden}
+.rc-site .fit-bar i{display:block; height:100%; background:var(--accent); border-radius:5px; transition:width .4s var(--ease-io)}
+.rc-site .fit-turnstile:empty{display:none}
+
+@keyframes fitIn{from{opacity:0; transform:translateY(8px)}}
+@keyframes fitBlink{50%,100%{opacity:0}}
+@keyframes fitSweep{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes fitSpin{to{transform:rotate(360deg)}}
+@keyframes fitPulse{50%{transform:scale(1.08)}}
+
+/* one pane at a time on a phone */
+@media (max-width: 959px){
+  .rc-site .fit-tabs{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s1); background:var(--line); border-radius:13px; padding:var(--s1); margin-bottom:var(--s3); position:sticky; top:var(--s6); z-index:2}
+  .rc-site .fit-tabs button{font:500 14px var(--f-body); color:var(--muted); background:transparent; border:0; border-radius:8px; min-height:44px; cursor:pointer}
+  .rc-site .fit-tabs button[aria-selected="true"]{font-weight:600; color:var(--ink); background:var(--surface)}
+  .rc-site .fit-panes > *{display:none; flex-basis:100%}
+  .rc-site .fit-panes[data-tab="Chat"] > .fit-chat, .rc-site .fit-panes[data-tab="Trace"] > .fit-trace{display:flex; flex-direction:column; position:static; max-height:none}
+  .rc-site .fit-panes[data-tab="Report"] > .fit-report{display:flex}
+}
+@media (prefers-reduced-motion: reduce){
+  .rc-site .fit *{animation:none !important; transition:none !important}
+}

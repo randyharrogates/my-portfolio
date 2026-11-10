@@ -140,6 +140,7 @@ export default function SiteLayout() {
           <nav className="links" aria-label="Pages">
             {[
               ["/work", "Work"],
+              ["/fit", "Role fit"],
               ["/about", "About"],
               ["/resume", "Résumé"],
             ].map(([path, label]) => (

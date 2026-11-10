@@ -18,6 +18,7 @@ import WorkPage from "./site/WorkPage.tsx";
 import CasePage from "./site/CasePage.tsx";
 import AboutPage from "./site/AboutPage.tsx";
 import ResumePage from "./site/ResumePage.tsx";
+import FitPage from "./site/fit/FitPage.tsx";
 import { SOFTWARE_YEARS } from "./site/years.ts";
 
 import Blog from "./pages/Blog.tsx";
@@ -224,6 +225,7 @@ const App: React.FC = () => (
         <Route path="/work" element={<WorkPage />} />
         <Route path="/work/:id" element={<CasePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/fit" element={<FitPage />} />
         <Route path="/resume" element={<ResumePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

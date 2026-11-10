@@ -44,7 +44,7 @@
 .rc-site .brand{display:flex; align-items:center; gap:var(--s2); text-decoration:none; font-weight:600; white-space:nowrap}
 .rc-site .brand img{width:28px; height:28px; border-radius:50%; object-fit:cover}
 .rc-site .links{display:flex; gap:var(--s5); margin-left:auto; font-size:15px}
-.rc-site .links a{text-decoration:none; color:var(--muted); padding-block:var(--s1); border-bottom:2px solid transparent; transition:color .2s, border-color .2s}
+.rc-site .links a{white-space:nowrap; text-decoration:none; color:var(--muted); padding-block:var(--s1); border-bottom:2px solid transparent; transition:color .2s, border-color .2s}
 .rc-site .links a:hover{color:var(--ink)} .rc-site .links a[aria-current="page"]{color:var(--ink); border-color:var(--accent)}
 .rc-site .btn{display:inline-flex; align-items:center; gap:var(--s2); min-height:40px; padding:0 var(--s4); border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 14px var(--f-body); text-decoration:none; cursor:pointer; transition:transform .12s var(--ease-out)}
 .rc-site .btn:active{transform:scale(.97)}
@@ -323,7 +323,9 @@
 }
 @media (max-width: 600px){
   .rc-site .brand span{display:none}
-  .rc-site .links{gap:var(--s3)}
+  .rc-site .links{gap:var(--s2); font-size:13px}
+  .rc-site .nav .wrap{gap:var(--s2)}
+  .rc-site .nav .btn{padding:0 var(--s3)}
   .rc-site .ask-label,.rc-site #askBtn .kbd{display:none}
   .rc-site .ask-short{display:inline !important}
   .rc-site .loop{grid-template-columns:minmax(0,1fr)}
