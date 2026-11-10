@@ -1,0 +1,1125 @@
+{
+ "hash": "5f5f653142ef8c18f4b0bd1b737047eb80f8bd5312ef2d8726df6c3b28500fc6",
+ "chunks": [
+  {
+   "id": "project:credit-memo:overview",
+   "source": "project",
+   "title": "Credit memos in minutes · Overview",
+   "url": "#/work/credit-memo",
+   "text": "Credit memos in minutes, every figure cited. A multi-agent credit-risk and KYB product for financial institutions. Specialist agents research a company and write a cited credit memo; a second model checks every section, and high-risk calls wait for an analyst. Eight specialist agents read statements, filings and the web, then write a credit memo that a judge model checks. Organisation: TrustPlus AI. Year: 2025–26. Status: Employer. Theme: Multi-agent systems. Stack: LangGraph, LangChain, FastAPI, React, FAISS, Azure Service Bus, LangFuse."
+  },
+  {
+   "id": "project:credit-memo:role",
+   "source": "project",
+   "title": "Credit memos in minutes · My role",
+   "url": "#/work/credit-memo",
+   "text": "Designed and built most of the product across the stack, from requirements and customer proofs of concept to production, and was on call for it. The problem: Analysts spent most of a day assembling a credit memo from financial statements, filings and web research, then checking it by hand. The answer had to be faster without becoming less trustworthy."
+  },
+  {
+   "id": "project:credit-memo:how",
+   "source": "project",
+   "title": "Credit memos in minutes · How it works",
+   "url": "#/work/credit-memo",
+   "text": "Ingest: Statements, filings and web results enter an event-driven pipeline. Research: 8 specialist agents in LangGraph, each owning part of the memo. Retrieve: Hybrid search with rank fusion and reranking over FAISS. Check: A judge model checks each section against its sources. Approve: High-risk calls wait for an analyst; a chat edits the finished memo."
+  },
+  {
+   "id": "project:credit-memo:built",
+   "source": "project",
+   "title": "Credit memos in minutes · What I built",
+   "url": "#/work/credit-memo",
+   "text": "8 specialist research agents orchestrated in LangGraph, with tool calling. Hybrid retrieval with reciprocal rank fusion and reranking over FAISS. A judge model, different from the writer, checks each section against its sources. Evaluation before release: golden test sets re-run on prompt and model changes, RAGAS for retrieval, LangFuse evaluations. Event-driven backend on Azure Service Bus with a LangChain multi-provider LLM layer and an Amazon Bedrock fallback."
+  },
+  {
+   "id": "project:credit-memo:decisions",
+   "source": "project",
+   "title": "Credit memos in minutes · Key decisions",
+   "url": "#/work/credit-memo",
+   "text": "Moved vector search from MongoDB to in-memory FAISS when parallel load hit I/O limits and a bigger tier cost too much. Separate judge and writer models, so a model never grades its own work. Per-step timing and error fields in the run state, so failures are visible to users and to on-call. Human approval only where the risk is high, so analysts review decisions, not typing."
+  },
+  {
+   "id": "project:credit-memo:results",
+   "source": "project",
+   "title": "Credit memos in minutes · Results",
+   "url": "#/work/credit-memo",
+   "text": "5–60 min per memo, down from 6–24 hours. ~85% faster retrieval (700–1,400 ms to 100–250 ms). ~4 → ~20 releases a month after the move to Claude Code."
+  },
+  {
+   "id": "project:kestrel:overview",
+   "source": "project",
+   "title": "Kestrel · Overview",
+   "url": "#/work/kestrel",
+   "text": "Kestrel, policy review for financial advisers. A multi-agent system that reads old insurance policies for financial advisers. Every field comes with a confidence score and a citation, and nothing is saved until an adviser confirms it. Four agents read an insurance policy, with confidence and a citation on every field, and nothing saves until an adviser confirms. Organisation: Personal. Year: 2026. Status: Private. Theme: Multi-agent systems. Stack: Multi-agent, OCR, FastAPI, React, SSE, audit trail."
+  },
+  {
+   "id": "project:kestrel:role",
+   "source": "project",
+   "title": "Kestrel · My role",
+   "url": "#/work/kestrel",
+   "text": "Solo: product, design and build. The problem: Advisers re-key old policies by hand before they can review a client's cover, and every insurer formats documents differently. A wrong field is a compliance problem, not just a typo."
+  },
+  {
+   "id": "project:kestrel:how",
+   "source": "project",
+   "title": "Kestrel · How it works",
+   "url": "#/work/kestrel",
+   "text": "Read: OCR on the policy document. Extract: Four agents fill about 19 fields, each with confidence and a citation. Clarify: Batched questions instead of guesses. Gate: Deterministic compliance checks. Confirm: The adviser confirms; an audit trail is written."
+  },
+  {
+   "id": "project:kestrel:built",
+   "source": "project",
+   "title": "Kestrel · What I built",
+   "url": "#/work/kestrel",
+   "text": "OCR, then four field-group agents on the open-source claw-code agent runtime. Per-field confidence and citations back to the page. Batched clarification questions instead of guesses. Deterministic compliance gates, a required human confirmation and an immutable audit trail. Run progress streamed to a React front end over Server-Sent Events."
+  },
+  {
+   "id": "project:kestrel:decisions",
+   "source": "project",
+   "title": "Kestrel · Key decisions",
+   "url": "#/work/kestrel",
+   "text": "Known cases are handled by rules, so the LLM only handles the edge cases. Per-insurer memory playbooks grow through versioned updates with rollback. Descriptive only: it never gives advice."
+  },
+  {
+   "id": "project:kestrel:results",
+   "source": "project",
+   "title": "Kestrel · Results",
+   "url": "#/work/kestrel",
+   "text": "~19 fields extracted per policy. 4 specialist extraction agents. 3 swappable LLM providers."
+  },
+  {
+   "id": "project:leetee:overview",
+   "source": "project",
+   "title": "LeeTee · Overview",
+   "url": "#/work/leetee",
+   "text": "LeeTee, a cited stock-research agent. Research skills and multi-agent workflows that study a growth company against ten criteria and write a cited verdict, published to a private multi-tenant catalogue. Research only; it never trades. Claude skills and multi-agent workflows that research a growth stock and write a cited verdict. Organisation: Personal. Year: 2026. Status: Private. Theme: Multi-agent systems. Stack: Claude skills, Multi-agent, Python, Next.js, Supabase."
+  },
+  {
+   "id": "project:leetee:role",
+   "source": "project",
+   "title": "LeeTee · My role",
+   "url": "#/work/leetee",
+   "text": "Solo. The problem: Stock research is slow, and most summaries skip the hard history and the sources."
+  },
+  {
+   "id": "project:leetee:how",
+   "source": "project",
+   "title": "LeeTee · How it works",
+   "url": "#/work/leetee",
+   "text": "Scout: Finds the real story beats in the company's history. Research: One agent per beat. Judge: Ten criteria, seven of them gating. Publish: A cited verdict with a buy ladder, to a private catalogue."
+  },
+  {
+   "id": "project:leetee:built",
+   "source": "project",
+   "title": "LeeTee · What I built",
+   "url": "#/work/leetee",
+   "text": "A scout pass finds the story beats, then one research agent runs per beat. A ten-criteria pipeline with gating rules and a cited report. A private multi-tenant catalogue on Next.js and Supabase."
+  },
+  {
+   "id": "project:leetee:decisions",
+   "source": "project",
+   "title": "LeeTee · Key decisions",
+   "url": "#/work/leetee",
+   "text": "The company story is told but never scored, so narrative cannot sway the verdict. Valuation sets the buy ladder, not the verdict. Research only: no trading path exists."
+  },
+  {
+   "id": "project:leetee:results",
+   "source": "project",
+   "title": "LeeTee · Results",
+   "url": "#/work/leetee",
+   "text": "10 criteria, 7 of them gating. 2–24 story chapters, sized to the company. 0 trades: research only."
+  },
+  {
+   "id": "project:agent-pilot:overview",
+   "source": "project",
+   "title": "A multi-agent RAG planner · Overview",
+   "url": "#/work/agent-pilot",
+   "text": "A multi-agent RAG planner. A research pilot at AI Singapore: specialist LangGraph agents discover venues, recommend activities and optimise an itinerary over a retrieval layer. Three LangGraph agents plan an outing together. A research pilot, not a production system. Organisation: AI Singapore. Year: 2024. Status: Research pilot. Theme: Multi-agent systems. Stack: LangGraph, RAG, Pinecone, FastAPI, AWS."
+  },
+  {
+   "id": "project:agent-pilot:role",
+   "source": "project",
+   "title": "A multi-agent RAG planner · My role",
+   "url": "#/work/agent-pilot",
+   "text": "Part of the team on a research pilot. The problem: Testing how specialist agents coordinate on a planning task with real retrieval."
+  },
+  {
+   "id": "project:agent-pilot:how",
+   "source": "project",
+   "title": "A multi-agent RAG planner · How it works",
+   "url": "#/work/agent-pilot",
+   "text": "Discover: A venue agent searches the retrieval layer. Recommend: An activity agent proposes what to do. Optimise: An itinerary agent orders the plan. Return: LangGraph assembles the result."
+  },
+  {
+   "id": "project:agent-pilot:built",
+   "source": "project",
+   "title": "A multi-agent RAG planner · What I built",
+   "url": "#/work/agent-pilot",
+   "text": "LangGraph orchestration of three specialist agents. FastAPI and Pinecone for retrieval. A React chat front end, deployed on AWS ECS with ECR."
+  },
+  {
+   "id": "project:agent-pilot:decisions",
+   "source": "project",
+   "title": "A multi-agent RAG planner · Key decisions",
+   "url": "#/work/agent-pilot",
+   "text": "Kept as a research pilot; the clinical NLP work was the production system."
+  },
+  {
+   "id": "project:agent-pilot:results",
+   "source": "project",
+   "title": "A multi-agent RAG planner · Results",
+   "url": "#/work/agent-pilot",
+   "text": "3 specialist agents. AWS ECS and ECR. Pilot research, not production."
+  },
+  {
+   "id": "project:jarvis:overview",
+   "source": "project",
+   "title": "Jarvis · Overview",
+   "url": "#/work/jarvis",
+   "text": "Jarvis, the agent I run my day on. My own long-running agent, built on Claude Code and in daily use since early 2026. It wakes on timers and on new mail, calendar and chat events, briefs me, files what I tell it, and asks my phone before it sends anything. One long-lived Claude Code session that briefs me, keeps my notes, and asks before it sends anything. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: Claude Code, MCP, Python, SQLite + vectors, on-device speech."
+  },
+  {
+   "id": "project:jarvis:role",
+   "source": "project",
+   "title": "Jarvis · My role",
+   "url": "#/work/jarvis",
+   "text": "Solo. I designed it, and built it by planning with Claude and implementing with Codex. The problem: Mail, calendar, notes, training and job search lived in separate apps. I wanted one assistant that remembers, works in the background, and never acts on my behalf without asking."
+  },
+  {
+   "id": "project:jarvis:how",
+   "source": "project",
+   "title": "Jarvis · How it works",
+   "url": "#/work/jarvis",
+   "text": "Wake: launchd timers and mail, calendar and chat watchers queue events. Recall: Reads the Markdown vault and its search index. Act: Runs one of 27 skills: brief, triage, log, draft. Gate: Outbound or destructive actions ask my phone first. Learn: My corrections become standing rules."
+  },
+  {
+   "id": "project:jarvis:built",
+   "source": "project",
+   "title": "Jarvis · What I built",
+   "url": "#/work/jarvis",
+   "text": "One long-lived Claude Code session woken by launchd jobs and local watchers. An event queue with cursors and idempotent handling, so every pass is safe to repeat. A Markdown knowledge base as the source of truth, with a rebuildable SQLite and vector index. Voice notes over chat with on-device speech-to-text and text-to-speech. A pre-tool-use hook that gates outbound and destructive actions and relays approvals to my phone."
+  },
+  {
+   "id": "project:jarvis:decisions",
+   "source": "project",
+   "title": "Jarvis · Key decisions",
+   "url": "#/work/jarvis",
+   "text": "Explored OpenClaw and ClaudeClaw early in 2026, then built my own. Every email and web page is untrusted data, never instructions. Timing lives in the operating system's scheduler, not in the agent."
+  },
+  {
+   "id": "project:jarvis:results",
+   "source": "project",
+   "title": "Jarvis · Results",
+   "url": "#/work/jarvis",
+   "text": "27 custom skills. 46 test files. 9 architecture decision records."
+  },
+  {
+   "id": "project:mcp-pack:overview",
+   "source": "project",
+   "title": "An MCP server and skill pack generated from the API · Overview",
+   "url": "#/work/mcp-pack",
+   "text": "An MCP server and skill pack generated from the API. A tool surface for AI assistants: an MCP server where every call runs as the signed-in user, and a Claude Code skill pack generated from the OpenAPI spec so new endpoints become agent tools automatically. Assistants drive the product as the signed-in user, and the skill pack regenerates from the OpenAPI spec. Organisation: TrustPlus AI. Year: 2025–26. Status: Employer. Theme: AI-driven workflows. Stack: MCP, Claude Code skills, OpenAPI, OAuth, JWT."
+  },
+  {
+   "id": "project:mcp-pack:role",
+   "source": "project",
+   "title": "An MCP server and skill pack generated from the API · My role",
+   "url": "#/work/mcp-pack",
+   "text": "Built the MCP server and the generator for the skill pack. The problem: Assistants, skills and tests each needed their own way into the product, with their own authentication, and every new endpoint meant hand-writing another tool."
+  },
+  {
+   "id": "project:mcp-pack:how",
+   "source": "project",
+   "title": "An MCP server and skill pack generated from the API · How it works",
+   "url": "#/work/mcp-pack",
+   "text": "Spec: The product's OpenAPI spec. Generate: 14 Claude Code skills, one per router. Serve: An MCP server with 8 tools. Sign in: OAuth and JWT as the acting user. Audit: Every call logged under that user."
+  },
+  {
+   "id": "project:mcp-pack:built",
+   "source": "project",
+   "title": "An MCP server and skill pack generated from the API · What I built",
+   "url": "#/work/mcp-pack",
+   "text": "An MCP server over the product API with OAuth and JWT sign-in as the acting user. Transparent re-authentication when a session expires. A Claude Code skill pack and CLI shim generated from the OpenAPI spec, one skill per router."
+  },
+  {
+   "id": "project:mcp-pack:decisions",
+   "source": "project",
+   "title": "An MCP server and skill pack generated from the API · Key decisions",
+   "url": "#/work/mcp-pack",
+   "text": "Generate the tool surface from the API contract instead of hand-writing it. Scopes inherit the acting user, so permissions and the audit trail stay correct."
+  },
+  {
+   "id": "project:mcp-pack:results",
+   "source": "project",
+   "title": "An MCP server and skill pack generated from the API · Results",
+   "url": "#/work/mcp-pack",
+   "text": "8 MCP tools. 14 skills generated from the spec. 1 auth flow shared by every client."
+  },
+  {
+   "id": "project:kestrel-mcp:overview",
+   "source": "project",
+   "title": "Kestrel MCP · Overview",
+   "url": "#/work/kestrel-mcp",
+   "text": "Kestrel MCP, policy review inside an assistant. An MCP-native version of Kestrel. Instead of another app, an adviser's AI assistant reviews old insurance policies through MCP tools served from a single Cloudflare Worker. The MCP-native sibling of Kestrel: an AI assistant reviews policies through tools on one Cloudflare Worker. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: MCP, Cloudflare Workers, TypeScript."
+  },
+  {
+   "id": "project:kestrel-mcp:role",
+   "source": "project",
+   "title": "Kestrel MCP · My role",
+   "url": "#/work/kestrel-mcp",
+   "text": "Solo. The problem: Advisers already work inside an AI assistant; they needed policy review there, with the same validation as the full app."
+  },
+  {
+   "id": "project:kestrel-mcp:how",
+   "source": "project",
+   "title": "Kestrel MCP · How it works",
+   "url": "#/work/kestrel-mcp",
+   "text": "Upload: A policy document through an MCP tool. Map: A 35-field roster with confidence and citations. Flag: Gaps flagged for the adviser. Save: Server-side validation on every save."
+  },
+  {
+   "id": "project:kestrel-mcp:built",
+   "source": "project",
+   "title": "Kestrel MCP · What I built",
+   "url": "#/work/kestrel-mcp",
+   "text": "An MCP server on one Cloudflare Worker. Document upload, field mapping with confidence and citations, gap flags. Validated saves of records, summaries and customer reports."
+  },
+  {
+   "id": "project:kestrel-mcp:decisions",
+   "source": "project",
+   "title": "Kestrel MCP · Key decisions",
+   "url": "#/work/kestrel-mcp",
+   "text": "Ship the product as tools for an assistant, not a separate UI. Validation happens on the server for every save, whatever the assistant sends."
+  },
+  {
+   "id": "project:kestrel-mcp:results",
+   "source": "project",
+   "title": "Kestrel MCP · Results",
+   "url": "#/work/kestrel-mcp",
+   "text": "35 policy fields in the roster. ~19 MCP tools. 1 Cloudflare Worker."
+  },
+  {
+   "id": "project:lee-rooms:overview",
+   "source": "project",
+   "title": "A WhatsApp concierge with an approval gate · Overview",
+   "url": "#/work/lee-rooms",
+   "text": "A WhatsApp concierge with an approval gate. A WhatsApp concierge agent for a co-living rental brand. It answers enquiries from listing data and saves a booking only after the owner approves it on Telegram. An agent that answers rental enquiries on WhatsApp and books only with the owner's approval. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: Claude Code, WhatsApp, Telegram, TypeScript."
+  },
+  {
+   "id": "project:lee-rooms:role",
+   "source": "project",
+   "title": "A WhatsApp concierge with an approval gate · My role",
+   "url": "#/work/lee-rooms",
+   "text": "Solo. The problem: Rental enquiries arrive at all hours, and most are the same questions about rooms, prices and location."
+  },
+  {
+   "id": "project:lee-rooms:how",
+   "source": "project",
+   "title": "A WhatsApp concierge with an approval gate · How it works",
+   "url": "#/work/lee-rooms",
+   "text": "Receive: An enquiry arrives on WhatsApp. Ground: The answer is drawn from the listings. Draft: The agent drafts a reply. Approve: The owner approves bookings, or every reply, on Telegram."
+  },
+  {
+   "id": "project:lee-rooms:built",
+   "source": "project",
+   "title": "A WhatsApp concierge with an approval gate · What I built",
+   "url": "#/work/lee-rooms",
+   "text": "A long-lived agent session wired to WhatsApp. Answers grounded in the listings, with completeness checks. A Telegram approval gate for bookings, or for every reply. A local dashboard for the owner."
+  },
+  {
+   "id": "project:lee-rooms:decisions",
+   "source": "project",
+   "title": "A WhatsApp concierge with an approval gate · Key decisions",
+   "url": "#/work/lee-rooms",
+   "text": "Approval is configurable per mode instead of all or nothing. No outbound messages to people who did not write first."
+  },
+  {
+   "id": "project:lee-rooms:results",
+   "source": "project",
+   "title": "A WhatsApp concierge with an approval gate · Results",
+   "url": "#/work/lee-rooms",
+   "text": "1 long-lived agent session. 2 approval modes. 0 unsolicited messages."
+  },
+  {
+   "id": "project:twc:overview",
+   "source": "project",
+   "title": "TWC · Overview",
+   "url": "#/work/twc",
+   "text": "TWC, an expense splitter with its own agent loop. A group expense splitter whose centrepiece is a receipt-reading agent. It runs entirely in the browser, on an agent loop I wrote from scratch. Drop in a receipt photo and an agent drafts the split for one-tap approval, entirely in the browser. Organisation: Personal. Year: 2025. Status: Live · Open source. Theme: AI-native products. Stack: Agent loop, Vision, React, TypeScript, Zod."
+  },
+  {
+   "id": "project:twc:role",
+   "source": "project",
+   "title": "TWC · My role",
+   "url": "#/work/twc",
+   "text": "Solo: design and build; open source. The problem: Splitting a group dinner from a receipt photo, in mixed currencies, is slow and error-prone."
+  },
+  {
+   "id": "project:twc:how",
+   "source": "project",
+   "title": "TWC · How it works",
+   "url": "#/work/twc",
+   "text": "Upload: A receipt photo, in the browser. Read: A vision model returns line items, validated by Zod. Plan: The agent drafts the split with idempotent tools. Approve: One tap to accept; nothing is written before."
+  },
+  {
+   "id": "project:twc:built",
+   "source": "project",
+   "title": "TWC · What I built",
+   "url": "#/work/twc",
+   "text": "An agent loop of up to 32 iterations with streamed phase labels and permission-gated tool dispatch. Receipt vision with structured outputs validated by Zod. One client interface over Anthropic, OpenAI and local OpenAI-compatible servers, each a hand-written fetch call. API keys stay in a passphrase-encrypted vault in the browser, with spend caps."
+  },
+  {
+   "id": "project:twc:decisions",
+   "source": "project",
+   "title": "TWC · Key decisions",
+   "url": "#/work/twc",
+   "text": "Plan mode removes write tools from the schema instead of trusting the prompt. Conversation pruning at 60% of the context budget. Money held in integer minor units so balances reconcile to zero."
+  },
+  {
+   "id": "project:twc:results",
+   "source": "project",
+   "title": "TWC · Results",
+   "url": "#/work/twc",
+   "text": "32 max iterations per agent run. 0 servers or databases. 5 idempotent tools."
+  },
+  {
+   "id": "project:leeseidon:overview",
+   "source": "project",
+   "title": "Leeseidon · Overview",
+   "url": "#/work/leeseidon",
+   "text": "Leeseidon, investment tracking with an encryption-blind server. A privacy-first investment tracker. Agents turn statements, PDFs and screenshots into trades, and the sync server only ever sees ciphertext. Agents read your statements; the sync server only ever stores ciphertext. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: React, TypeScript, Cloudflare Workers, AES-GCM."
+  },
+  {
+   "id": "project:leeseidon:role",
+   "source": "project",
+   "title": "Leeseidon · My role",
+   "url": "#/work/leeseidon",
+   "text": "Solo: product, design and build. The problem: Portfolio trackers want your financial data on their servers. I wanted the analytics without handing that over."
+  },
+  {
+   "id": "project:leeseidon:how",
+   "source": "project",
+   "title": "Leeseidon · How it works",
+   "url": "#/work/leeseidon",
+   "text": "Drop: A CSV, PDF or screenshot. Extract: A multi-turn agent turns it into trades through schematized tools. Reconcile: The same engine as manual entry. Sync: Encrypted on the device; the server stores ciphertext."
+  },
+  {
+   "id": "project:leeseidon:built",
+   "source": "project",
+   "title": "Leeseidon · What I built",
+   "url": "#/work/leeseidon",
+   "text": "Multi-turn agents extract trades from CSV, PDF and images through schematized tools. A model-agnostic tool executor with streaming, retries and rate-limit handling. One isomorphic TypeScript core powers the web app and a CLI that ships Claude Code skills. Heavy simulations run in Web Workers."
+  },
+  {
+   "id": "project:leeseidon:decisions",
+   "source": "project",
+   "title": "Leeseidon · Key decisions",
+   "url": "#/work/leeseidon",
+   "text": "The vault passphrase never leaves the device. AI-parsed statements go through the same engine as manual entry."
+  },
+  {
+   "id": "project:leeseidon:results",
+   "source": "project",
+   "title": "Leeseidon · Results",
+   "url": "#/work/leeseidon",
+   "text": "E2E encrypted sync. 1 TypeScript core for web and CLI. Live at leeseidon.com."
+  },
+  {
+   "id": "project:tide-tally:overview",
+   "source": "project",
+   "title": "Tide Tally · Overview",
+   "url": "#/work/tide-tally",
+   "text": "Tide Tally, an offline-first expense tracker with an agent. A mobile-first expense tracker built around one number and one gesture: how much is left, and three taps to log what you just spent. It works offline, and an agent turns receipts and statements into draft expenses you review before anything is saved. Three taps to log a spend, even with no signal; hand the agent a receipt or statement and review what it drafts. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: React, TypeScript, IndexedDB, Cloudflare D1, WebGL, Capacitor, OAuth."
+  },
+  {
+   "id": "project:tide-tally:role",
+   "source": "project",
+   "title": "Tide Tally · My role",
+   "url": "#/work/tide-tally",
+   "text": "Solo: product, design and build, with Claude Code. The problem: Most budgeting apps open onto a dashboard, need a signal, and nag. Logging a $3.40 coffee should take seconds, in a basement food court or on the MRT."
+  },
+  {
+   "id": "project:tide-tally:how",
+   "source": "project",
+   "title": "Tide Tally · How it works",
+   "url": "#/work/tide-tally",
+   "text": "Capture: The numpad is the home screen: amount, category, save. Store: Every write lands on the device first (IndexedDB). Sync: A Cloudflare Pages Function and D1 sync in the background. Ask: The agent reads a receipt or statement and drafts expenses. Review: You confirm drafts; other software can log through OAuth."
+  },
+  {
+   "id": "project:tide-tally:built",
+   "source": "project",
+   "title": "Tide Tally · What I built",
+   "url": "#/work/tide-tally",
+   "text": "React 19, TypeScript and Tailwind on Vite, with a hand-written WebGL shader for the water. Offline-first storage in IndexedDB (Dexie) with background sync to a Cloudflare Pages Function and D1, on one origin. An agent that turns an uploaded receipt or statement into draft expenses on the same review screen as manual entry. An OAuth device flow with three scopes, so a coding agent or a script can log an expense, with an OpenAPI spec generated from the route table and a skill package published by CI. Android and iOS builds with Capacitor; Vitest, Playwright (including an offline-capture suite) and invariant checks in CI."
+  },
+  {
+   "id": "project:tide-tally:decisions",
+   "source": "project",
+   "title": "Tide Tally · Key decisions",
+   "url": "#/work/tide-tally",
+   "text": "Uploaded documents are read once in the request and never stored. The agent only drafts; nothing reaches the ledger until you save it. Dropped end-to-end encryption that depended on a key another app could rotate, and said so plainly in the privacy note. A free stack by design: Cloudflare Pages, Functions and D1."
+  },
+  {
+   "id": "project:tide-tally:results",
+   "source": "project",
+   "title": "Tide Tally · Results",
+   "url": "#/work/tide-tally",
+   "text": "3 taps to log an expense. Offline every write lands on the device first. Live at tally.leeseidon.com."
+  },
+  {
+   "id": "project:verona:overview",
+   "source": "project",
+   "title": "Verona · Overview",
+   "url": "#/work/verona",
+   "text": "Verona, a wedding app an agent can drive. A mobile-first wedding app, from guest list to the dance floor. An OpenAPI contract keeps the API in step with the UI, so an agent can do anything a guest or couple can. Guest list to dance floor: RSVPs, seating and a live photo wall, with an API an agent can use. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: Next.js, Supabase, row-level security, PWA."
+  },
+  {
+   "id": "project:verona:role",
+   "source": "project",
+   "title": "Verona · My role",
+   "url": "#/work/verona",
+   "text": "Solo: product, design and build. The problem: Wedding planning is spread across spreadsheets, chat groups and paper seating plans."
+  },
+  {
+   "id": "project:verona:how",
+   "source": "project",
+   "title": "Verona · How it works",
+   "url": "#/work/verona",
+   "text": "Contract: One OpenAPI contract for the UI and the API. App: A Next.js PWA on Cloudflare Workers. Data: Supabase Postgres with row-level security and realtime. Agent: A bring-your-own agent can use every feature."
+  },
+  {
+   "id": "project:verona:built",
+   "source": "project",
+   "title": "Verona · What I built",
+   "url": "#/work/verona",
+   "text": "Next.js (App Router) PWA on Cloudflare Workers. Supabase Postgres with row-level security, Google sign-in and realtime updates. Photo uploads to object storage and a moderated live photo wall. Playwright tests and CI auto-deploy; English, Chinese and Malay."
+  },
+  {
+   "id": "project:verona:decisions",
+   "source": "project",
+   "title": "Verona · Key decisions",
+   "url": "#/work/verona",
+   "text": "An OpenAPI parity contract so an agent can use every feature. Free-tier-only infrastructure as a cost guardrail."
+  },
+  {
+   "id": "project:verona:results",
+   "source": "project",
+   "title": "Verona · Results",
+   "url": "#/work/verona",
+   "text": "3 languages. RLS row-level security in Postgres. Live at verona.leeseidon.com."
+  },
+  {
+   "id": "project:resume-builder:overview",
+   "source": "project",
+   "title": "Résumé Builder · Overview",
+   "url": "#/work/resume-builder",
+   "text": "Résumé Builder, a Claude Code plugin. A Claude Code plugin that turns career notes into tailored, ATS-safe résumés and cover letters, with the deterministic build steps exposed as MCP tools. Three skills and an MCP server that turn career notes into tailored, ATS-safe résumés. Organisation: Personal. Year: 2026. Status: Private. Theme: Tooling for AI work. Stack: Claude Code plugin, MCP, LaTeX, Python."
+  },
+  {
+   "id": "project:resume-builder:role",
+   "source": "project",
+   "title": "Résumé Builder · My role",
+   "url": "#/work/resume-builder",
+   "text": "Solo. I directed Claude Code, which wrote most of the code. The problem: Every application meant rewriting a CV from a blank page, and claims drifted from what actually happened."
+  },
+  {
+   "id": "project:resume-builder:how",
+   "source": "project",
+   "title": "Résumé Builder · How it works",
+   "url": "#/work/resume-builder",
+   "text": "Notes: One source of truth for career facts. Tailor: A skill maps a job description to evidence. Build: MCP tools compile the PDF. Check: An ATS check on every build."
+  },
+  {
+   "id": "project:resume-builder:built",
+   "source": "project",
+   "title": "Résumé Builder · What I built",
+   "url": "#/work/resume-builder",
+   "text": "Skills for building the career notes, tailoring a résumé and writing a cover letter. An MCP server that exposes the deterministic build steps (compile, checks) as tools. A local companion app alongside the plugin."
+  },
+  {
+   "id": "project:resume-builder:decisions",
+   "source": "project",
+   "title": "Résumé Builder · Key decisions",
+   "url": "#/work/resume-builder",
+   "text": "Every CV is generated from one source of truth. Deterministic steps are tools; judgement stays with the model and the person."
+  },
+  {
+   "id": "project:resume-builder:results",
+   "source": "project",
+   "title": "Résumé Builder · Results",
+   "url": "#/work/resume-builder",
+   "text": "3 skills. 15 MCP tools. ATS check on every build."
+  },
+  {
+   "id": "project:eval-code:overview",
+   "source": "project",
+   "title": "eval-code · Overview",
+   "url": "#/work/eval-code",
+   "text": "eval-code, an agent-first eval workbench. A workbench that replaces notebooks for LLM, RAG and multi-agent projects: ingest and clean data, define an eval target, run evals under a hard spend cap and compare runs. A workspace for LLM, RAG and agent projects: data in, evals run under a hard spend cap, failures compared. Organisation: Personal. Year: 2026. Status: Early. Theme: Tooling for AI work. Stack: Python, LLM evals, RAG, agents."
+  },
+  {
+   "id": "project:eval-code:role",
+   "source": "project",
+   "title": "eval-code · My role",
+   "url": "#/work/eval-code",
+   "text": "Solo; early stage. The problem: LLM projects live in scattered notebooks, and eval runs can quietly burn money."
+  },
+  {
+   "id": "project:eval-code:how",
+   "source": "project",
+   "title": "eval-code · How it works",
+   "url": "#/work/eval-code",
+   "text": "Ingest: A raw dataset. Explore: Clean it and chart it. Evaluate: Run against a target under a hard spend cap. Compare: Compare runs and drill into failures."
+  },
+  {
+   "id": "project:eval-code:built",
+   "source": "project",
+   "title": "eval-code · What I built",
+   "url": "#/work/eval-code",
+   "text": "Dataset ingest, cleaning and chart-based exploration. Eval targets for RAG and agent systems. A spend tracker that stops runs at a cap."
+  },
+  {
+   "id": "project:eval-code:decisions",
+   "source": "project",
+   "title": "eval-code · Key decisions",
+   "url": "#/work/eval-code",
+   "text": "Agent-first: the same tools serve the UI and an agent. Spend limits are enforced, not just reported."
+  },
+  {
+   "id": "project:eval-code:results",
+   "source": "project",
+   "title": "eval-code · Results",
+   "url": "#/work/eval-code",
+   "text": "Hard spend cap on every run. 1 workspace from raw data to compared runs. May 2026 start."
+  },
+  {
+   "id": "project:clinical-nlp:overview",
+   "source": "project",
+   "title": "Clinical NLP in production · Overview",
+   "url": "#/work/clinical-nlp",
+   "text": "Clinical NLP in production. A production NLP pipeline for a healthcare environment: entity extraction from clinical notes feeding a classifier that predicts clinical interventions, with explanations clinicians can read. Fine-tuned BioClinicalBERT and a downstream classifier, explained to clinicians. Organisation: AI Singapore. Year: 2024. Status: Employer. Theme: Applied ML and RAG. Stack: PyTorch, BioClinicalBERT, Kedro, MLflow, FastAPI."
+  },
+  {
+   "id": "project:clinical-nlp:role",
+   "source": "project",
+   "title": "Clinical NLP in production · My role",
+   "url": "#/work/clinical-nlp",
+   "text": "AI engineer on the project: data preparation, fine-tuning, evaluation and serving. Also mentored 12 apprentices across two cohorts. The problem: Clinical notes are unstructured, and clinicians need to see why a model made each call before they trust it."
+  },
+  {
+   "id": "project:clinical-nlp:how",
+   "source": "project",
+   "title": "Clinical NLP in production · How it works",
+   "url": "#/work/clinical-nlp",
+   "text": "Prepare: Clean and explore clinical notes. Extract: Fine-tuned BioClinicalBERT tags entities. Predict: A classifier predicts interventions. Explain: EBM shows clinicians why. Serve: FastAPI and Docker, tracked in MLflow."
+  },
+  {
+   "id": "project:clinical-nlp:built",
+   "source": "project",
+   "title": "Clinical NLP in production · What I built",
+   "url": "#/work/clinical-nlp",
+   "text": "Data cleaning and exploration of unstructured clinical notes. BioClinicalBERT fine-tuned in PyTorch for named-entity recognition, with other BERT models as baselines. Extracted entities feed a downstream intervention classifier. Evaluated on held-out data (precision, recall, F1); Kedro pipelines and MLflow tracking. Served with FastAPI and Docker, and handed over with documentation."
+  },
+  {
+   "id": "project:clinical-nlp:decisions",
+   "source": "project",
+   "title": "Clinical NLP in production · Key decisions",
+   "url": "#/work/clinical-nlp",
+   "text": "Explainable Boosting Machines so clinicians can read each prediction. Hyperparameter tuning with documented quality, latency and compute-cost trade-offs."
+  },
+  {
+   "id": "project:clinical-nlp:results",
+   "source": "project",
+   "title": "Clinical NLP in production · Results",
+   "url": "#/work/clinical-nlp",
+   "text": "5 models in the pipeline. 12 apprentices mentored. EBM explanations for clinicians."
+  },
+  {
+   "id": "project:defence-rag:overview",
+   "source": "project",
+   "title": "An on-premise RAG assistant for a defence-sector client · Overview",
+   "url": "#/work/defence-rag",
+   "text": "An on-premise RAG assistant for a defence-sector client. An enterprise knowledge assistant for a Singapore defence-sector client. The data could not leave the environment, so the whole stack ran on premise. A knowledge assistant on a fully on-premise stack, with hand-off to a person for complex requests. Organisation: BGC Group. Year: 2024–25. Status: Employer. Theme: Applied ML and RAG. Stack: RAG, FastAPI, Weaviate, MongoDB, React, Docker."
+  },
+  {
+   "id": "project:defence-rag:role",
+   "source": "project",
+   "title": "An on-premise RAG assistant for a defence-sector client · My role",
+   "url": "#/work/defence-rag",
+   "text": "Led the on-premise deployment of the whole stack with Docker, built the React front end, worked with the client's business users, and handed the system over with documentation. The problem: Staff needed answers from internal documents that could not leave the client's environment."
+  },
+  {
+   "id": "project:defence-rag:how",
+   "source": "project",
+   "title": "An on-premise RAG assistant for a defence-sector client · How it works",
+   "url": "#/work/defence-rag",
+   "text": "Chunk: Semantic-aware chunking of internal documents. Retrieve: Vector search, on premise. Answer: Cited answers in multi-turn sessions. Escalate: Complex requests hand off to a person."
+  },
+  {
+   "id": "project:defence-rag:built",
+   "source": "project",
+   "title": "An on-premise RAG assistant for a defence-sector client · What I built",
+   "url": "#/work/defence-rag",
+   "text": "A FastAPI application layer and middleware to the model endpoints. Stateful multi-turn sessions with escalation to a human agent. Semantic-aware chunking, tuned with embedding visualisations. Weaviate for vectors, MongoDB for state, a React front end and Docker CI/CD across three environments."
+  },
+  {
+   "id": "project:defence-rag:decisions",
+   "source": "project",
+   "title": "An on-premise RAG assistant for a defence-sector client · Key decisions",
+   "url": "#/work/defence-rag",
+   "text": "A fully on-premise stack instead of a cloud model API. Hand complex intents to a person rather than guess."
+  },
+  {
+   "id": "project:defence-rag:results",
+   "source": "project",
+   "title": "An on-premise RAG assistant for a defence-sector client · Results",
+   "url": "#/work/defence-rag",
+   "text": "On-prem the data never left. 3 environments: dev, staging, production. HITL hand-off to a person."
+  },
+  {
+   "id": "project:speech:overview",
+   "source": "project",
+   "title": "Speech-to-text with Whisper · Overview",
+   "url": "#/work/speech",
+   "text": "Speech-to-text with Whisper. An end-to-end model-serving app: Whisper transcription behind FastAPI, a SQLite history and a React front end, all in Docker. Whisper transcription served with FastAPI, with history and a React front end. Organisation: Personal. Year: 2024. Status: Open source. Theme: Applied ML and RAG. Stack: Whisper, FastAPI, React, Docker."
+  },
+  {
+   "id": "project:speech:role",
+   "source": "project",
+   "title": "Speech-to-text with Whisper · My role",
+   "url": "#/work/speech",
+   "text": "Solo; open source. The problem: A simple, private way to transcribe recordings and keep them searchable."
+  },
+  {
+   "id": "project:speech:how",
+   "source": "project",
+   "title": "Speech-to-text with Whisper · How it works",
+   "url": "#/work/speech",
+   "text": "Upload: An audio file. Transcribe: Whisper behind FastAPI. Store: SQLite history. Search: A React front end."
+  },
+  {
+   "id": "project:speech:built",
+   "source": "project",
+   "title": "Speech-to-text with Whisper · What I built",
+   "url": "#/work/speech",
+   "text": "Whisper inference behind a FastAPI gateway. SQLite for transcript history. A React front end, all containerised."
+  },
+  {
+   "id": "project:speech:decisions",
+   "source": "project",
+   "title": "Speech-to-text with Whisper · Key decisions",
+   "url": "#/work/speech",
+   "text": "A small split of gateway, inference and storage that can scale out later."
+  },
+  {
+   "id": "project:speech:results",
+   "source": "project",
+   "title": "Speech-to-text with Whisper · Results",
+   "url": "#/work/speech",
+   "text": "Whisper served with FastAPI. Docker end to end. Multi language and format support."
+  },
+  {
+   "id": "career:the-assembly-place:2026-now",
+   "source": "career",
+   "title": "The Assembly Place · Head of Technology and AI",
+   "url": "#/about",
+   "text": "The Assembly Place, Head of Technology and AI, 2026–now. Leads a small team building the company's CRM, internal tools and an AI-agent console with approvals."
+  },
+  {
+   "id": "career:trustplus-ai:2025-26",
+   "source": "career",
+   "title": "TrustPlus AI · Senior AI Software Engineer",
+   "url": "#/about",
+   "text": "TrustPlus AI, Senior AI Software Engineer, 2025–26. Built most of a multi-agent credit-risk and KYB product."
+  },
+  {
+   "id": "career:bgc-group:2024-25",
+   "source": "career",
+   "title": "BGC Group · Senior Software Engineer (AI)",
+   "url": "#/about",
+   "text": "BGC Group, Senior Software Engineer (AI), 2024–25. An on-premise RAG assistant for a defence-sector client."
+  },
+  {
+   "id": "career:ai-singapore:2024",
+   "source": "career",
+   "title": "AI Singapore · AI Engineer",
+   "url": "#/about",
+   "text": "AI Singapore, AI Engineer, 2024. Clinical NLP in production; mentored 12 apprentices."
+  },
+  {
+   "id": "career:ncs:2022-23",
+   "source": "career",
+   "title": "NCS · Business Systems Analyst",
+   "url": "#/about",
+   "text": "NCS, Business Systems Analyst, 2022–23. Automation for a nation-wide public healthcare application."
+  },
+  {
+   "id": "career:bitopia:2022",
+   "source": "career",
+   "title": "Bitopia · Full-Stack Software Engineer",
+   "url": "#/about",
+   "text": "Bitopia, Full-Stack Software Engineer, 2022. Logistics and real-estate platforms."
+  },
+  {
+   "id": "career:napshot:2019-21",
+   "source": "career",
+   "title": "Napshot · Solutions and Software Engineer",
+   "url": "#/about",
+   "text": "Napshot, Solutions and Software Engineer, 2019–21. Custom platforms for small businesses."
+  },
+  {
+   "id": "career:singapore-army:2012-18",
+   "source": "career",
+   "title": "Singapore Army · Combat Engineer, Regular",
+   "url": "#/about",
+   "text": "Singapore Army, Combat Engineer, Regular, 2012–18. Led and trained teams before moving into software."
+  },
+  {
+   "id": "career:the-assembly-place:current-work",
+   "source": "career",
+   "title": "The Assembly Place · current work",
+   "url": "#/work",
+   "text": "The Assembly Place, 2026–now: CRM, internal tools and an AI-agent console. Current employer, no public case study."
+  },
+  {
+   "id": "site:pillar:01",
+   "source": "site",
+   "title": "Focus area · AI-native development",
+   "url": "#/",
+   "text": "AI-native development. Claude Code and Codex in parallel every day; I plan, review and own every merge."
+  },
+  {
+   "id": "site:pillar:02",
+   "source": "site",
+   "title": "Focus area · AI-driven workflows",
+   "url": "#/",
+   "text": "AI-driven workflows. Agents wired into mail, chat, CRMs and product APIs, acting as the signed-in user and asking before they act."
+  },
+  {
+   "id": "site:pillar:03",
+   "source": "site",
+   "title": "Focus area · Multi-agent systems",
+   "url": "#/",
+   "text": "Multi-agent systems. Specialist agents that research, extract and check each other's work, with people approving what matters."
+  },
+  {
+   "id": "site:pillar:04",
+   "source": "site",
+   "title": "Focus area · Model training and fine-tuning",
+   "url": "#/",
+   "text": "Model training and fine-tuning. Fine-tuned BioClinicalBERT for clinical NER in a healthcare deployment, and trained PyTorch classification models that run in production."
+  },
+  {
+   "id": "site:archive:hr-system",
+   "source": "site",
+   "title": "Earlier work · HR management system",
+   "url": "#/work",
+   "text": "HR management system. Node.js and Express API with a React and TypeScript front end: employee records, Excel import and export, an admin dashboard."
+  },
+  {
+   "id": "site:archive:bookings",
+   "source": "site",
+   "title": "Earlier work · Holiday booking app",
+   "url": "#/work",
+   "text": "Holiday booking app. Flask and SQL: package browsing, bookings with availability checks, and an admin interface."
+  },
+  {
+   "id": "site:archive:storefront",
+   "source": "site",
+   "title": "Earlier work · VietMala Eatery",
+   "url": "#/work",
+   "text": "VietMala Eatery. A responsive Vue storefront for a food and beverage shop."
+  },
+  {
+   "id": "site:archive:video",
+   "source": "site",
+   "title": "Earlier work · Programmatic social reels",
+   "url": "#/work",
+   "text": "Programmatic social reels. Short videos built in code with Remotion."
+  },
+  {
+   "id": "cv:summary:1",
+   "source": "cv",
+   "title": "CV · Summary",
+   "url": "Resume.pdf",
+   "text": "AI software engineer, 8+ years in software, building AI-native products, AI-driven workflows and multi-agent systems end to end, from requirements and prototypes to production and on-call. Multi-agent systems: specialist agents orchestrated in LangGraph with tool calling, retrieval with hybrid search and reranking, a judge model checking every section against its sources, and human approval before high-risk decisions or writes. AI-driven workflows: event-driven pipelines, MCP servers that let agents act as the signed-in user, and long-running agents with approval gates and feedback loops. AI-native development: Claude Code and Codex run in parallel every day, in separate git worktrees, with loops that run until the tests pass; I review and stand behind every merge, and moving a team onto this way of working took releases from about 4 a month to about 20. Full stack in Python (FastAPI), TypeScript (Node.js, React, Next.js) and Java, on AWS, Azure and Cloudflare. Now Head of Technology and AI at The Assembly Place, leading a small team."
+  },
+  {
+   "id": "cv:the-assembly-place:1",
+   "source": "cv",
+   "title": "CV · The Assembly Place",
+   "url": "Resume.pdf",
+   "text": "The Assembly Place: Lead a small technology team that builds and runs the company’s software products: an in-house CRM used daily by operations staff, its admin app and APIs, and an internal AI-agent console. Also run company IT, including security, AWS IAM and audit."
+  },
+  {
+   "id": "cv:the-assembly-place:2",
+   "source": "cv",
+   "title": "CV · The Assembly Place",
+   "url": "Resume.pdf",
+   "text": "The Assembly Place: Run an AI-first development workflow: Claude Code and Codex work in parallel from shared project standards and reusable skills, one planning and reviewing while the other implements and tests; most new code is written this way, and people stay accountable for every merge."
+  },
+  {
+   "id": "cv:the-assembly-place:3",
+   "source": "cv",
+   "title": "CV · The Assembly Place",
+   "url": "Resume.pdf",
+   "text": "The Assembly Place: Agent access without exposed credentials: agents reach company data through an MCP server over the CRM where every request runs as the signed-in user (OAuth, per-user tokens) with a confirmation step before any write; the agent console connects to company systems through MCP connectors and delegates only to approved sub-agents."
+  },
+  {
+   "id": "cv:the-assembly-place:4",
+   "source": "cv",
+   "title": "CV · The Assembly Place",
+   "url": "Resume.pdf",
+   "text": "The Assembly Place: Loop engineering: long-running agent loops work through Jira tickets and babysit pull requests; reviewer agents send work back until tests and checks pass; parallel agents run in separate git worktrees; team skills, hooks and CLAUDE.md standards steer every coding agent."
+  },
+  {
+   "id": "cv:the-assembly-place:5",
+   "source": "cv",
+   "title": "CV · The Assembly Place",
+   "url": "Resume.pdf",
+   "text": "The Assembly Place: Built the internal AI-agent console end to end in TypeScript: a Node.js (Fastify) API on PostgreSQL and a React web app with live updates over WebSockets."
+  },
+  {
+   "id": "cv:the-assembly-place:6",
+   "source": "cv",
+   "title": "CV · The Assembly Place",
+   "url": "Resume.pdf",
+   "text": "The Assembly Place: Run the AWS infrastructure as code (Terraform) with deployment safeguards, scheduled cost controls and monitoring; releases are tested in staging against a written checklist, and production data changes run from rehearsed runbooks."
+  },
+  {
+   "id": "cv:trustplus-ai:1",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): Designed and built most of the credit-risk and KYB SaaS product, from requirements workshops and prototypes with business users to production; worked across the entire stack (React frontend, Python FastAPI APIs, MongoDB, AI pipelines, Docker, GitHub Actions CI/CD). Analyst turnaround fell from 6–24 hours to 5–60 minutes."
+  },
+  {
+   "id": "cv:trustplus-ai:2",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): Scaling: MongoDB vector search hit its I/O limits under parallel load and upgrading the tier cost too much, so I moved search to in-memory FAISS and parallelised it; measured on LangFuse retrieval spans over the same test cases, latency fell about 85% (700–1,400 ms to 100–250 ms)."
+  },
+  {
+   "id": "cv:trustplus-ai:3",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): Production incident: traced and resolved a memory failure in the event-driven pipeline, where concurrent heavy jobs exhausted container memory and redelivered messages restarted the same work; per-step timing and error fields in the run state located the fault and now drive clear user-facing error messages."
+  },
+  {
+   "id": "cv:trustplus-ai:4",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): Event-driven backend on Azure Service Bus (14 consumers) and Container Apps, infrastructure in Terraform; idempotency-aware retries and atomic upserts against concurrent callers; a LangChain multi-provider LLM layer (OpenAI, Anthropic, Google, Amazon Bedrock fallback) with rate-limit handling and per-run token and cost tracking."
+  },
+  {
+   "id": "cv:trustplus-ai:5",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): AI features in the product (LangGraph, LangChain): 8 specialist LangGraph research agents that read financial statements, SEC EDGAR filings and web results and write a cited credit memo; RAG with hybrid retrieval and reranking; an LLM-as-a-judge check on every section; human approval on high-risk decisions; a chatbot that routes each request to a fast edit path or a retrieval path so users can question and edit a finished memo."
+  },
+  {
+   "id": "cv:trustplus-ai:6",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): Built an MCP server (8 tools, OAuth and JWT sign-in as the acting user) so AI assistants act only with that user’s permissions, and generated a 14-skill Claude Code pack from the OpenAPI spec so new endpoints become agent tools automatically."
+  },
+  {
+   "id": "cv:trustplus-ai:7",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): Improved how the team ships without being asked: led the move from Cursor to Claude Code across development, design and product work, with shared CLAUDE.md standards and skills I wrote for code review, change planning, test review and changelogs; releases rose from about 4 a month to about 20 while review standards held."
+  },
+  {
+   "id": "cv:trustplus-ai:8",
+   "source": "cv",
+   "title": "CV · TrustPlus AI (Fintech SaaS)",
+   "url": "Resume.pdf",
+   "text": "TrustPlus AI (Fintech SaaS): On call for production and the escalation point for user-reported issues: triaged from LangFuse traces and CloudWatch logs, reproduced and fixed with the engineers involved, and fed the lessons back into tests and team skills."
+  },
+  {
+   "id": "cv:bgc-group:1",
+   "source": "cv",
+   "title": "CV · BGC Group (Defence-sector client), Senior Software Engineer (AI Application Specialist), Contract",
+   "url": "Resume.pdf",
+   "text": "BGC Group (Defence-sector client), Senior Software Engineer (AI Application Specialist), Contract: Delivered an enterprise RAG knowledge assistant for a Singapore defence-sector client on a fully on-premise stack, because the data could not leave the environment: built the React frontend and the full-stack deployment, with Docker-based CI/CD across development, staging and production; worked directly with the client’s business users on discovery and fit."
+  },
+  {
+   "id": "cv:bgc-group:2",
+   "source": "cv",
+   "title": "CV · BGC Group (Defence-sector client), Senior Software Engineer (AI Application Specialist), Contract",
+   "url": "Resume.pdf",
+   "text": "BGC Group (Defence-sector client), Senior Software Engineer (AI Application Specialist), Contract: Designed the hand-off so complex requests move from the assistant to a human agent."
+  },
+  {
+   "id": "cv:ai-singapore:1",
+   "source": "cv",
+   "title": "CV · AI Singapore, AI Engineer",
+   "url": "Resume.pdf",
+   "text": "AI Singapore, AI Engineer: Delivered a production NLP pipeline for a healthcare environment: five models for named-entity recognition and event prediction (including a fine-tuned BioClinicalBERT), served with FastAPI and Docker, with Kedro pipelines for reproducible training and evaluation; made predictions explainable to clinicians with Explainable Boosting Machines."
+  },
+  {
+   "id": "cv:ai-singapore:2",
+   "source": "cv",
+   "title": "CV · AI Singapore, AI Engineer",
+   "url": "Resume.pdf",
+   "text": "AI Singapore, AI Engineer: Mentored 12 apprentices across two cohorts in NLP and LLM techniques."
+  },
+  {
+   "id": "cv:ncs-pte-ltd:1",
+   "source": "cv",
+   "title": "CV · NCS Pte. Ltd., Business Systems Analyst (Backend Automation & Integration)",
+   "url": "Resume.pdf",
+   "text": "NCS Pte. Ltd., Business Systems Analyst (Backend Automation & Integration): Improved operational productivity by 50% for a nation-wide public healthcare web application with a Python automation suite that validates configuration changes across environments, replacing a manual process."
+  },
+  {
+   "id": "cv:ncs-pte-ltd:2",
+   "source": "cv",
+   "title": "CV · NCS Pte. Ltd., Business Systems Analyst (Backend Automation & Integration)",
+   "url": "Resume.pdf",
+   "text": "NCS Pte. Ltd., Business Systems Analyst (Backend Automation & Integration): Ran SQL data migrations between systems with 99.9% data integrity, documented system architecture and BPMN workflows for cross-functional teams, and advised on PDPA compliance."
+  },
+  {
+   "id": "cv:bitopia-technology:1",
+   "source": "cv",
+   "title": "CV · Bitopia Technology, Full-Stack Software Engineer",
+   "url": "Resume.pdf",
+   "text": "Bitopia Technology, Full-Stack Software Engineer: Ran client requirements workshops and pre-sales scoping, then built REST microservices and React dashboards for logistics and real-estate platforms, integrating mapping, carrier and payment APIs behind real-time tracking with PostgreSQL."
+  },
+  {
+   "id": "cv:napshot-pte-ltd:1",
+   "source": "cv",
+   "title": "CV · Napshot Pte. Ltd., Solutions & Software Engineer",
+   "url": "Resume.pdf",
+   "text": "Napshot Pte. Ltd., Solutions & Software Engineer: Worked across 3+ concurrent SME client engagements (F&B, hospitality, HR): requirements workshops, solution design and custom platforms (React, Vue, Flask) that replaced paper and spreadsheet processes, taken through to go-live; ran the cloud infrastructure, monitoring and incident response for client deployments."
+  },
+  {
+   "id": "cv:singapore-army:1",
+   "source": "cv",
+   "title": "CV · Singapore Army (SAF), Combat Engineer, Regular Force",
+   "url": "Resume.pdf",
+   "text": "Singapore Army (SAF), Combat Engineer, Regular Force: Led and trained personnel up to company level (100 to 200), and ran user-acceptance testing and feedback cycles on equipment and systems with operational end users."
+  },
+  {
+   "id": "cv:jarvis:1",
+   "source": "cv",
+   "title": "CV · Jarvis",
+   "url": "Resume.pdf",
+   "text": "Jarvis, my own long-running agent harness on Claude Code, running 24/7"
+  },
+  {
+   "id": "cv:jarvis:2",
+   "source": "cv",
+   "title": "CV · Jarvis",
+   "url": "Resume.pdf",
+   "text": "Jarvis: Explored OpenClaw and ClaudeClaw early in 2026, then built my own: one long-lived Claude Code session woken by launchd jobs and local Gmail, calendar and chat watchers through an event queue with cursors and idempotent handling, so every pass is safe to repeat."
+  },
+  {
+   "id": "cv:jarvis:3",
+   "source": "cv",
+   "title": "CV · Jarvis",
+   "url": "Resume.pdf",
+   "text": "Jarvis: Guardrails: a pre-tool-use hook gates outbound and destructive actions by where the turn came from, relays approvals to my phone, and treats all email and web content as untrusted data; feedback loops turn my corrections into standing rules that later runs apply."
+  },
+  {
+   "id": "cv:jarvis:4",
+   "source": "cv",
+   "title": "CV · Jarvis",
+   "url": "Resume.pdf",
+   "text": "Jarvis: 27 custom skills, a Python CLI with 46 test files and 9 architecture decision records; built by planning with Claude and implementing with Codex."
+  },
+  {
+   "id": "cv:twc:1",
+   "source": "cv",
+   "title": "CV · TWC",
+   "url": "Resume.pdf",
+   "text": "TWC, browser-only agent with its own agent loop, live at randyharrogates.github.io/twc"
+  },
+  {
+   "id": "cv:twc:2",
+   "source": "cv",
+   "title": "CV · TWC",
+   "url": "Resume.pdf",
+   "text": "TWC: Wrote the agent loop from scratch: up to 32 iterations with streamed phase labels, permission-gated tool dispatch, conversation pruning at 60% of the context budget, and a plan mode that removes mutating tools from the schema rather than relying on the prompt."
+  },
+  {
+   "id": "cv:twc:3",
+   "source": "cv",
+   "title": "CV · TWC",
+   "url": "Resume.pdf",
+   "text": "TWC: One client interface over Anthropic, OpenAI and local OpenAI-compatible servers, each a hand-written fetch call with no vendor SDK; API keys stay in a passphrase-encrypted vault in the browser (PBKDF2 and AES-GCM), with rate limits and spend caps. React, TypeScript, Zod."
+  },
+  {
+   "id": "cv:leeseidon:1",
+   "source": "cv",
+   "title": "CV · Leeseidon",
+   "url": "Resume.pdf",
+   "text": "Leeseidon, agentic investment tracker, live at leeseidon.com"
+  },
+  {
+   "id": "cv:leeseidon:2",
+   "source": "cv",
+   "title": "CV · Leeseidon",
+   "url": "Resume.pdf",
+   "text": "Leeseidon: Multi-turn agents extract trades from CSV, PDF and images through a model-agnostic tool executor with streaming and retries; an encryption-blind sync server stores only ciphertext; one TypeScript core powers the web app and a CLI that ships Claude Code skills."
+  },
+  {
+   "id": "cv:kestrel:1",
+   "source": "cv",
+   "title": "CV · Kestrel",
+   "url": "Resume.pdf",
+   "text": "Kestrel, multi-agent review of insurance policy documents"
+  },
+  {
+   "id": "cv:kestrel:2",
+   "source": "cv",
+   "title": "CV · Kestrel",
+   "url": "Resume.pdf",
+   "text": "Kestrel: Four specialist extraction agents on the open-source claw-code agent runtime: per-field confidence and citations, deterministic compliance gates, required human confirmation and an audit trail; SSE streaming to a React front end."
+  },
+  {
+   "id": "cv:skills:1",
+   "source": "cv",
+   "title": "CV · Skills",
+   "url": "Resume.pdf",
+   "text": "AI-native development: Claude Code and Codex in parallel, git worktrees, run-until-green and review loops, custom skills and hooks, CLAUDE.md standards, AI-assisted code review, change planning and test review, Cursor"
+  },
+  {
+   "id": "cv:skills:2",
+   "source": "cv",
+   "title": "CV · Skills",
+   "url": "Resume.pdf",
+   "text": "Agents: agent harnesses and loops, tool calling, MCP servers and clients, OAuth-scoped agent access, human-in-the-loop approval, LangGraph, LangChain, Claude and OpenAI SDKs, RAG, LLM-as-a-judge, structured outputs"
+  },
+  {
+   "id": "cv:skills:3",
+   "source": "cv",
+   "title": "CV · Skills",
+   "url": "Resume.pdf",
+   "text": "Full stack: TypeScript, React, Next.js, Node.js (Fastify, Express), Python (FastAPI, Pydantic), Java (Spring Boot), REST and OpenAPI, WebSockets, Server-Sent Events, PWA"
+  },
+  {
+   "id": "cv:skills:4",
+   "source": "cv",
+   "title": "CV · Skills",
+   "url": "Resume.pdf",
+   "text": "Production fundamentals: pytest, Playwright, LangFuse, CloudWatch, Sentry, on-call; Docker, Terraform, GitHub Actions CI/CD; AWS, Azure, Cloudflare Workers; PostgreSQL, MongoDB, Redis"
+  },
+  {
+   "id": "cv:education-certifications:1",
+   "source": "cv",
+   "title": "CV · Education & certifications",
+   "url": "Resume.pdf",
+   "text": "Singapore University of Social Sciences, B.Sc. Information & Communication Technology, Minor in Data Science (GPA 4.2/5)"
+  },
+  {
+   "id": "cv:education-certifications:2",
+   "source": "cv",
+   "title": "CV · Education & certifications",
+   "url": "Resume.pdf",
+   "text": "Certified Associate AI Engineer (CAIE), AI Professionals Singapore · Entry Certificate in Business Analysis (ECBA), IIBA."
+  }
+ ]
+}
