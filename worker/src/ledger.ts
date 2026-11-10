@@ -30,8 +30,13 @@ export class Ledger extends DurableObject<LedgerEnv> {
   private async budget(now: number): Promise<BudgetState> {
     return (await this.ctx.storage.get<BudgetState>("budget")) ?? emptyBudget(now);
   }
-  private async limits(now: number): Promise<LimitState> {
-    return (await this.ctx.storage.get<LimitState>("limits")) ?? emptyLimits(now);
+  // Runs and questions keep separate state: each is pruned with its own time
+  // windows, so starting one kind can never clear the other's pacing or in-flight marks.
+  private limitsKey(keys: string[]): string {
+    return keys.some((k) => k.startsWith("q:")) ? "limits:question" : "limits";
+  }
+  private async limits(key: string, now: number): Promise<LimitState> {
+    return (await this.ctx.storage.get<LimitState>(key)) ?? emptyLimits(now);
   }
 
   // Start of a run: visitor limits first, then "is there any budget at all".
@@ -41,16 +46,18 @@ export class Ledger extends DurableObject<LedgerEnv> {
     const left = remaining(b, this.budgetCfg(), now);
     await this.ctx.storage.put("budget", b);
     if (Math.min(left.month, left.day) < minMicro) return { ok: false, reason: "budget", retryAfterSec: 3600 };
-    const l = await this.limits(now);
+    const stateKey = kind === "question" ? "limits:question" : "limits";
+    const l = await this.limits(stateKey, now);
     const res = begin(l, this.limitCfg(kind), keys, now);
-    await this.ctx.storage.put("limits", l);
+    await this.ctx.storage.put(stateKey, l);
     return res;
   }
 
   async end(keys: string[]): Promise<void> {
-    const l = await this.limits(Date.now());
+    const stateKey = this.limitsKey(keys);
+    const l = await this.limits(stateKey, Date.now());
     end(l, keys);
-    await this.ctx.storage.put("limits", l);
+    await this.ctx.storage.put(stateKey, l);
   }
 
   async reserve(microUsd: number): Promise<string | null> {

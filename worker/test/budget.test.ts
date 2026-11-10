@@ -131,3 +131,14 @@ test("the IP is stored only as a daily-salted hash", async () => {
   assert.notEqual(a, await hashIp("s", "203.0.113.8", "2026-11-10"));
   assert.ok(!a.includes("203"));
 });
+
+test("question pacing uses its own state, so it cannot clear a run's 10-second gap", () => {
+  const runs = emptyLimits(T0);
+  const questions = emptyLimits(T0);
+  const qCfg = { runsPerDay: 5, burstMs: 5_000, inflightMs: 60_000 };
+  assert.ok(begin(runs, lim, ["v:a", "ip:x"], T0).ok);
+  end(runs, ["v:a", "ip:x"]);
+  assert.ok(begin(questions, qCfg, ["q:v:a", "q:ip:x"], T0 + 6_000).ok); // prunes only question state
+  const again = begin(runs, lim, ["v:a", "ip:x"], T0 + 7_000);
+  assert.ok(!again.ok && again.reason === "burst");
+});
