@@ -58,55 +58,70 @@ function ActionChip({ action }: { action: Action }) {
 
 /* ---------- the agent graph ---------- */
 
-// The graph is drawn on a fixed 760 × 608 board and scaled to its pane: nodes are
-// placed in percentages of it, edges are paths in the same coordinates.
-const W = 760;
+// The graph is drawn on a fixed board and scaled to its pane: nodes are placed in
+// percentages of it, edges are paths in the same coordinates. A phone gets a
+// narrower board, so the boxes stay large enough to read.
 const H = 608;
-const MID = 380;
 interface Box { x: number; y: number; w: number; h: number }
-const MAIN = { x: 280, w: 200, h: 64 };
+interface Dims { W: number; mid: number; main: { x: number; w: number; h: number }; loopX: number; gap: number; chip: number }
+const WIDE: Dims = { W: 760, mid: 380, main: { x: 280, w: 200, h: 64 }, loopX: 16, gap: 14, chip: 120 };
+const NARROW: Dims = { W: 420, mid: 210, main: { x: 100, w: 220, h: 64 }, loopX: 10, gap: 8, chip: 96 };
 const RETRIEVER_Y = 264;
 const RETRIEVER_H = 56;
+const isRetriever = (n: GraphNode) => /^r\d+$/.test(n.key);
 
-function layout(graph: Graph): Record<string, Box> {
+function useNarrow(): boolean {
+  const query = "(max-width: 959px)";
+  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const onChange = () => setNarrow(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+  return narrow;
+}
+
+function layout(graph: Graph, d: Dims): Record<string, Box> {
   const boxes: Record<string, Box> = {};
   if (graph.kind === "chat") {
-    graph.nodes.forEach((n, i) => (boxes[n.key] = { ...MAIN, y: 24 + i * 112 }));
+    graph.nodes.forEach((n, i) => (boxes[n.key] = { ...d.main, y: 24 + i * 112 }));
     return boxes;
   }
-  const retrievers = graph.nodes.filter((n) => /^r\d+$/.test(n.key));
+  const retrievers = graph.nodes.filter(isRetriever);
   const slots = Math.max(retrievers.length, 1);
-  const gap = 14;
-  const w = Math.min(120, (730 - (slots - 1) * gap) / slots);
-  const x0 = (W - (slots * w + (slots - 1) * gap)) / 2;
-  boxes.gate = { ...MAIN, y: 24 };
-  boxes.orchestrator = { ...MAIN, y: 136 };
-  retrievers.forEach((n, i) => (boxes[n.key] = { x: x0 + i * (w + gap), y: RETRIEVER_Y, w, h: RETRIEVER_H }));
-  boxes.verifier = { ...MAIN, y: 392 };
-  boxes.writer = { ...MAIN, y: 520 };
+  const span = d.W - 2 * (d.loopX + d.gap);
+  const w = Math.min(d.chip, (span - (slots - 1) * d.gap) / slots);
+  const x0 = (d.W - (slots * w + (slots - 1) * d.gap)) / 2;
+  boxes.gate = { ...d.main, y: 24 };
+  boxes.orchestrator = { ...d.main, y: 136 };
+  retrievers.forEach((n, i) => (boxes[n.key] = { x: x0 + i * (w + d.gap), y: RETRIEVER_Y, w, h: RETRIEVER_H }));
+  boxes.verifier = { ...d.main, y: 392 };
+  boxes.writer = { ...d.main, y: 520 };
   return boxes;
 }
 
 type EdgeState = "idle" | "live" | "done";
 const into = (n?: GraphNode): EdgeState => (!n || n.state === "waiting" ? "idle" : n.state === "running" ? "live" : "done");
 
-function edges(graph: Graph, boxes: Record<string, Box>): { d: string; state: EdgeState; loop?: boolean }[] {
+function edges(graph: Graph, boxes: Record<string, Box>, d: Dims): { d: string; state: EdgeState; loop?: boolean }[] {
   const at = (key: string) => graph.nodes.find((n) => n.key === key);
   const out: { d: string; state: EdgeState; loop?: boolean }[] = [];
+  const back = (from: Box, to: Box) => `M${d.main.x} ${from.y + 32} H${d.loopX} V${to.y + 32} H${d.main.x - 6}`;
   if (graph.kind === "chat") {
-    graph.nodes.slice(1).forEach((n) => out.push({ d: `M${MID} ${boxes[n.key].y - 48} V${boxes[n.key].y}`, state: into(n) }));
-    if (graph.looped) out.push({ d: `M280 ${boxes.verify.y + 32} H16 V${boxes.search.y + 32} H274`, state: graph.looping ? "live" : "done", loop: true });
+    graph.nodes.slice(1).forEach((n) => out.push({ d: `M${d.mid} ${boxes[n.key].y - 48} V${boxes[n.key].y}`, state: into(n) }));
+    if (graph.looped) out.push({ d: back(boxes.verify, boxes.search), state: graph.looping ? "live" : "done", loop: true });
     return out;
   }
-  out.push({ d: `M${MID} 88 V136`, state: into(at("orchestrator")) });
+  out.push({ d: `M${d.mid} 88 V136`, state: into(at("orchestrator")) });
   const verifier = at("verifier");
-  for (const n of graph.nodes.filter((x) => /^r\d+$/.test(x.key))) {
+  for (const n of graph.nodes.filter(isRetriever)) {
     const cx = boxes[n.key].x + boxes[n.key].w / 2;
-    out.push({ d: `M${MID} 200 V232 H${cx} V${RETRIEVER_Y}`, state: into(n) });
-    out.push({ d: `M${cx} ${RETRIEVER_Y + RETRIEVER_H} V356 H${MID} V392`, state: n.state === "done" || n.state === "failed" ? into(verifier) : "idle" });
+    out.push({ d: `M${d.mid} 200 V232 H${cx} V${RETRIEVER_Y}`, state: into(n) });
+    out.push({ d: `M${cx} ${RETRIEVER_Y + RETRIEVER_H} V356 H${d.mid} V392`, state: n.state === "done" || n.state === "failed" ? into(verifier) : "idle" });
   }
-  out.push({ d: `M${MID} 456 V520`, state: into(at("writer")) });
-  if (graph.looped) out.push({ d: "M280 424 H16 V168 H274", state: graph.looping ? "live" : "done", loop: true });
+  out.push({ d: `M${d.mid} 456 V520`, state: into(at("writer")) });
+  if (graph.looped) out.push({ d: back(boxes.verifier, boxes.orchestrator), state: graph.looping ? "live" : "done", loop: true });
   return out;
 }
 
@@ -170,24 +185,26 @@ function detail(n: GraphNode, graph: Graph, s: FitState): { title: string; rows:
 }
 
 const Board = memo(function Board({ graph, state, selected, onSelect }: { graph: Graph; state: FitState; selected: string | null; onSelect: (key: string | null) => void }) {
-  const boxes = layout(graph);
+  const d = useNarrow() ? NARROW : WIDE;
+  const W = d.W;
+  const boxes = layout(graph, d);
   const pct = (b: Box) => ({ left: `${(b.x / W) * 100}%`, top: `${(b.y / H) * 100}%`, width: `${(b.w / W) * 100}%`, height: `${(b.h / H) * 100}%` });
   const picked = graph.nodes.find((n) => n.key === selected);
   const info = picked ? detail(picked, graph, state) : null;
   return (
     <>
       <div className="fit-board-scroll">
-        <div className="fit-board" data-kind={graph.kind}>
+        <div className="fit-board" data-kind={graph.kind} style={{ aspectRatio: `${W} / ${H}`, maxWidth: W }}>
           <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
             <defs>
               <marker id="fit-head" orient="auto" markerWidth="6" markerHeight="6" refX="3" refY="3"><path d="M0 0 L6 3 L0 6 Z" /></marker>
             </defs>
-            {edges(graph, boxes).map((e, i) => <path key={i} d={e.d} className={`fit-edge ${e.state}${e.loop ? " loop" : ""}`} markerEnd={e.loop ? "url(#fit-head)" : undefined} />)}
+            {edges(graph, boxes, d).map((e, i) => <path key={i} d={e.d} className={`fit-edge ${e.state}${e.loop ? " loop" : ""}`} markerEnd={e.loop ? "url(#fit-head)" : undefined} />)}
           </svg>
-          {graph.kind === "run" && !graph.nodes.some((n) => /^r\d+$/.test(n.key)) && (
-            <span className="fit-node ghost" style={pct({ x: 200, y: RETRIEVER_Y, w: 360, h: RETRIEVER_H })}>retrievers join once the plan is made</span>
+          {graph.kind === "run" && !graph.nodes.some(isRetriever) && (
+            <span className="fit-node ghost" style={pct({ x: d.mid - 170, y: RETRIEVER_Y, w: 340, h: RETRIEVER_H })}>retrievers join once the plan is made</span>
           )}
-          {graph.looped && <span className="fit-loop-label" style={{ left: `${(28 / W) * 100}%`, top: `${((graph.kind === "run" ? 196 : 300) / H) * 100}%` }}>{graph.looping ? "searching again" : "second search done"}</span>}
+          {graph.looped && <span className="fit-loop-label" style={{ left: `${((d.loopX + 12) / W) * 100}%`, top: `${((graph.kind === "run" ? 204 : 300) / H) * 100}%` }}>{graph.looping ? "searching again" : "second search done"}</span>}
           {graph.nodes.map((n, i) => {
             const card = state.cards.find((c) => c.id === n.key);
             return (
@@ -221,8 +238,8 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
 
 // The folded graph: one dot per stage, still live. Clicking it opens the graph.
 function Rail({ graph, onOpen }: { graph: Graph; onOpen: () => void }) {
-  const retrievers = graph.nodes.filter((n) => /^r\d+$/.test(n.key));
-  const stages = graph.kind === "chat" ? graph.nodes : graph.nodes.filter((n) => !/^r\d+$/.test(n.key));
+  const retrievers = graph.nodes.filter(isRetriever);
+  const stages = graph.kind === "chat" ? graph.nodes : graph.nodes.filter((n) => !isRetriever(n));
   const group: GraphNode["state"] = retrievers.some((n) => n.state === "running") ? "running" : retrievers.length && retrievers.every((n) => n.state === "done" || n.state === "failed") ? "done" : "waiting";
   const dots = graph.kind === "chat" ? stages.map((n) => ({ key: n.key, state: n.state })) : stages.flatMap((n) => (n.key === "verifier" ? [{ key: "retriever", state: group }, { key: n.key, state: n.state }] : [{ key: n.key, state: n.state }]));
   return (

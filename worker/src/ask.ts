@@ -65,7 +65,8 @@ export type AskEvent = Stamped<OwnEvent | StepEvent | UsageEvent>;
 export type AskDeps = RunDeps<AskEvent>;
 
 const notShown = (): Answer => ({ kind: "not_shown", text: SAY.notShown, evidence: [], actions: ["email"] });
-const offTopic = (): Answer => ({ kind: "off_topic", text: SAY.offTopic, evidence: [], actions: [] });
+// A refusal still leaves the visitor somewhere to go: the question may be a fair one for me in person.
+const offTopic = (): Answer => ({ kind: "off_topic", text: SAY.offTopic, evidence: [], actions: ["email"] });
 
 // Folds every turn but the last KEEP_VERBATIM into the running summary. If the
 // model call fails or its text does not pass the screen, the old turns are still

@@ -9,7 +9,7 @@ ENVIRONMENT = "production"
 OPENAI_MODEL = "gpt-6-luna"
 # "low" keeps hidden reasoning small. Left unset, it sometimes used up a step's whole output cap and the reply was cut off.
 OPENAI_REASONING_EFFORT = "low"
-PRICE_INPUT_PER_M = "0.10"       # USD per million tokens: confirm on OpenAI's pricing page
+PRICE_INPUT_PER_M = "0.10"       # USD per million tokens. Matches third-party price trackers (2026-11-10); not yet checked on OpenAI's own pricing page
 PRICE_CACHED_PER_M = "0.01"
 PRICE_OUTPUT_PER_M = "0.50"
 MONTHLY_BUDGET_USD = "10"
