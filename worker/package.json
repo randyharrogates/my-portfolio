@@ -10,7 +10,8 @@
     "test": "node --no-warnings --test test/*.test.ts",
     "typecheck": "tsc -p .",
     "check": "npm run typecheck && npm test",
-    "dev": "wrangler dev --env dev"
+    "dev": "wrangler dev --env dev",
+    "eval": "node --no-warnings eval/run.ts"
   },
   "dependencies": {
     "openai": "^7.55.0"

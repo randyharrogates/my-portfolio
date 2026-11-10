@@ -279,6 +279,61 @@ export const P: Project[] = [
     links: [],
   },
 
+  {
+    id: "role-fit",
+    art: "site/art-role-fit.webp",
+    theme: "multi",
+    org: "Personal",
+    year: "2026",
+    status: "Open source",
+    title: "A role-fit agent, running on this site",
+    card: "Paste a job description and five agents check it against my published work. Every claim is an exact quote, and you watch each step run.",
+    lede: "The multi-agent system built into this portfolio. A visitor pastes a job description; a planner, up to six parallel retrievers, a critic and a writer return a cited fit report with the gaps listed, then answer follow-up questions in my voice. No login, a hard monthly spend cap, and the whole run streams to the page.",
+    role: "Solo. I designed it and built it with Claude Code.",
+    problem:
+      "A chatbot that answers questions about me proves very little. I wanted the site itself to run a real multi-agent system that a stranger can try without signing in, that cannot invent experience I do not have, and that cannot run up a bill.",
+    flow: [
+      ["Gate", "Refuses anything that is not a job description"],
+      ["Plan", "Picks the six requirements the advert stresses most"],
+      ["Retrieve", "Six agents search in parallel and must quote exactly"],
+      ["Critique", "A critic can lower a verdict, never raise one"],
+      ["Write", "A summary streams, then follow-up questions open"],
+    ],
+    system: [
+      "A fixed pipeline written in code on a Cloudflare Worker: gate, planner, up to six parallel retrievers, critic, writer. At most 10 model calls a run, each with a strict JSON schema and an output cap",
+      "Retrieval is BM25 over excerpts built from this site's case studies and my CV. Search runs in code; a model only judges what search found",
+      "Every quote must be an exact substring of the excerpt it cites, checked in code before it is shown. A claim with no surviving quote becomes a gap",
+      "Typed server-sent events stream each step with elapsed time, tokens and estimated cost. Cached and recorded runs replay at the pace they really ran",
+      "A Durable Object ledger reserves the worst-case cost before every call and settles the real one afterwards, so the monthly cap is a hard limit and not an alert",
+      "No login: a signed anonymous token and a salted IP hash, a Turnstile check, 5 runs and 5 questions a day, and a 10-second gap between runs",
+      "Follow-up questions keep the last four turns on the server, so the visitor cannot rewrite the agent's memory",
+    ],
+    decisions: [
+      "A fixed pipeline over a free-roaming agent: the cost per run has a ceiling, and every step can be tested with a scripted model",
+      "Keyword search over embeddings: a few hundred excerpts do not need a vector store, and every hit can be explained",
+      "Server-sent events over WebSockets: the stream only flows one way, and it needs no connection state",
+      "Guardrails in code, not in prompts: text that addresses the model is refused before any call, and the agent's prose is screened for links, leaked instructions and commitments made on my behalf",
+      "A small, cheap model with the harness doing the hard part: the model picks quotes, the code decides what is true enough to show",
+    ],
+    results: [
+      ["10", "model calls at most per run"],
+      ["$10", "hard monthly spend cap"],
+      ["TESTS", "automated tests"],
+    ],
+    tags: [
+      "Cloudflare Workers",
+      "Durable Objects",
+      "OpenAI Responses API",
+      "Server-sent events",
+      "BM25",
+      "TypeScript",
+      "React",
+    ],
+    links: [
+      ["Try it", "#/fit"],
+      ["Code", "https://github.com/randyharrogates/my-portfolio/tree/master/worker"],
+    ],
+  },
   // ---------- AI-driven workflows
   {
     id: "jarvis",

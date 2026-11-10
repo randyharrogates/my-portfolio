@@ -62,7 +62,7 @@ export interface FitState {
 export const STEP_NAMES: Record<string, { name: string; waiting: string }> = {
   gate: { name: "Gate", waiting: "is this a job description?" },
   planner: { name: "Planner", waiting: "picks the requirements that matter most" },
-  retriever: { name: "Retrievers", waiting: "search 160 excerpts and quote the evidence exactly" },
+  retriever: { name: "Retrievers", waiting: "search my published pages and quote the evidence exactly" },
   critic: { name: "Critic", waiting: "can lower a verdict, never raise one" },
   writer: { name: "Writer", waiting: "streams the summary" },
 };
