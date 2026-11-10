@@ -16,24 +16,42 @@ export class OpenAIModel implements Model {
     this.effort = effort ? (effort as Effort) : undefined;
   }
 
-  async call(req: ModelRequest): Promise<ModelResponse> {
-    const res = await this.client.responses.create({
+  async call(req: ModelRequest, onText?: (delta: string) => void): Promise<ModelResponse> {
+    const params = {
       model: this.model,
       instructions: req.system,
       input: req.user,
       max_output_tokens: req.maxOutputTokens,
       store: false,
       ...(this.effort ? { reasoning: { effort: this.effort } } : {}),
-      text: { format: { type: "json_schema", name: req.schemaName, schema: req.schema, strict: true } },
-    });
+      text: { format: { type: "json_schema" as const, name: req.schemaName, schema: req.schema, strict: true } },
+    };
+    let text = "";
+    let raw: OpenAI.Responses.ResponseUsage | undefined;
+    if (onText) {
+      // Same single request, read as a stream so the page can show text as it is written.
+      const stream = await this.client.responses.create({ ...params, stream: true });
+      for await (const ev of stream) {
+        if (ev.type === "response.output_text.delta") {
+          text += ev.delta;
+          onText(ev.delta);
+        } else if (ev.type === "response.completed" || ev.type === "response.incomplete" || ev.type === "response.failed") {
+          raw = ev.response.usage;
+        }
+      }
+    } else {
+      const res = await this.client.responses.create(params);
+      text = res.output_text;
+      raw = res.usage;
+    }
     const usage = {
-      input: res.usage?.input_tokens ?? 0,
-      cached: res.usage?.input_tokens_details?.cached_tokens ?? 0,
-      output: res.usage?.output_tokens ?? 0,
+      input: raw?.input_tokens ?? 0,
+      cached: raw?.input_tokens_details?.cached_tokens ?? 0,
+      output: raw?.output_tokens ?? 0,
     };
     let json: unknown = null;
     try {
-      json = JSON.parse(res.output_text);
+      json = JSON.parse(text);
     } catch {
       // truncated or refused: the pipeline treats a non-object as a failed step
     }

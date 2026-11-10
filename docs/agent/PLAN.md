@@ -156,3 +156,16 @@ official `openai` SDK's model types), and that quality is good enough once the e
 - **To deploy later:** create the KV namespace and put its id in `wrangler.toml`; set the secrets
   `OPENAI_API_KEY`, `TURNSTILE_SECRET`, `VISITOR_SECRET` with `wrangler secret put`; set
   `AGENT_ENABLED = "true"`.
+- **Step 2b, streaming (done, 2026-11-10):** transport stays SSE over `fetch` (one-way, works through the
+  Worker with no socket state; WebSockets would add nothing here). Every event now carries `t` (ms since
+  the run started) so a cached or recorded run replays at its real pace. New events: `say` (plain-language
+  narration for the conversation pane, composed in code, not by a model), `verdict` (a requirement's card
+  filling in as its retriever finishes, and again if the critic lowers it), `delta` (the writer's summary
+  as it is generated) and `summary` (the authoritative text, which replaces the deltas). `step` events
+  carry the requirement id, `ms` and `costMicro`; `usage` is sent after every call with a running
+  `costMicro`. The summary stream is screened: text is released four words behind and stops for good if the
+  text so far fails the forbidden-claims check (`stream.ts`). 50 tests.
+- **Decision reversed (2026-11-10):** estimated cost is now shown beside tokens and elapsed time, labelled
+  as an estimate from token counts at list price. It replaces "no dollar figures" in section 1.
+- **Designed, not built:** follow-up questions about a finished report (the input at the foot of the
+  conversation pane). It needs a second endpoint and its own per-report cap.

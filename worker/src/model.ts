@@ -24,7 +24,8 @@ export interface ModelResponse {
 }
 
 export interface Model {
-  call(req: ModelRequest): Promise<ModelResponse>;
+  // `onText` receives the raw output text as it is generated, when the caller wants to stream it.
+  call(req: ModelRequest, onText?: (delta: string) => void): Promise<ModelResponse>;
 }
 
 export interface Price {
@@ -50,11 +51,12 @@ export class ScriptedModel implements Model {
   constructor(script: Partial<Record<Step, (req: ModelRequest) => unknown>>) {
     this.script = script;
   }
-  async call(req: ModelRequest): Promise<ModelResponse> {
+  async call(req: ModelRequest, onText?: (delta: string) => void): Promise<ModelResponse> {
     this.calls.push(req);
     const fn = this.script[req.step];
     if (!fn) throw new Error(`no script for step ${req.step}`);
     const json = fn(req);
+    if (onText) for (const piece of JSON.stringify(json).match(/[\s\S]{1,7}/g) ?? []) onText(piece);
     const input = Math.ceil((req.system.length + req.user.length) / 4);
     return { json, usage: { input, cached: 0, output: Math.ceil(JSON.stringify(json).length / 4) } };
   }
