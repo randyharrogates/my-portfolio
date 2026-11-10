@@ -37,6 +37,8 @@ export class OpenAIModel implements Model {
           onText(ev.delta);
         } else if (ev.type === "response.completed" || ev.type === "response.incomplete" || ev.type === "response.failed") {
           raw = ev.response.usage;
+        } else if (ev.type === "error") {
+          throw new Error("model stream error");
         }
       }
     } else {
@@ -44,10 +46,13 @@ export class OpenAIModel implements Model {
       text = res.output_text;
       raw = res.usage;
     }
+    // Fail closed on billing: with no usage report the true cost is unknown, so throw
+    // and let the pipeline settle this call at its worst-case reservation, never at zero.
+    if (!raw) throw new Error("model response carried no usage");
     const usage = {
-      input: raw?.input_tokens ?? 0,
-      cached: raw?.input_tokens_details?.cached_tokens ?? 0,
-      output: raw?.output_tokens ?? 0,
+      input: raw.input_tokens,
+      cached: raw.input_tokens_details?.cached_tokens ?? 0,
+      output: raw.output_tokens,
     };
     let json: unknown = null;
     try {
