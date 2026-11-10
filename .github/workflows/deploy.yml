@@ -33,6 +33,11 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Repository variables (Settings, Variables). Both are public values, not secrets.
+          # Unset means the role-fit page shows recorded runs only.
+          REACT_APP_FIT_API: ${{ vars.FIT_API }}
+          REACT_APP_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

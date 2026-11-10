@@ -1,5 +1,5 @@
 {
- "hash": "603fb92ad013daea3acfe270fe93e3b6f4baa1bdf06a1deaaa779c1856fbb50a",
+ "hash": "94312c1a8b3e22227b27a9d339ab399c87fb5bdbf2e8419eda42c2140044fbd2",
  "chunks": [
   {
    "id": "project:credit-memo:overview",
@@ -209,7 +209,7 @@
    "source": "project",
    "title": "A role-fit agent · Results",
    "url": "#/work/role-fit",
-   "text": "10 model calls at most per run. $10 hard monthly spend cap. TESTS automated tests."
+   "text": "10 model calls at most per run. $10 hard monthly spend cap. 69 automated tests."
   },
   {
    "id": "project:jarvis:overview",

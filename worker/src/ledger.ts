@@ -11,74 +11,80 @@ export interface LedgerEnv {
   QUESTIONS_PER_DAY: string;
 }
 
+// Runs and follow-up questions are limited separately: their own counters, their
+// own pacing, and their own stored state, so starting one never clears the other's.
+export type Kind = "run" | "question";
+const KINDS: Record<Kind, { perDay: keyof LedgerEnv; burstMs: number; inflightMs: number }> = {
+  run: { perDay: "RUNS_PER_DAY", burstMs: 10_000, inflightMs: 120_000 },
+  question: { perDay: "QUESTIONS_PER_DAY", burstMs: 5_000, inflightMs: 60_000 },
+};
+
 // One global instance holds the budget and the visitor counters. A Durable Object
 // handles one request at a time and its storage is strongly consistent, which is
-// what makes the spend cap a hard limit rather than a best effort.
+// what makes the spend cap a hard limit rather than a best effort. State is read
+// from storage once when the object wakes, kept in memory, and written back on
+// every change.
 export class Ledger extends DurableObject<LedgerEnv> {
+  private budget!: BudgetState;
+  private limits!: Record<Kind, LimitState>;
+
+  constructor(ctx: DurableObjectState, env: LedgerEnv) {
+    super(ctx, env);
+    ctx.blockConcurrencyWhile(async () => {
+      const now = Date.now();
+      const stored = await ctx.storage.get<BudgetState | LimitState>(["budget", "limits:run", "limits:question"]);
+      this.budget = (stored.get("budget") as BudgetState | undefined) ?? emptyBudget(now);
+      this.limits = {
+        run: (stored.get("limits:run") as LimitState | undefined) ?? emptyLimits(now),
+        question: (stored.get("limits:question") as LimitState | undefined) ?? emptyLimits(now),
+      };
+    });
+  }
+
   private budgetCfg(): BudgetConfig {
     return {
       monthlyMicro: Math.round(Number(this.env.MONTHLY_BUDGET_USD) * 1e6),
       dailyMicro: Math.round(Number(this.env.DAILY_BUDGET_USD) * 1e6),
     };
   }
-  // Runs and follow-up questions are counted separately (different keys, different caps).
-  private limitCfg(kind: "run" | "question"): LimitConfig {
-    return kind === "run"
-      ? { runsPerDay: Number(this.env.RUNS_PER_DAY), burstMs: 10_000, inflightMs: 120_000 }
-      : { runsPerDay: Number(this.env.QUESTIONS_PER_DAY), burstMs: 5_000, inflightMs: 60_000 };
+  private limitCfg(kind: Kind): LimitConfig {
+    const k = KINDS[kind];
+    return { runsPerDay: Number(this.env[k.perDay]), burstMs: k.burstMs, inflightMs: k.inflightMs };
   }
-  private async budget(now: number): Promise<BudgetState> {
-    return (await this.ctx.storage.get<BudgetState>("budget")) ?? emptyBudget(now);
+  private saveBudget(): Promise<void> {
+    return this.ctx.storage.put("budget", this.budget);
   }
-  // Runs and questions keep separate state: each is pruned with its own time
-  // windows, so starting one kind can never clear the other's pacing or in-flight marks.
-  private limitsKey(keys: string[]): string {
-    return keys.some((k) => k.startsWith("q:")) ? "limits:question" : "limits";
-  }
-  private async limits(key: string, now: number): Promise<LimitState> {
-    return (await this.ctx.storage.get<LimitState>(key)) ?? emptyLimits(now);
+  private saveLimits(kind: Kind): Promise<void> {
+    return this.ctx.storage.put(`limits:${kind}`, this.limits[kind]);
   }
 
-  // Start of a run: visitor limits first, then "is there any budget at all".
-  async begin(keys: string[], minMicro: number, kind: "run" | "question" = "run"): Promise<Begin | { ok: false; reason: "budget"; retryAfterSec: number }> {
-    const now = Date.now();
-    const b = await this.budget(now);
-    const left = remaining(b, this.budgetCfg(), now);
-    await this.ctx.storage.put("budget", b);
-    if (Math.min(left.month, left.day) < minMicro) return { ok: false, reason: "budget", retryAfterSec: 3600 };
-    const stateKey = kind === "question" ? "limits:question" : "limits";
-    const l = await this.limits(stateKey, now);
-    const res = begin(l, this.limitCfg(kind), keys, now);
-    await this.ctx.storage.put(stateKey, l);
+  // Whether a run or question of at least `minMicro` is currently affordable. No amounts leave the Worker.
+  async live(minMicro: number): Promise<boolean> {
+    const left = remaining(this.budget, this.budgetCfg(), Date.now());
+    return Math.min(left.month, left.day) >= minMicro;
+  }
+
+  // Start of a run or question: "is there any budget at all", then the visitor's limits.
+  async begin(keys: string[], minMicro: number, kind: Kind): Promise<Begin | { ok: false; reason: "budget"; retryAfterSec: number }> {
+    if (!(await this.live(minMicro))) return { ok: false, reason: "budget", retryAfterSec: 3600 };
+    const res = begin(this.limits[kind], this.limitCfg(kind), keys, Date.now());
+    await this.saveLimits(kind);
     return res;
   }
 
-  async end(keys: string[]): Promise<void> {
-    const stateKey = this.limitsKey(keys);
-    const l = await this.limits(stateKey, Date.now());
-    end(l, keys);
-    await this.ctx.storage.put(stateKey, l);
+  async end(keys: string[], kind: Kind): Promise<void> {
+    end(this.limits[kind], keys);
+    await this.saveLimits(kind);
   }
 
   async reserve(microUsd: number): Promise<string | null> {
-    const now = Date.now();
-    const b = await this.budget(now);
-    const r = reserve(b, this.budgetCfg(), microUsd, now);
-    await this.ctx.storage.put("budget", b);
+    const r = reserve(this.budget, this.budgetCfg(), microUsd, Date.now());
+    await this.saveBudget();
     return r.ok ? r.id : null;
   }
 
   async settle(id: string, microUsd: number): Promise<void> {
-    const now = Date.now();
-    const b = await this.budget(now);
-    settle(b, id, microUsd, now);
-    await this.ctx.storage.put("budget", b);
-  }
-
-  // Whether live runs are currently affordable. No amounts leave the Worker.
-  async live(minMicro: number): Promise<boolean> {
-    const now = Date.now();
-    const left = remaining(await this.budget(now), this.budgetCfg(), now);
-    return Math.min(left.month, left.day) >= minMicro;
+    settle(this.budget, id, microUsd, Date.now());
+    await this.saveBudget();
   }
 }

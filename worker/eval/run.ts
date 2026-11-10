@@ -16,9 +16,10 @@ import { isSafeProse } from "../src/guard.ts";
 import type { Price } from "../src/model.ts";
 import { OpenAIModel } from "../src/openai.ts";
 import { runPipeline } from "../src/pipeline.ts";
-import type { Event, Meter, Outcome, Report } from "../src/pipeline.ts";
+import { byId, corpus, index } from "../test/fixtures.ts";
+import type { Meter } from "../src/metered.ts";
+import type { Event, Outcome, Report } from "../src/pipeline.ts";
 import { reportActions, suggestions } from "../src/suggest.ts";
-import type { Corpus } from "../src/types.ts";
 
 const here = (p: string) => new URL(p, import.meta.url);
 const vars = (file: string): Record<string, string> => {
@@ -46,10 +47,6 @@ if (!key) {
 const CAP_USD = Number(process.env.EVAL_CAP_USD ?? "0.50");
 const price: Price = { inputPerM: Number(setting("PRICE_INPUT_PER_M")), cachedPerM: Number(setting("PRICE_CACHED_PER_M")), outputPerM: Number(setting("PRICE_OUTPUT_PER_M")) };
 const model = new OpenAIModel(key, setting("OPENAI_MODEL"), setting("OPENAI_REASONING_EFFORT") || undefined);
-const corpus = JSON.parse(readFileSync(here("../corpus/corpus.json"), "utf8")) as Corpus;
-const index = new Bm25(corpus.chunks);
-const byId = new Map(corpus.chunks.map((c) => [c.id, c]));
-
 // The same budget code the Worker uses, capped for this run.
 const budget = emptyBudget(Date.now());
 const cap = { monthlyMicro: CAP_USD * 1e6, dailyMicro: CAP_USD * 1e6 };

@@ -1,29 +1,17 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { Bm25 } from "../src/bm25.ts";
 import { emptyBudget, reserve, settle } from "../src/budget.ts";
 import { ScriptedModel, worstCase } from "../src/model.ts";
 import { MAX_OUTPUT, SYSTEM, gateUser, plannerUser } from "../src/prompts.ts";
 import type { ModelRequest, Step } from "../src/model.ts";
 import { runPipeline } from "../src/pipeline.ts";
-import type { Event, Meter } from "../src/pipeline.ts";
-import type { Corpus } from "../src/types.ts";
+import type { Meter } from "../src/metered.ts";
+import type { Event } from "../src/pipeline.ts";
+import { byId, corpus, firstExcerpt as excerptIn, freeMeter, index, price } from "./fixtures.ts";
 
-const corpus = JSON.parse(readFileSync(new URL("../corpus/corpus.json", import.meta.url), "utf8")) as Corpus;
-const index = new Bm25(corpus.chunks);
-const byId = new Map(corpus.chunks.map((c) => [c.id, c]));
-const price = { inputPerM: 0.1, cachedPerM: 0.01, outputPerM: 0.5 };
 const JD = "Senior AI Engineer. You will build multi-agent systems with LangGraph, fine-tune NLP models, and write Rust for embedded robotics.";
 
-const freeMeter: Meter = { reserve: async () => "r", settle: async () => {} };
-
-// Picks the first excerpt offered in the prompt and quotes its opening words.
-const firstExcerpt = (req: ModelRequest) => {
-  const m = /<excerpt id="([^"]+)"[^>]*>\n([^\n]+)/.exec(req.user);
-  assert.ok(m, "retriever prompt should carry excerpts");
-  return { excerpt_id: m[1], quote: m[2].slice(0, 60) };
-};
+const firstExcerpt = (req: ModelRequest) => excerptIn(req.user);
 
 const honest: Partial<Record<Step, (r: ModelRequest) => unknown>> = {
   gate: () => ({ is_job_description: true }),

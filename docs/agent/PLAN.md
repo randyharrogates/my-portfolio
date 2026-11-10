@@ -179,3 +179,29 @@ official `openai` SDK's model types), and that quality is good enough once the e
   report this Worker stored in the last day (`reportId` arrives in the run's final frame). 59 tests;
   exercised under `wrangler dev` (401 without a token, 410 unknown report, 429 too fast, memory carried,
   off-topic refusal, 429 at the sixth question). **Not yet run against a real model.**
+- **Step 3, voice, guardrails, page, case study (done, 2026-11-10):**
+  - *Voice:* the agent answers as me, in first person (`voice.ts` holds the style notes and every fixed line).
+  - *Guardrails in code (`guard.ts`):* hidden characters stripped and text folded before anything reads it;
+    text that addresses the model is refused before any call is paid for (job descriptions and questions);
+    model prose is screened for links, markup, leaked prompt wording and commitments (pay, dates, offers) and
+    replaced by the checked quotes if it fails; role and requirement text a model wrote from visitor text is
+    flattened to one plain line before it is shown or reused in a prompt.
+  - *Transport hardening:* JSON-only POSTs, `nosniff`, a deny-all CSP and no-referrer on every Worker
+    response; a site-wide Content Security Policy in `public/index.html` (no inline scripts, connections
+    only to the site, GitHub's profile API and the Worker); links in the stream are rendered only when they
+    are one of the site's own routes or the résumé PDF.
+  - *Chips:* follow-up suggestions computed from the verdicts (`suggest.ts`) and page actions (email,
+    résumé, case studies); a "not shown" answer offers "Email me".
+  - *Page:* `src/site/fit/` (`/#/fit`, nav "Role fit"): conversation, report and trace panes at 1 : 1.618 : 1,
+    tabs on a phone, elapsed time, tokens and estimated cost, session kept in the browser for 24 hours.
+  - *Case study:* `role-fit` in `src/site/data.ts`, so the agent can cite its own design.
+  - *Simplify pass:* one metered model caller (`metered.ts`) for the pipeline and the answers, one
+    grounding function (`quote.ts`), one sanitiser, the request handler split into three routes, ledger
+    state held in memory and written through, unused event fields and options removed.
+  - *Real-model check:* `cd worker && npm run eval` runs 8 job descriptions and 12 questions (jailbreak
+    attempts included) against the configured model under its own $0.50 cap, prints a scoreboard and, on a
+    clean full run, records `public/site/fit/replays.json` for the page. **Not yet run: no key in
+    `worker/.dev.vars`.**
+- **To deploy later (adds to the list above):** set repository variables `FIT_API` (the Worker's URL) and
+  `TURNSTILE_SITE_KEY` for the Pages build; the Worker origin is then allowed by the site CSP
+  automatically. Push only after `npm run eval` passes on the real model.

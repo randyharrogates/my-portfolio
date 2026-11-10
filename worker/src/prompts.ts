@@ -1,3 +1,5 @@
+import { oneLine } from "./guard.ts";
+import { MAX_QUOTE_CHARS } from "./quote.ts";
 import type { Chunk } from "./types.ts";
 import { VOICE } from "./voice.ts";
 
@@ -11,10 +13,7 @@ Rules that apply to every step:
 - A quote must be copied character for character from one excerpt. Do not paraphrase inside a quote.
 - Reply with JSON only, matching the schema you are given.`;
 
-// Text a model wrote from the visitor's job description (the role title, a requirement)
-// is still visitor-influenced. Wherever it is placed inside a later prompt it is
-// flattened to one line with no angle brackets, so it cannot open or close a block.
-const inline = (s: string) => s.replace(/[<>\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 240);
+const inline = (s: string) => oneLine(s, MAX_QUOTE_CHARS);
 
 const fence = (tag: string, body: string) => `<${tag}>\n${body.replaceAll(`</${tag}>`, "")}\n</${tag}>`;
 

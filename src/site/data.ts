@@ -318,7 +318,7 @@ export const P: Project[] = [
     results: [
       ["10", "model calls at most per run"],
       ["$10", "hard monthly spend cap"],
-      ["TESTS", "automated tests"],
+      ["69", "automated tests"],
     ],
     tags: [
       "Cloudflare Workers",

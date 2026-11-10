@@ -32,27 +32,22 @@ export interface Answer {
   actions: Action[];
 }
 
-type RunOutcome =
-  | { status: "done" }
-  | { status: "not_a_job_description" }
-  | { status: "budget_exhausted" }
-  | { status: "failed" };
-
-type AskOutcome = { status: "answered" } | { status: "budget_exhausted" } | { status: "failed" };
+type RunStatus = "done" | "not_a_job_description" | "budget_exhausted" | "failed";
+type AskStatus = "answered" | "budget_exhausted" | "failed";
 
 export type Frame = { t?: number } & (
-  | { type: "step"; step: string; id?: string; label: string; state: "start" | "done" | "failed"; usage?: Usage; ms?: number; costMicro?: number }
+  | { type: "step"; step: string; id?: string; state: "start" | "done" | "failed"; usage?: Usage; ms?: number; costMicro?: number }
   | { type: "say"; text: string }
   | { type: "plan"; role: string; requirements: { id: string; text: string; importance: string }[] }
-  | { type: "retrieved"; id?: string; chunks: { id: string; title: string }[] }
+  | { type: "retrieved"; id: string; chunks: { id: string; title: string }[] }
   | { type: "verdict"; id: string; verdict: Verdict; evidence: Evidence[] }
   | { type: "dropped"; id?: string; reason: string }
   | { type: "delta"; text: string }
   | { type: "summary"; text: string }
   | { type: "answer"; answer: Answer }
   | ({ type: "usage" } & Totals)
-  | { type: "outcome"; outcome: RunOutcome; cached: boolean; runsLeft: number | null; reportId: string | null; suggestions: string[]; actions: Action[] }
-  | { type: "outcome"; outcome: AskOutcome; questionsLeft: number; suggestions: string[] }
+  | { type: "outcome"; outcome: { status: RunStatus }; cached: boolean; runsLeft: number | null; reportId: string | null; suggestions: string[]; actions: Action[] }
+  | { type: "outcome"; outcome: { status: AskStatus }; questionsLeft: number; suggestions: string[] }
 );
 
 export interface Replay {

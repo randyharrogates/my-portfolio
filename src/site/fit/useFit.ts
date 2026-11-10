@@ -7,7 +7,7 @@ import { reducedMotion } from "../shared.tsx";
 import { SITE_KEY, store, streamPost } from "./api.ts";
 import type { PostResult } from "./api.ts";
 import { initial, reduce } from "./state.ts";
-import type { FitState, Refusal } from "./state.ts";
+import type { FitState } from "./state.ts";
 import type { Frame, Replay } from "./types.ts";
 
 const SESSION_KEY = "fit.session";
@@ -37,18 +37,25 @@ function loadTurnstile(): Promise<Turnstile | null> {
   });
 }
 
-function restore(): FitState | null {
+interface Saved {
+  at: number; // when the report was produced: the server keeps it for 24 hours from then
+  state: FitState;
+}
+
+function restore(): Saved | null {
   try {
-    const saved = JSON.parse(store.get(SESSION_KEY) ?? "null") as { at: number; state: FitState } | null;
+    const saved = JSON.parse(store.get(SESSION_KEY) ?? "null") as Saved | null;
     if (!saved || Date.now() - saved.at > SESSION_TTL_MS || saved.state.phase !== "done") return null;
-    return { ...saved.state, asking: false };
+    return { at: saved.at, state: { ...saved.state, asking: false } };
   } catch {
     return null;
   }
 }
 
 export function useFit() {
-  const [state, dispatch] = useReducer(reduce, initial, (s) => restore() ?? s);
+  const restored = useRef(restore()).current;
+  const [state, dispatch] = useReducer(reduce, restored?.state ?? initial);
+  const reportAt = useRef(restored?.at ?? 0);
   const run = useRef({ id: 0, startedAt: 0, lastAt: 0, timers: new Set<number>(), abort: null as AbortController | null });
   const widget = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
@@ -83,16 +90,11 @@ export function useFit() {
     return r.id;
   }, [cancel]);
 
-  // The clock in the trace, while a run is in progress.
-  useEffect(() => {
-    if (state.phase !== "running") return;
-    const timer = window.setInterval(() => dispatch({ kind: "tick", elapsedMs: performance.now() - run.current.startedAt }), 100);
-    return () => window.clearInterval(timer);
-  }, [state.phase]);
-
   // Remember a finished live session, so a reload keeps the report and the conversation.
   useEffect(() => {
-    if (state.phase === "done" && !state.replay && !state.asking) store.set(SESSION_KEY, JSON.stringify({ at: Date.now(), state }));
+    if (state.phase !== "done" || state.replay || state.asking) return;
+    reportAt.current ||= Date.now();
+    store.set(SESSION_KEY, JSON.stringify({ at: reportAt.current, state } satisfies Saved));
   }, [state]);
 
   const humanToken = useCallback(async (): Promise<string> => {
@@ -118,12 +120,13 @@ export function useFit() {
 
   const refuse = useCallback((result: PostResult, id: number) => {
     if (result.ok || run.current.id !== id || result.error === "stopped") return;
-    dispatch({ kind: "refuse", refusal: result.error as Refusal, retryAfterSec: result.retryAfterSec });
+    dispatch({ kind: "refuse", refusal: result.error, retryAfterSec: result.retryAfterSec });
   }, []);
 
   const start = useCallback(
     async (jd: string) => {
       const id = begin();
+      reportAt.current = 0;
       dispatch({ kind: "start", jd, replay: false });
       const turnstileToken = await humanToken();
       if (run.current.id !== id) return;

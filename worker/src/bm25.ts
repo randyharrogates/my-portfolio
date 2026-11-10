@@ -65,6 +65,11 @@ const ALIAS_STEMS = new Map(
   Object.entries(ALIASES).map(([k, v]) => [stem(k), v.map(stem)] as const),
 );
 
+// Standard BM25 constants, and how many chunks one project or CV role may contribute to a result.
+const K1 = 1.4;
+const B = 0.75;
+const PER_GROUP = 3;
+
 export interface Hit {
   chunk: Chunk;
   score: number;
@@ -74,12 +79,8 @@ export class Bm25 {
   private docs: { chunk: Chunk; tf: Map<string, number>; len: number }[];
   private df = new Map<string, number>();
   private avgLen: number;
-  private readonly k1: number;
-  private readonly b: number;
 
-  constructor(chunks: Chunk[], k1 = 1.4, b = 0.75) {
-    this.k1 = k1;
-    this.b = b;
+  constructor(chunks: Chunk[]) {
     this.docs = chunks.map((chunk) => {
       // The title is indexed with the text so "Jarvis" finds every Jarvis chunk.
       const tokens = tokenize(chunk.title + " " + chunk.text);
@@ -92,9 +93,9 @@ export class Bm25 {
     this.avgLen = this.docs.length ? total / this.docs.length : 0;
   }
 
-  // `perSource` caps how many chunks one project or CV role can contribute, so
+  // `PER_GROUP` caps how many chunks one project or CV role can contribute, so
   // one long case study cannot fill the whole context.
-  search(query: string, k = 8, perGroup = 3): Hit[] {
+  search(query: string, k = 8): Hit[] {
     const terms = new Map<string, number>();
     for (const t of tokenize(query)) {
       terms.set(t, 1);
@@ -109,8 +110,8 @@ export class Bm25 {
         if (!f) continue;
         const df = this.df.get(t) ?? 0;
         const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
-        const norm = f + this.k1 * (1 - this.b + (this.b * d.len) / (this.avgLen || 1));
-        score += weight * idf * ((f * (this.k1 + 1)) / norm);
+        const norm = f + K1 * (1 - B + (B * d.len) / (this.avgLen || 1));
+        score += weight * idf * ((f * (K1 + 1)) / norm);
       }
       if (score > 0) hits.push({ chunk: d.chunk, score });
     }
@@ -120,7 +121,7 @@ export class Bm25 {
     for (const h of hits) {
       const group = h.chunk.id.split(":").slice(0, 2).join(":");
       const c = used.get(group) ?? 0;
-      if (c >= perGroup) continue;
+      if (c >= PER_GROUP) continue;
       used.set(group, c + 1);
       out.push(h);
       if (out.length === k) break;

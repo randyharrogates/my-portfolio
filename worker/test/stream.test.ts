@@ -2,17 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ScriptedModel } from "../src/model.ts";
 import type { ModelRequest, Step } from "../src/model.ts";
-import { Bm25 } from "../src/bm25.ts";
-import { isClean, runPipeline } from "../src/pipeline.ts";
+import { isClean } from "../src/guard.ts";
+import { runPipeline } from "../src/pipeline.ts";
 import type { Event } from "../src/pipeline.ts";
 import { JsonStringStream, ScreenedText } from "../src/stream.ts";
-import type { Corpus } from "../src/types.ts";
-import { readFileSync } from "node:fs";
+import { byId, firstExcerpt, freeMeter, index, price } from "./fixtures.ts";
 
-const corpus = JSON.parse(readFileSync(new URL("../corpus/corpus.json", import.meta.url), "utf8")) as Corpus;
-const index = new Bm25(corpus.chunks);
-const byId = new Map(corpus.chunks.map((c) => [c.id, c]));
-const price = { inputPerM: 0.1, cachedPerM: 0.01, outputPerM: 0.5 };
 const JD = "Senior AI Engineer. You will build multi-agent systems with LangGraph and fine-tune NLP models.";
 
 const pieces = (s: string, size: number) => s.match(new RegExp(`[\\s\\S]{1,${size}}`, "g")) ?? [];
@@ -65,10 +60,7 @@ test("a forbidden phrase is never released, even partially", () => {
 const script = (summary: string): Partial<Record<Step, (r: ModelRequest) => unknown>> => ({
   gate: () => ({ is_job_description: true }),
   planner: () => ({ role: "Senior AI Engineer", requirements: [{ text: "Building multi-agent systems with LangGraph", importance: "must" }] }),
-  retriever: (r) => {
-    const m = /<excerpt id="([^"]+)"[^>]*>\n([^\n]+)/.exec(r.user)!;
-    return { verdict: "strong", evidence: [{ excerpt_id: m[1], quote: m[2].slice(0, 60) }] };
-  },
+  retriever: (r) => ({ verdict: "strong", evidence: [firstExcerpt(r.user)] }),
   critic: () => ({ items: [] }),
   writer: () => ({ summary }),
 });
@@ -81,7 +73,7 @@ async function run(summary: string) {
     index,
     byId,
     price,
-    meter: { reserve: async () => "r", settle: async () => {} },
+    meter: freeMeter,
     emit: (e) => events.push(e),
     now: () => (clock += 10),
   });
@@ -96,7 +88,7 @@ test("the summary streams as deltas that add up to the final summary", async () 
   assert.ok(deltas.length > 1, "more than one delta");
   assert.equal(deltas.map((e) => e.text).join(""), summary);
   const final = events.find((e) => e.type === "summary");
-  assert.ok(final?.type === "summary" && final.text === summary && final.streamed);
+  assert.ok(final?.type === "summary" && final.text === summary);
 });
 
 test("a summary that fails the screen is replaced and its bad part never streamed", async () => {
@@ -105,7 +97,7 @@ test("a summary that fails the screen is replaced and its bad part never streame
   const streamed = events.filter((e) => e.type === "delta").map((e) => e.text).join("");
   assert.ok(!/10,000|users/.test(streamed));
   const final = events.find((e) => e.type === "summary");
-  assert.ok(final?.type === "summary" && !final.streamed && final.text === outcome.report.summary && /^Of 1 requirement for/.test(final.text));
+  assert.ok(final?.type === "summary" && final.text === outcome.report.summary && /^Of 1 requirement for/.test(final.text));
 });
 
 test("every event is timestamped in order, and steps carry time, tokens and cost", async () => {

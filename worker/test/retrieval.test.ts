@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { Bm25, tokenize } from "../src/bm25.ts";
-import { groundedEvidence, quoteIsGrounded } from "../src/quote.ts";
+import { groundQuotes, quoteIsGrounded } from "../src/quote.ts";
 import type { Chunk, Corpus } from "../src/types.ts";
 
 const corpus = JSON.parse(readFileSync(new URL("../corpus/corpus.json", import.meta.url), "utf8")) as Corpus;
@@ -68,15 +68,19 @@ test("a quote is grounded only when it appears in the cited chunk", () => {
   assert.ok(!quoteIsGrounded("FAISS", chunk), "too short to count as evidence");
 });
 
-test("evidence citing a missing chunk or an invented quote is dropped", () => {
-  const byId = new Map([[chunk.id, chunk]]);
-  const kept = groundedEvidence(
+test("evidence citing a missing chunk or an invented quote is dropped, and says why", () => {
+  const drops: string[] = [];
+  const kept = groundQuotes(
     [
-      { chunkId: "t:1", quote: "latency fell about 85%" },
-      { chunkId: "t:1", quote: "ten years of Rust experience" },
-      { chunkId: "t:404", quote: "latency fell about 85%" },
+      { excerpt_id: "t:1", quote: "latency fell about 85%" },
+      { excerpt_id: "t:1", quote: "ten years of Rust experience" },
+      { excerpt_id: "t:404", quote: "latency fell about 85%" },
+      { excerpt_id: "t:1", quote: 42 },
     ],
-    byId,
+    [chunk],
+    3,
+    (reason) => drops.push(reason),
   );
-  assert.deepEqual(kept, [{ chunkId: "t:1", quote: "latency fell about 85%" }]);
+  assert.deepEqual(kept.map((e) => [e.chunkId, e.quote]), [["t:1", "latency fell about 85%"]]);
+  assert.deepEqual(drops, ["quote_not_in_source", "unknown_source"]);
 });

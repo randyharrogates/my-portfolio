@@ -10,6 +10,11 @@ const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F­​-‏
 export const cleanInput = (s: string) =>
   s.normalize("NFKC").replace(INVISIBLE, "").replace(/\r\n?/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
+// Text that came from a visitor, or that a model wrote from a visitor's text, is
+// flattened to one plain line wherever it is shown or put back into a prompt, so
+// it cannot open or close a block or carry markup.
+export const oneLine = (s: string, max: number) => s.replace(/[<>`\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+
 // Phrases that address the model rather than describe a job or ask about work.
 // Deliberately narrow: an AI-engineering advert may say "system prompts" or
 // "act as a technical lead", and those must pass.

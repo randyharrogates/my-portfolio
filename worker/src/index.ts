@@ -1,3 +1,7 @@
+// The HTTP entry. Every request passes the same gate (origin, burst limit), then
+// one of three routes: GET /status, POST /run (a job description in, a streamed
+// report out) and POST /ask (a follow-up question about a stored report).
+
 import corpusJson from "../corpus/corpus.json";
 import { MAX_QUESTION_CHARS, MAX_TURNS_REMEMBERED, MIN_QUESTION_CHARS, runAsk } from "./ask.ts";
 import type { AskEvent, AskOutcome, Turn } from "./ask.ts";
@@ -5,10 +9,12 @@ import { Bm25 } from "./bm25.ts";
 import { dayOf } from "./budget.ts";
 import { devModel } from "./devmodel.ts";
 import { Ledger } from "./ledger.ts";
+import type { Kind } from "./ledger.ts";
+import type { Meter } from "./metered.ts";
 import type { Model, Price } from "./model.ts";
 import { OpenAIModel } from "./openai.ts";
-import { MAX_JD_CHARS, runPipeline } from "./pipeline.ts";
-import type { Event, Outcome } from "./pipeline.ts";
+import { MAX_JD_CHARS, MIN_JD_CHARS, runPipeline } from "./pipeline.ts";
+import type { Event, Outcome, Report } from "./pipeline.ts";
 import { reportActions, suggestions } from "./suggest.ts";
 import type { Action } from "./suggest.ts";
 import type { Chunk, Corpus } from "./types.ts";
@@ -40,16 +46,27 @@ interface Env {
 const corpus = corpusJson as Corpus;
 const index = new Bm25(corpus.chunks);
 const byId = new Map<string, Chunk>(corpus.chunks.map((c) => [c.id, c]));
+const CORPUS_ID = corpus.hash.slice(0, 12);
 
-const MIN_JD_CHARS = 80;
 const MAX_BODY_BYTES = 16_384;
-// Below this there is no point starting a run (roughly the gate plus planner calls).
-const MIN_RUN_MICRO = 1_500;
-const CACHE_TTL_SEC = 24 * 3600;
-// Roughly one answer call: below this a question is refused before any work.
-const MIN_ASK_MICRO = 400;
+// Below these there is no point starting: roughly the gate plus planner calls, and one answer call.
+const MIN_MICRO: Record<Kind, number> = { run: 1_500, question: 400 };
+const DAY_SEC = 24 * 3600;
 
-function cors(env: Env, origin: string | null): Record<string, string> | null {
+type Headers = Record<string, string>;
+
+// On every response: nothing here is a document, so it may not be sniffed, framed, or run anything.
+const SECURE: Headers = {
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+  "Referrer-Policy": "no-referrer",
+};
+
+const json = (status: number, body: unknown, headers: Headers = {}) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...SECURE, ...headers } });
+
+function cors(env: Env, origin: string | null): Headers | null {
   const allowed = env.ALLOWED_ORIGINS.split(",").map((s) => s.trim());
   if (!origin || !allowed.includes(origin)) return null;
   return {
@@ -61,19 +78,6 @@ function cors(env: Env, origin: string | null): Record<string, string> | null {
     Vary: "Origin",
   };
 }
-
-// On every response: nothing here is a document, so it may not be sniffed, framed, or run anything.
-const SECURE: Record<string, string> = {
-  "Cache-Control": "no-store",
-  "X-Content-Type-Options": "nosniff",
-  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
-  "Referrer-Policy": "no-referrer",
-};
-
-const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...SECURE, ...headers } });
-
-const normalizeJd = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
 async function sha256Hex(s: string): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -94,184 +98,35 @@ async function turnstileOk(env: Env, token: unknown, ip: string): Promise<boolea
   }
 }
 
-function pickModel(env: Env): Model | null {
-  if (env.OPENAI_API_KEY) return new OpenAIModel(env.OPENAI_API_KEY, env.OPENAI_MODEL, env.OPENAI_REASONING_EFFORT);
-  return env.ENVIRONMENT === "dev" ? devModel() : null;
-}
-
-// `reportId` is what a follow-up question quotes to say which report it is about.
+// What the page is sent when a run or a question ends. The report itself has
+// already been streamed piece by piece, so only the status travels here.
 type Frame =
   | Event
   | AskEvent
-  | { type: "outcome"; outcome: Outcome; cached: boolean; runsLeft: number | null; reportId: string | null; suggestions: string[]; actions: Action[] }
-  | { type: "outcome"; outcome: AskOutcome; questionsLeft: number; suggestions: string[] };
+  | { type: "outcome"; outcome: { status: Outcome["status"] }; cached: boolean; runsLeft: number | null; reportId: string | null; suggestions: string[]; actions: Action[] }
+  | { type: "outcome"; outcome: { status: AskOutcome["status"] }; questionsLeft: number; suggestions: string[] };
 
-// The chips under a finished report: follow-up questions and page actions, computed in code.
-const chips = (outcome: Outcome) =>
-  outcome.status === "done" ? { suggestions: suggestions(outcome.report), actions: reportActions(outcome.report) } : { suggestions: [], actions: [] as Action[] };
-
+// A finished run, kept for a day: its events replay the same job description for
+// free, and its report is what follow-up questions are asked about.
 interface Stored {
   events: Event[];
-  outcome: Outcome;
+  report: Report;
 }
 
 const sse = (frames: Frame[]) => frames.map((f) => `data: ${JSON.stringify(f)}\n\n`).join("");
 
-export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    const origin = request.headers.get("Origin");
-    const corsHeaders = cors(env, origin);
-
-    // 1. Origin. Browsers from other sites, and anything with no Origin, stop here.
-    if (!corsHeaders) return json(403, { error: "origin_not_allowed" });
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-
-    // 2. Burst limit per IP, before any other work.
-    const ip = request.headers.get("CF-Connecting-IP") ?? "0.0.0.0";
-    const burst = await env.BURST.limit({ key: ip });
-    if (!burst.success) return json(429, { error: "slow_down" }, { ...corsHeaders, "Retry-After": "10" });
-
-    const ledger = env.LEDGER.get(env.LEDGER.idFromName("global"));
-    const model = pickModel(env);
-    const enabled = env.AGENT_ENABLED === "true" && model !== null;
-
-    if (request.method === "GET" && url.pathname === "/status") {
-      const live = enabled && (await ledger.live(MIN_RUN_MICRO));
-      return json(200, { live, corpus: corpus.hash.slice(0, 12) }, corsHeaders);
-    }
-    if (request.method !== "POST" || (url.pathname !== "/run" && url.pathname !== "/ask")) return json(404, { error: "not_found" }, corsHeaders);
-
-    // 3. Size and shape of the request. JSON only: a plain HTML form cannot send it.
-    if (!(request.headers.get("Content-Type") ?? "").toLowerCase().startsWith("application/json")) return json(415, { error: "json_only" }, corsHeaders);
-    if (Number(request.headers.get("Content-Length") ?? "0") > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
-    const raw = await request.text();
-    if (raw.length > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
-    let body: { jd?: unknown; turnstileToken?: unknown; reportId?: unknown; question?: unknown };
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      return json(400, { error: "bad_json" }, corsHeaders);
-    }
-    const price: Price = {
-      inputPerM: Number(env.PRICE_INPUT_PER_M),
-      cachedPerM: Number(env.PRICE_CACHED_PER_M),
-      outputPerM: Number(env.PRICE_OUTPUT_PER_M),
-    };
-    const meter = { reserve: (m: number) => ledger.reserve(m), settle: (id: string, m: number) => ledger.settle(id, m) };
-    const sseHeaders = { ...corsHeaders, ...SECURE, "Content-Type": "text/event-stream" };
-
-    // A follow-up question about a report this Worker produced in the last day.
-    if (url.pathname === "/ask") {
-      const reportId = typeof body.reportId === "string" && /^[0-9a-f]{64}$/.test(body.reportId) ? body.reportId : "";
-      const question = typeof body.question === "string" ? body.question.trim() : "";
-      if (!reportId) return json(400, { error: "bad_report" }, corsHeaders);
-      if (question.length < MIN_QUESTION_CHARS || question.length > MAX_QUESTION_CHARS)
-        return json(400, { error: "question_length", min: MIN_QUESTION_CHARS, max: MAX_QUESTION_CHARS }, corsHeaders);
-      if (!enabled || !model) return json(503, { error: "live_runs_off", fallback: "replay" }, corsHeaders);
-      // Only a visitor who already passed the human check on /run holds a signed token.
-      const visitor = await verifyVisitorToken(env.VISITOR_SECRET, request.headers.get("X-Visitor"));
-      if (!visitor) return json(401, { error: "no_visitor" }, corsHeaders);
-      const stored = await env.CACHE.get<Stored>(`fit:${corpus.hash.slice(0, 12)}:${reportId}`, "json");
-      if (!stored || stored.outcome.status !== "done") return json(410, { error: "report_expired" }, corsHeaders);
-      const report = stored.outcome.report;
-
-      const qKeys = [`q:v:${visitor}`, `q:ip:${await hashIp(env.VISITOR_SECRET, ip, dayOf(Date.now()))}`];
-      const begun = await ledger.begin(qKeys, MIN_ASK_MICRO, "question");
-      if (!begun.ok) {
-        if (begun.reason === "budget") return json(503, { error: "live_runs_off", fallback: "replay" }, corsHeaders);
-        return json(429, { error: begun.reason }, { ...corsHeaders, "Retry-After": String(begun.retryAfterSec) });
-      }
-      // Conversation memory lives here, per visitor and report, never in the request.
-      const memoryKey = `chat:${reportId}:${visitor}`;
-      const history = (await env.CACHE.get<Turn[]>(memoryKey, "json")) ?? [];
-      return stream(ctx, sseHeaders, async (send) => {
-        let outcome: AskOutcome = { status: "failed" };
-        try {
-          outcome = await runAsk(question, report, history, { model, index, byId, price, meter, emit: send });
-          if (outcome.status === "answered") {
-            const turn: Turn = { q: question, a: outcome.answer.text, chunkIds: outcome.answer.evidence.map((e) => e.chunkId) };
-            await env.CACHE.put(memoryKey, JSON.stringify([...history, turn].slice(-MAX_TURNS_REMEMBERED)), { expirationTtl: CACHE_TTL_SEC });
-          }
-        } catch {
-          // an unexpected error still ends the stream with a clear outcome
-        } finally {
-          await ledger.end(qKeys);
-          const asked = [...history.map((t) => t.q), question];
-          send({ type: "outcome", outcome, questionsLeft: begun.runsLeft, suggestions: outcome.status === "answered" ? suggestions(report, asked) : [] });
-        }
-      });
-    }
-
-    const jd = typeof body.jd === "string" ? body.jd.trim() : "";
-    if (jd.length < MIN_JD_CHARS || jd.length > MAX_JD_CHARS) return json(400, { error: "jd_length", min: MIN_JD_CHARS, max: MAX_JD_CHARS }, corsHeaders);
-
-    // 4. Kill switch, or no model configured.
-    if (!enabled || !model) return json(503, { error: "live_runs_off", fallback: "replay" }, corsHeaders);
-
-    // 5. Turnstile: a fresh, single-use token per run.
-    if (!(await turnstileOk(env, body.turnstileToken, ip))) return json(403, { error: "turnstile_failed" }, corsHeaders);
-
-    // 6. Anonymous visitor identity.
-    let visitorId = await verifyVisitorToken(env.VISITOR_SECRET, request.headers.get("X-Visitor"));
-    let visitorToken: string | null = null;
-    if (!visitorId) {
-      const issued = await issueVisitorToken(env.VISITOR_SECRET);
-      visitorId = issued.id;
-      visitorToken = issued.token;
-    }
-    const streamHeaders: Record<string, string> = {
-      ...sseHeaders,
-      ...(visitorToken ? { "X-Visitor": visitorToken } : {}),
-    };
-
-    // 7. Cache: the same job description within a day costs nothing and uses no run.
-    const reportId = await sha256Hex(normalizeJd(jd));
-    const cacheKey = `fit:${corpus.hash.slice(0, 12)}:${reportId}`;
-    const hit = await env.CACHE.get<Stored>(cacheKey, "json");
-    if (hit) return new Response(sse([...hit.events, { type: "outcome", outcome: hit.outcome, cached: true, runsLeft: null, reportId, ...chips(hit.outcome) }]), { headers: streamHeaders });
-
-    // 8. Per-visitor limits and the budget check, in the ledger.
-    const keys = [`v:${visitorId}`, `ip:${await hashIp(env.VISITOR_SECRET, ip, dayOf(Date.now()))}`];
-    const started = await ledger.begin(keys, MIN_RUN_MICRO);
-    if (!started.ok) {
-      if (started.reason === "budget") return json(503, { error: "live_runs_off", fallback: "replay" }, corsHeaders);
-      return json(429, { error: started.reason }, { ...corsHeaders, "Retry-After": String(started.retryAfterSec) });
-    }
-
-    // 9. Run, streaming each event as it happens.
-    return stream(ctx, streamHeaders, async (send) => {
-      const events: Event[] = [];
-      let outcome: Outcome = { status: "failed", step: "gate" };
-      let stored = false;
-      try {
-        outcome = await runPipeline(jd, {
-          model,
-          index,
-          byId,
-          price,
-          meter,
-          emit: (e) => {
-            events.push(e);
-            send(e);
-          },
-        });
-        if (outcome.status === "done") {
-          await env.CACHE.put(cacheKey, JSON.stringify({ events, outcome } satisfies Stored), { expirationTtl: CACHE_TTL_SEC });
-          stored = true;
-        }
-      } catch {
-        // an unexpected error still ends the stream with a clear outcome
-      } finally {
-        await ledger.end(keys);
-        send({ type: "outcome", outcome, cached: false, runsLeft: started.runsLeft, reportId: stored ? reportId : null, ...chips(outcome) });
-      }
-    });
-  },
-} satisfies ExportedHandler<Env>;
+const runEnd = (outcome: Outcome, cached: boolean, runsLeft: number | null, reportId: string | null): Frame => ({
+  type: "outcome",
+  outcome: { status: outcome.status },
+  cached,
+  runsLeft,
+  reportId,
+  suggestions: outcome.status === "done" ? suggestions(outcome.report) : [],
+  actions: outcome.status === "done" ? reportActions(outcome.report) : [],
+});
 
 // Runs `work` in the background and streams every frame it sends as one SSE message.
-function stream(ctx: ExecutionContext, headers: Record<string, string>, work: (send: (f: Frame) => void) => Promise<void>): Response {
+function stream(ctx: ExecutionContext, headers: Headers, work: (send: (f: Frame) => void) => Promise<void>): Response {
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
   const writer = writable.getWriter();
   const enc = new TextEncoder();
@@ -286,3 +141,174 @@ function stream(ctx: ExecutionContext, headers: Record<string, string>, work: (s
   );
   return new Response(readable, { headers });
 }
+
+// Everything a route needs once the request has passed the shared checks.
+interface Ctx {
+  env: Env;
+  ctx: ExecutionContext;
+  ip: string;
+  cors: Headers;
+  sse: Headers;
+  ledger: DurableObjectStub<Ledger>;
+  model: Model;
+  price: Price;
+  meter: Meter;
+  visitorHeader: string | null;
+}
+
+const liveOff = (c: { cors: Headers }) => json(503, { error: "live_runs_off", fallback: "replay" }, c.cors);
+
+// Counts this run or question against the visitor's limits, or says why not.
+async function begin(c: Ctx, kind: Kind, visitorId: string): Promise<{ keys: string[]; left: number } | Response> {
+  const prefix = kind === "question" ? "q:" : "";
+  const keys = [`${prefix}v:${visitorId}`, `${prefix}ip:${await hashIp(c.env.VISITOR_SECRET, c.ip, dayOf(Date.now()))}`];
+  const started = await c.ledger.begin(keys, MIN_MICRO[kind], kind);
+  if (started.ok) return { keys, left: started.runsLeft };
+  if (started.reason === "budget") return liveOff(c);
+  return json(429, { error: started.reason }, { ...c.cors, "Retry-After": String(started.retryAfterSec) });
+}
+
+async function handleRun(c: Ctx, body: Record<string, unknown>): Promise<Response> {
+  const jd = typeof body.jd === "string" ? body.jd.trim() : "";
+  if (jd.length < MIN_JD_CHARS || jd.length > MAX_JD_CHARS) return json(400, { error: "jd_length", min: MIN_JD_CHARS, max: MAX_JD_CHARS }, c.cors);
+
+  // A fresh, single-use human check per run.
+  if (!(await turnstileOk(c.env, body.turnstileToken, c.ip))) return json(403, { error: "turnstile_failed" }, c.cors);
+
+  // Anonymous visitor identity: a signed token the page keeps and sends back.
+  let visitorId = await verifyVisitorToken(c.env.VISITOR_SECRET, c.visitorHeader);
+  const headers = { ...c.sse };
+  if (!visitorId) {
+    const issued = await issueVisitorToken(c.env.VISITOR_SECRET);
+    visitorId = issued.id;
+    headers["X-Visitor"] = issued.token;
+  }
+
+  // The same job description within a day costs nothing and uses no run.
+  const reportId = await sha256Hex(jd.replace(/\s+/g, " ").toLowerCase());
+  const cacheKey = `fit:${CORPUS_ID}:${reportId}`;
+  const hit = await c.env.CACHE.get<Stored>(cacheKey, "json");
+  if (hit) return new Response(sse([...hit.events, runEnd({ status: "done", report: hit.report }, true, null, reportId)]), { headers });
+
+  const started = await begin(c, "run", visitorId);
+  if (started instanceof Response) return started;
+
+  return stream(c.ctx, headers, async (send) => {
+    const events: Event[] = [];
+    let outcome: Outcome = { status: "failed", step: "gate" };
+    let stored = false;
+    try {
+      outcome = await runPipeline(jd, {
+        model: c.model,
+        index,
+        byId,
+        price: c.price,
+        meter: c.meter,
+        emit: (e) => {
+          events.push(e);
+          send(e);
+        },
+      });
+      if (outcome.status === "done") {
+        await c.env.CACHE.put(cacheKey, JSON.stringify({ events, report: outcome.report } satisfies Stored), { expirationTtl: DAY_SEC });
+        stored = true;
+      }
+    } finally {
+      // an unexpected error still ends the stream with a clear outcome
+      await c.ledger.end(started.keys, "run");
+      send(runEnd(outcome, false, started.left, stored ? reportId : null));
+    }
+  });
+}
+
+async function handleAsk(c: Ctx, body: Record<string, unknown>): Promise<Response> {
+  const reportId = typeof body.reportId === "string" && /^[0-9a-f]{64}$/.test(body.reportId) ? body.reportId : "";
+  const question = typeof body.question === "string" ? body.question.trim() : "";
+  if (!reportId) return json(400, { error: "bad_report" }, c.cors);
+  if (question.length < MIN_QUESTION_CHARS || question.length > MAX_QUESTION_CHARS)
+    return json(400, { error: "question_length", min: MIN_QUESTION_CHARS, max: MAX_QUESTION_CHARS }, c.cors);
+
+  // Only a visitor who already passed the human check on /run holds a signed token.
+  const visitor = await verifyVisitorToken(c.env.VISITOR_SECRET, c.visitorHeader);
+  if (!visitor) return json(401, { error: "no_visitor" }, c.cors);
+
+  // Conversation memory lives here, per visitor and report, never in the request.
+  const memoryKey = `chat:${reportId}:${visitor}`;
+  const [stored, remembered] = await Promise.all([c.env.CACHE.get<Stored>(`fit:${CORPUS_ID}:${reportId}`, "json"), c.env.CACHE.get<Turn[]>(memoryKey, "json")]);
+  if (!stored) return json(410, { error: "report_expired" }, c.cors);
+  const history = remembered ?? [];
+
+  const started = await begin(c, "question", visitor);
+  if (started instanceof Response) return started;
+
+  return stream(c.ctx, c.sse, async (send) => {
+    let outcome: AskOutcome = { status: "failed" };
+    try {
+      outcome = await runAsk(question, stored.report, history, { model: c.model, index, byId, price: c.price, meter: c.meter, emit: send });
+      if (outcome.status === "answered") {
+        const turn: Turn = { q: question, a: outcome.answer.text, chunkIds: outcome.answer.evidence.map((e) => e.chunkId) };
+        await c.env.CACHE.put(memoryKey, JSON.stringify([...history, turn].slice(-MAX_TURNS_REMEMBERED)), { expirationTtl: DAY_SEC });
+      }
+    } finally {
+      await c.ledger.end(started.keys, "question");
+      const asked = [...history.map((t) => t.q), question];
+      send({ type: "outcome", outcome: { status: outcome.status }, questionsLeft: started.left, suggestions: outcome.status === "answered" ? suggestions(stored.report, asked) : [] });
+    }
+  });
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    // 1. Origin. Browsers from other sites, and anything with no Origin, stop here.
+    const corsHeaders = cors(env, request.headers.get("Origin"));
+    if (!corsHeaders) return json(403, { error: "origin_not_allowed" });
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+
+    // 2. Burst limit per IP, before any other work.
+    const ip = request.headers.get("CF-Connecting-IP") ?? "0.0.0.0";
+    if (!(await env.BURST.limit({ key: ip })).success) return json(429, { error: "slow_down" }, { ...corsHeaders, "Retry-After": "10" });
+
+    // 3. The kill switch, and whether a model is configured at all.
+    const hasModel = Boolean(env.OPENAI_API_KEY) || env.ENVIRONMENT === "dev";
+    const enabled = env.AGENT_ENABLED === "true" && hasModel;
+    const ledger = env.LEDGER.get(env.LEDGER.idFromName("global"));
+
+    if (request.method === "GET" && url.pathname === "/status") {
+      return json(200, { live: enabled && (await ledger.live(MIN_MICRO.run)), corpus: CORPUS_ID }, corsHeaders);
+    }
+    const route = request.method === "POST" ? { "/run": handleRun, "/ask": handleAsk }[url.pathname] : undefined;
+    if (!route) return json(404, { error: "not_found" }, corsHeaders);
+
+    // 4. Size and shape of the request. JSON only: a plain HTML form cannot send it.
+    if (!(request.headers.get("Content-Type") ?? "").toLowerCase().startsWith("application/json")) return json(415, { error: "json_only" }, corsHeaders);
+    if (Number(request.headers.get("Content-Length") ?? "0") > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
+    const raw = await request.text();
+    if (raw.length > MAX_BODY_BYTES) return json(413, { error: "too_large" }, corsHeaders);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      body = null;
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) return json(400, { error: "bad_json" }, corsHeaders);
+    if (!enabled) return liveOff({ cors: corsHeaders });
+
+    return route(
+      {
+        env,
+        ctx,
+        ip,
+        cors: corsHeaders,
+        sse: { ...corsHeaders, ...SECURE, "Content-Type": "text/event-stream" },
+        ledger,
+        model: env.OPENAI_API_KEY ? new OpenAIModel(env.OPENAI_API_KEY, env.OPENAI_MODEL, env.OPENAI_REASONING_EFFORT) : devModel(),
+        price: { inputPerM: Number(env.PRICE_INPUT_PER_M), cachedPerM: Number(env.PRICE_CACHED_PER_M), outputPerM: Number(env.PRICE_OUTPUT_PER_M) },
+        meter: { reserve: (m) => ledger.reserve(m), settle: (id, m) => ledger.settle(id, m) },
+        visitorHeader: request.headers.get("X-Visitor"),
+      },
+      body as Record<string, unknown>,
+    );
+  },
+} satisfies ExportedHandler<Env>;

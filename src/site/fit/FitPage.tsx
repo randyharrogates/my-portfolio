@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { jump } from "../shared.tsx";
-import { API, isLive } from "./api.ts";
-import { STEP_NAMES } from "./state.ts";
+import { isLive } from "./api.ts";
+import { STEP_NAMES, cost, seconds } from "./state.ts";
 import type { Card, ChatItem, FitState, Refusal } from "./state.ts";
 import type { Action, Evidence, Replay } from "./types.ts";
 import { useFit } from "./useFit.ts";
@@ -13,9 +13,9 @@ const MAX_JD = 6000;
 const MIN_QUESTION = 8;
 const MAX_QUESTION = 300;
 
-const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+// These mirror the Worker's own limits (worker/src/pipeline.ts, ask.ts), which it enforces whatever the page says.
+const MAX_CALLS = 10;
 const count = (n: number) => n.toLocaleString();
-const cost = (micro: number) => `$${(micro / 1e6).toFixed(micro < 1000 ? 5 : 4)}`;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 // A source link is only ever one of the site's own pages or its résumé PDF.
@@ -24,6 +24,29 @@ function Source({ evidence }: { evidence: Evidence }) {
   if (/^#\/[a-z0-9/_-]*$/i.test(evidence.url)) return <Link className="fit-src" to={evidence.url.slice(1)}>{evidence.title}</Link>;
   if (evidence.url === "Resume.pdf") return <a className="fit-src" href="Resume.pdf" target="_blank" rel="noopener noreferrer">{evidence.title}</a>;
   return <span className="fit-src">{evidence.title}</span>;
+}
+
+function Quote({ evidence, small }: { evidence: Evidence; small?: boolean }) {
+  return (
+    <figure className={"fit-quote" + (small ? " small" : "")}>
+      <blockquote>“{evidence.quote}”</blockquote>
+      <figcaption><span className="ok">✓ quote matches source</span><Source evidence={evidence} /></figcaption>
+    </figure>
+  );
+}
+
+// The run's clock. It ticks on its own while the run is in progress, so the
+// rest of the page does not re-render ten times a second.
+function Elapsed({ running, ms }: { running: boolean; ms: number }) {
+  const [now, setNow] = useState(ms);
+  useEffect(() => {
+    if (!running) return;
+    const startedAt = performance.now() - ms;
+    const timer = window.setInterval(() => setNow(performance.now() - startedAt), 100);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restart only when the run starts or stops
+  }, [running]);
+  return <b className={running ? "ticking" : ""}>{seconds(running ? Math.max(now, ms) : ms)}</b>;
 }
 
 function ActionChip({ action }: { action: Action }) {
@@ -55,12 +78,7 @@ function ReportCard({ card, index }: { card: Card; index: number }) {
           <div className="fit-skel" /><div className="fit-skel short" />
         </>
       )}
-      {card.evidence.map((e) => (
-        <figure key={e.chunkId + e.quote} className="fit-quote">
-          <blockquote>“{e.quote}”</blockquote>
-          <figcaption><span className="ok">✓ quote matches source</span><Source evidence={e} /></figcaption>
-        </figure>
-      ))}
+      {card.evidence.map((e) => <Quote key={e.chunkId + e.quote} evidence={e} />)}
       {card.verdict === "gap" && <p className="fit-muted">Nothing in my case studies or CV shows this{card.chunks.length ? `. The search returned ${plural(card.chunks.length, "excerpt")}; none supported it.` : "."}</p>}
       {(card.dropped > 0 || card.lowered) && (
         <p className="fit-flags">
@@ -84,18 +102,13 @@ function Bubble({ item }: { item: ChatItem }) {
     <div className={"fit-bubble agent" + (item.answer && item.answer.kind !== "grounded" ? " plain" : "")}>
       {item.note && <small>{item.note}</small>}
       <span>{item.text}{item.streaming && <i className="fit-caret" aria-hidden="true" />}</span>
-      {item.answer?.evidence.map((e) => (
-        <figure key={e.chunkId + e.quote} className="fit-quote small">
-          <blockquote>“{e.quote}”</blockquote>
-          <figcaption><span className="ok">✓ quote matches source</span><Source evidence={e} /></figcaption>
-        </figure>
-      ))}
+      {item.answer?.evidence.map((e) => <Quote key={e.chunkId + e.quote} evidence={e} small />)}
       {item.answer && item.answer.actions.length > 0 && <div className="fit-chips">{item.answer.actions.map((a) => <ActionChip key={a} action={a} />)}</div>}
     </div>
   );
 }
 
-function Chat({ state, onAsk }: { state: FitState; onAsk: (q: string) => void }) {
+const Chat = memo(function Chat({ state, onAsk }: { state: FitState; onAsk: (q: string) => void }) {
   const [question, setQuestion] = useState("");
   const log = useRef<HTMLDivElement>(null);
   // Keep the newest line of the conversation in view as it streams.
@@ -132,9 +145,9 @@ function Chat({ state, onAsk }: { state: FitState; onAsk: (q: string) => void })
       </form>
     </section>
   );
-}
+});
 
-function Report({ state, onReset }: { state: FitState; onReset: () => void }) {
+const Report = memo(function Report({ state, onReset }: { state: FitState; onReset: () => void }) {
   const tally = (v: string) => state.cards.filter((c) => c.verdict === v).length;
   return (
     <section className="fit-report" aria-label="Fit report">
@@ -159,11 +172,16 @@ function Report({ state, onReset }: { state: FitState; onReset: () => void }) {
       )}
     </section>
   );
-}
+});
 
-function Trace({ state }: { state: FitState }) {
+const Trace = memo(function Trace({ state }: { state: FitState }) {
   const tokens = state.totals.input + state.totals.output;
-  const g = state.guardrails;
+  // What the guardrails did, read off the cards.
+  const g = {
+    quotesDropped: state.cards.reduce((sum, c) => sum + c.dropped, 0),
+    lowered: state.cards.filter((c) => c.lowered).length,
+    gaps: state.phase === "done" ? state.cards.filter((c) => c.verdict === "gap").length : 0,
+  };
   return (
     <aside className="fit-pane fit-trace" aria-label="Agent trace">
       <header>
@@ -171,7 +189,7 @@ function Trace({ state }: { state: FitState }) {
         <span className={"fit-badge " + (state.phase === "running" ? "live" : "strong") + (state.phase === "done" ? " pulse" : "")} role="status">{state.phase === "running" ? "running" : "completed"}</span>
       </header>
       <div className="fit-meter">
-        <div><b className={state.phase === "running" ? "ticking" : ""}>{seconds(state.elapsedMs)}</b><span>elapsed</span></div>
+        <div><Elapsed running={state.phase === "running"} ms={state.elapsedMs} /><span>elapsed</span></div>
         <div><b>{count(tokens)}</b><span>tokens</span></div>
         <div><b>{cost(state.totals.costMicro)}</b><span>est. cost</span></div>
       </div>
@@ -181,7 +199,7 @@ function Trace({ state }: { state: FitState }) {
             <span className="fit-mark" aria-hidden="true">{st.state === "done" ? "✓" : st.state === "failed" ? "!" : st.state === "running" ? "" : i + 1}</span>
             <div>
               <div className="fit-row"><b>{STEP_NAMES[st.key].name}{st.key === "retriever" && state.cards.length > 0 ? ` × ${state.cards.length}` : ""}</b>{st.ms !== undefined && <span>{seconds(st.ms)}</span>}</div>
-              <span className="fit-muted">{st.state === "waiting" ? STEP_NAMES[st.key].waiting : st.state === "running" ? "working…" : st.state === "failed" ? "failed" : STEP_NAMES[st.key].waiting}</span>
+              <span className="fit-muted">{st.state === "running" ? "working…" : st.state === "failed" ? "failed" : STEP_NAMES[st.key].does}</span>
               {st.key === "retriever" && state.retrievers.length > 0 && (
                 <ul className="fit-subs">
                   {state.retrievers.map((r) => {
@@ -209,13 +227,13 @@ function Trace({ state }: { state: FitState }) {
         </div>
       )}
       <div className="fit-cap">
-        <div className="fit-row"><span>model calls</span><span>{state.totals.calls} of 10 allowed</span></div>
-        <div className="fit-bar" role="img" aria-label={`${state.totals.calls} of 10 model calls used`}><i style={{ width: `${Math.min(100, state.totals.calls * 10)}%` }} /></div>
+        <div className="fit-row"><span>model calls</span><span>{state.totals.calls} of {MAX_CALLS} allowed</span></div>
+        <div className="fit-bar" role="img" aria-label={`${state.totals.calls} of ${MAX_CALLS} model calls used`}><i style={{ width: `${Math.min(100, (state.totals.calls / MAX_CALLS) * 100)}%` }} /></div>
         <small>Cost is an estimate from token counts at the model’s list price.</small>
       </div>
     </aside>
   );
-}
+});
 
 const REFUSALS: Record<Refusal, [string, string]> = {
   not_a_job_description: ["That doesn’t look like a job description", "This page only checks a role against my published work. Paste the advert’s responsibilities and requirements and try again."],
@@ -229,7 +247,6 @@ const REFUSALS: Record<Refusal, [string, string]> = {
   report_expired: ["That report has expired", "Run the job description again."],
   network: ["I couldn’t reach the server", "Check your connection and try again."],
   failed: ["That run failed", "A step did not return a usable answer. It was not counted as a result; try again."],
-  stopped: ["Stopped", "The run was stopped."],
 };
 
 function Start({ state, live, replays, onRun, onReplay }: { state: FitState; live: boolean; replays: Replay[]; onRun: (jd: string) => void; onReplay: (r: Replay) => void }) {
@@ -281,12 +298,12 @@ function Start({ state, live, replays, onRun, onReplay }: { state: FitState; liv
         <header><div><span className="eyebrow">Agent trace</span><b>Waiting for a job description</b></div></header>
         <ol className="fit-steps">
           {Object.entries(STEP_NAMES).map(([key, s], i) => (
-            <li key={key} className="waiting"><span className="fit-mark" aria-hidden="true">{i + 1}</span><div><b>{s.name}{key === "retriever" ? " × 6, in parallel" : ""}</b><span className="fit-muted">{s.waiting}</span></div></li>
+            <li key={key} className="waiting"><span className="fit-mark" aria-hidden="true">{i + 1}</span><div><b>{s.name}{key === "retriever" ? " × 6, in parallel" : ""}</b><span className="fit-muted">{s.does}</span></div></li>
           ))}
         </ol>
         <div className="fit-guard">
           <span className="eyebrow">Built-in limits</span>
-          <p>At most 10 model calls per run, 5 runs and 5 questions a day per visitor, and a fixed monthly budget. Every step streams here live, with time elapsed, tokens used and estimated cost.</p>
+          <p>At most {MAX_CALLS} model calls per run, 5 runs and 5 questions a day per visitor, and a fixed monthly budget. Every step streams here live, with time elapsed, tokens used and estimated cost.</p>
         </div>
       </aside>
     </div>
@@ -324,7 +341,7 @@ export default function FitPage() {
               </div>
             </>
           ) : (
-            <Start state={state} live={live && API !== ""} replays={replays} onRun={start} onReplay={replay} />
+            <Start state={state} live={live} replays={replays} onRun={start} onReplay={replay} />
           )}
           <div ref={widget} className="fit-turnstile" />
         </div>
