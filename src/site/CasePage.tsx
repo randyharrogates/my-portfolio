@@ -28,6 +28,17 @@ function Cover({ project: p }: { project: Project }) {
       />
       <figcaption>Screenshot</figcaption>
     </figure>
+  ) : p.art && !failed ? (
+    <figure className="cover art">
+      <img
+        src={p.art}
+        alt=""
+        loading="lazy"
+        style={{ objectPosition: "center" }}
+        onError={() => setFailed(true)}
+      />
+      <figcaption>Illustration</figcaption>
+    </figure>
   ) : null;
 }
 export default function CasePage() {

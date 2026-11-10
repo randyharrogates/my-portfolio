@@ -106,6 +106,7 @@
 .rc-site .cover{margin:var(--s6) 0 0; border-radius:21px; overflow:hidden; border:1px solid var(--line); position:relative; box-shadow:var(--shadow); background:var(--stage)}
 .rc-site .cover img{display:block; width:100%; aspect-ratio:2.618/1; object-fit:cover; object-position:top center}
 .rc-site .cover figcaption{right:13px; bottom:13px; font-size:11px; padding:3px 8px}
+.rc-site .cover.art img{aspect-ratio:1.618/1; object-position:center}
 .rc-site .cover.shots{display:grid; grid-template-columns:minmax(0,1.618fr) minmax(0,1fr); gap:var(--s3); padding:var(--s3); box-shadow:none}
 .rc-site .cover.shots img{aspect-ratio:auto; height:100%; border-radius:13px; border:1px solid var(--line)}
 @media (max-width:600px){.rc-site .cover.shots{grid-template-columns:minmax(0,1fr)}}

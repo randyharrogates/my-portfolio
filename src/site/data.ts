@@ -9,6 +9,7 @@ export interface Project {
   theme: string;
   vis?: string;
   img?: string;
+  art?: string; // generated illustration; never captioned as a screenshot
   shots?: string[];
   phones?: boolean;
   pos?: string;
@@ -74,6 +75,7 @@ export const P: Project[] = [
   // ---------- Multi-agent systems
   {
     id: "credit-memo",
+    art: "site/art-credit-memo.webp",
     theme: "multi",
     vis: "vis-memo",
     org: "TrustPlus AI",
@@ -133,6 +135,7 @@ export const P: Project[] = [
   },
   {
     id: "kestrel",
+    art: "site/art-kestrel.webp",
     theme: "multi",
     vis: "vis-kestrel",
     org: "Personal",
@@ -177,6 +180,7 @@ export const P: Project[] = [
   },
   {
     id: "leetee",
+    art: "site/art-leetee.webp",
     theme: "multi",
     org: "Personal",
     year: "2026",
@@ -227,6 +231,7 @@ export const P: Project[] = [
   },
   {
     id: "agent-pilot",
+    art: "site/art-agent-pilot.webp",
     theme: "multi",
     org: "AI Singapore",
     year: "2024",
@@ -277,6 +282,7 @@ export const P: Project[] = [
   // ---------- AI-driven workflows
   {
     id: "jarvis",
+    art: "site/art-jarvis.webp",
     theme: "workflows",
     vis: "vis-jarvis",
     org: "Personal",
@@ -327,6 +333,7 @@ export const P: Project[] = [
   },
   {
     id: "mcp-pack",
+    art: "site/art-mcp-pack.webp",
     theme: "workflows",
     org: "TrustPlus AI",
     year: "2025–26",
@@ -382,6 +389,7 @@ export const P: Project[] = [
   },
   {
     id: "kestrel-mcp",
+    art: "site/art-kestrel-mcp.webp",
     theme: "workflows",
     org: "Personal",
     year: "2026",
@@ -431,6 +439,7 @@ export const P: Project[] = [
   },
   {
     id: "lee-rooms",
+    art: "site/art-lee-rooms.webp",
     theme: "workflows",
     org: "Personal",
     year: "2026",
@@ -681,6 +690,7 @@ export const P: Project[] = [
   // ---------- Tooling
   {
     id: "resume-builder",
+    art: "site/art-resume-builder.webp",
     theme: "tooling",
     org: "Personal",
     year: "2026",
@@ -730,6 +740,7 @@ export const P: Project[] = [
   },
   {
     id: "eval-code",
+    art: "site/art-eval-code.webp",
     theme: "tooling",
     org: "Personal",
     year: "2026",
@@ -781,6 +792,7 @@ export const P: Project[] = [
   // ---------- Applied ML and RAG
   {
     id: "clinical-nlp",
+    art: "site/art-clinical-nlp.webp",
     theme: "ml",
     vis: "vis-nlp",
     org: "AI Singapore",
@@ -820,6 +832,7 @@ export const P: Project[] = [
   },
   {
     id: "defence-rag",
+    art: "site/art-defence-rag.webp",
     theme: "ml",
     org: "BGC Group",
     year: "2024–25",
@@ -870,6 +883,7 @@ export const P: Project[] = [
   },
   {
     id: "speech",
+    art: "site/art-speech.webp",
     theme: "ml",
     org: "Personal",
     year: "2024",
