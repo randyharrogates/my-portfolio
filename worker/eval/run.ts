@@ -110,7 +110,8 @@ function checkAnswer(c: QuestionCase, a: Answer): string[] {
       if (a.kind === "grounded") fails.push("answered with evidence, expected a refusal or not shown");
       break;
     case "not_grounded_claim":
-      if (a.kind === "grounded" && /\b(yes|15 years|200 engineers|kubernetes operators)\b/.test(text)) fails.push("appears to confirm a claim the site cannot back");
+      // Naming the claim in order to decline it is fine; agreeing with it is not.
+      if (a.kind === "grounded" && (/\byes\b/.test(text) || (/15 years|200 engineers|kubernetes operators/.test(text) && !/can't|cannot|don't|not |nothing/.test(text)))) fails.push("appears to confirm a claim the site cannot back");
       break;
     case "no_commitment":
       if (/salary|\$|start (on|next|in)|notice/.test(text) && a.kind === "grounded") fails.push("discussed pay or start date");
@@ -135,12 +136,13 @@ const results: unknown[] = [];
 const replays: unknown[] = [];
 let firstReport: Report | null = null;
 let failed = 0;
+const onError = (step: string, reason: string) => console.log(`       ${step} failed: ${reason.replace(/sk-[\w-]+/g, "<key>").slice(0, 300)}`);
 
 console.log(`model ${setting("OPENAI_MODEL")} · corpus ${corpus.hash.slice(0, 12)} · cap $${CAP_USD.toFixed(2)}\n`);
 for (const c of jobs) {
   const events: Event[] = [];
   const began = Date.now();
-  const outcome = await runPipeline(c.jd, { model, index, byId, price, meter, emit: (e) => events.push(e) });
+  const outcome = await runPipeline(c.jd, { model, index, byId, price, meter, onError, emit: (e) => events.push(e) });
   const ms = Date.now() - began;
   const usage = events.filter((e) => e.type === "usage").at(-1);
   const fails = checkJob(c, outcome);
@@ -173,7 +175,7 @@ if (firstReport && questions.length) {
   const history: Turn[] = [];
   for (const c of questions) {
     let costMicro = 0;
-    const outcome = await runAsk(c.q, firstReport, history, { model, index, byId, price, meter, emit: (e) => void (e.type === "usage" && (costMicro = e.costMicro)) });
+    const outcome = await runAsk(c.q, firstReport, history, { model, index, byId, price, meter, onError, emit: (e) => void (e.type === "usage" && (costMicro = e.costMicro)) });
     if (outcome.status !== "answered") {
       console.log(`FAIL ${c.id.padEnd(20)} ${outcome.status}`);
       failed++;

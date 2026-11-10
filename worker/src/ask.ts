@@ -62,7 +62,7 @@ export async function runAsk(questionRaw: string, report: Report, history: Turn[
 
   // 1. Search, in code. Excerpts cited in the previous turn stay on the table, so
   // "tell me more about that" has something to stand on.
-  const found = deps.index.search(question, TOP_K).map((h) => h.chunk);
+  const found = deps.index.offer(question, TOP_K);
   for (const id of history.at(-1)?.chunkIds ?? []) {
     const c = deps.byId.get(id);
     if (c && !found.includes(c)) found.push(c);

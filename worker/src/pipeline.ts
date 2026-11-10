@@ -83,7 +83,7 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
 
   // One retriever: search in code, then one model call to judge what search found.
   async function retrieve(r: Requirement): Promise<{ result: RequirementResult; dropped: number }> {
-    const found = deps.index.search(r.text, TOP_K).map((h) => h.chunk);
+    const found = deps.index.offer(r.text, TOP_K);
     run.emit({ type: "retrieved", id: r.id, chunks: found.map((c) => ({ id: c.id, title: c.title })) });
     let dropped = 0;
     let verdict: Verdict = "gap";

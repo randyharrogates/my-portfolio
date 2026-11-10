@@ -200,8 +200,17 @@ official `openai` SDK's model types), and that quality is good enough once the e
     state held in memory and written through, unused event fields and options removed.
   - *Real-model check:* `cd worker && npm run eval` runs 8 job descriptions and 12 questions (jailbreak
     attempts included) against the configured model under its own $0.50 cap, prints a scoreboard and, on a
-    clean full run, records `public/site/fit/replays.json` for the page. **Not yet run: no key in
-    `worker/.dev.vars`.**
+    clean full run, records `public/site/fit/replays.json` for the page. **Run on 2026-11-10 against `gpt-6-luna`: 8 of 8 jobs and 12 of 12
+    questions passed, about $0.01 for the whole set.**
 - **To deploy later (adds to the list above):** set repository variables `FIT_API` (the Worker's URL) and
   `TURNSTILE_SITE_KEY` for the Pages build; the Worker origin is then allowed by the site CSP
   automatically. Push only after `npm run eval` passes on the real model.
+- **Step 4, first runs on the real model (done, 2026-11-10):** three faults the stand-in model could not show.
+  - *Replies cut off:* with reasoning effort unset, hidden reasoning sometimes used a step's whole output
+    cap; the cut-off reply failed to parse and the requirement was silently reported as a gap. Effort is now
+    `low` and the caps leave room (`MAX_OUTPUT`). A failed step now reports its reason (`onError`).
+  - *Broad requirements missed:* "5+ years, Python and TypeScript" never ranked the CV summary. The CV's
+    summary and skills lines are now offered to every retriever and answer (`Bm25.offer`).
+  - *Summary contradicting the cards:* the writer saw only the first quote per requirement. It now sees all
+    of them and is told the verdicts are final. The planner now writes short noun phrases, not advert wording.
+

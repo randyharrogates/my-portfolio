@@ -24,6 +24,8 @@ export interface RunDeps<E> {
   price: Price;
   emit: (e: E) => void;
   now?: () => number;
+  // Told why a step failed. The visitor is only ever told that it did.
+  onError?: (step: Step, reason: string) => void;
 }
 
 export interface Totals {
@@ -95,11 +97,12 @@ export class Run<E extends { type: string }> {
       this.total.output += res.usage.output;
       this.total.costMicro += spent;
       const json = rec(res.json);
-      if (!json) throw new StepFailed(step);
+      if (!json) throw new Error(`reply was not a JSON object (${res.usage.output} output tokens)`);
       this.emit({ type: "step", step, ...tag, state: "done", usage: res.usage, ms: this.now() - began, costMicro: spent });
       this.emitUsage();
       return json;
-    } catch {
+    } catch (e) {
+      this.deps.onError?.(step, e instanceof Error ? e.message : String(e));
       this.emit({ type: "step", step, ...tag, state: "failed", ms: this.now() - began });
       throw new StepFailed(step);
     } finally {

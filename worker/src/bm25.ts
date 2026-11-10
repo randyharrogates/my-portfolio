@@ -75,10 +75,13 @@ export interface Hit {
   score: number;
 }
 
+const PROFILE = /^cv:(summary|skills):/;
+
 export class Bm25 {
   private docs: { chunk: Chunk; tf: Map<string, number>; len: number }[];
   private df = new Map<string, number>();
   private avgLen: number;
+  private profile: Chunk[];
 
   constructor(chunks: Chunk[]) {
     this.docs = chunks.map((chunk) => {
@@ -91,6 +94,7 @@ export class Bm25 {
     });
     const total = this.docs.reduce((n, d) => n + d.len, 0);
     this.avgLen = this.docs.length ? total / this.docs.length : 0;
+    this.profile = this.docs.map((d) => d.chunk).filter((c) => PROFILE.test(c.id));
   }
 
   // `PER_GROUP` caps how many chunks one project or CV role can contribute, so
@@ -127,5 +131,15 @@ export class Bm25 {
       if (out.length === k) break;
     }
     return out;
+  }
+
+  // What a model step is offered: the best matches, plus the CV's profile and
+  // skills lines. Those answer the broad questions ("how many years", "which
+  // languages") that never rank well, because they share no rare words with them.
+  // A query that matches nothing is offered nothing, so no model call is spent on it.
+  offer(query: string, k: number): Chunk[] {
+    const found = this.search(query, k).map((h) => h.chunk);
+    if (found.length === 0) return [];
+    return [...found, ...this.profile.filter((c) => !found.includes(c))];
   }
 }
