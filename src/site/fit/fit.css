@@ -177,7 +177,7 @@
   .rc-site .fit-stage[data-tab="Chat"].running .fit-main::after{content:"Questions open when the report is done."; color:var(--muted); font-size:14px}
   .rc-site .fit-barline .fit-bar{display:none}
   .rc-site .fit-src{min-height:44px; display:inline-flex; align-items:center}
-  .rc-site .fit-rail{min-height:0}
+  .rc-site .fit-fold{display:none}
   .rc-site .fit-board-scroll{padding:var(--s3) var(--s2)}
   .rc-site .fit-node.small{padding:2px} .rc-site .fit-node.small span{display:none}
   .rc-site .fit-loop-label{display:none}

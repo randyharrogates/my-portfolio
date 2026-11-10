@@ -275,7 +275,7 @@ function GraphPane({ state, open, onToggle }: { state: FitState; open: boolean; 
                   <button type="button" role="tab" aria-selected={graph.kind === "chat"} onClick={() => { setWhich("chat"); setSelected(null); }}>Question</button>
                 </div>
               )}
-              <button type="button" className="btn" onClick={onToggle}>Fold</button>
+              <button type="button" className="btn fit-fold" onClick={onToggle}>Fold</button>
             </div>
           </header>
           <Board graph={graph} state={state} selected={selected} onSelect={setSelected} />
@@ -542,7 +542,9 @@ export default function FitPage() {
   }, [state.phase]);
   useEffect(() => { if (state.asking) { setSide("chat"); setTab((t) => (t === "Report" ? "Chat" : t)); } }, [state.asking]);
   const working = state.phase === "running" || state.phase === "done";
-  const open = choice ?? state.phase === "running";
+  // On a phone the graph has a tab to itself, so there is nothing to fold it for.
+  const narrow = useNarrow();
+  const open = narrow || (choice ?? state.phase === "running");
   const done = state.phase === "done";
   return (
     <div data-page="fit" className="fit">
