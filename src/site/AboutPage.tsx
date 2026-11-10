@@ -32,6 +32,19 @@ export default function AboutPage() {
                 at AI Singapore, and AI products in fintech. I now lead
                 technology and AI at The Assembly Place.
               </p>
+              <p>
+                <strong>Under the agents is machine learning I have trained and
+                shipped.</strong> At AI Singapore I fine-tuned BioClinicalBERT
+                in PyTorch for named-entity recognition on clinical notes,
+                compared it against other BERT baselines, and fed the extracted
+                entities into a classifier that predicts clinical interventions,
+                with Explainable Boosting Machines so clinicians can see why each
+                prediction was made. Every model was evaluated on held-out data
+                (precision, recall, F1) and tracked in MLflow. At TrustPlus I
+                cleaned and explored customer data, trained PyTorch
+                image-classification models that run in production, and served
+                fine-tuned models on Amazon SageMaker.
+              </p>
               <div className="subnav">
                 <button
                   className="chip"

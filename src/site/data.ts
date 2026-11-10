@@ -1003,6 +1003,13 @@ export const PILLARS: string[][] = [
     "#work/multi",
     "See the systems →",
   ],
+  [
+    "04",
+    "Model training and fine-tuning",
+    "Fine-tuned BioClinicalBERT for clinical NER in a healthcare deployment, and trained PyTorch classification models that run in production.",
+    "#work/ml",
+    "See the models →",
+  ],
 ];
 
 export const QA: Answer[] = [

@@ -82,7 +82,7 @@
 .rc-site .fact{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s2) var(--s3); font-size:12px; color:var(--muted); line-height:1.4}
 .rc-site .fact b{display:block; color:var(--ink); font-family:var(--f-display); font-size:16px; letter-spacing:-.01em}
 .rc-site .fact.wide{grid-column:1 / -1}
-.rc-site .pillars{grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s4); margin-top:var(--s6); border-top:1px solid var(--line); padding-top:var(--s4)}
+.rc-site .pillars{grid-column:1 / -1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s4); margin-top:var(--s6); border-top:1px solid var(--line); padding-top:var(--s4)}
 .rc-site .pillar{text-decoration:none; display:flex; flex-direction:column; gap:var(--s2)}
 .rc-site .pillar h3{font-size:20px; font-weight:700}
 .rc-site .pillar p{font-size:14px; color:var(--muted)}
