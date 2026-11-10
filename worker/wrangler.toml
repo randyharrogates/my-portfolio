@@ -15,7 +15,7 @@ PRICE_OUTPUT_PER_M = "0.50"
 MONTHLY_BUDGET_USD = "10"
 DAILY_BUDGET_USD = "0.33"
 RUNS_PER_DAY = "5"
-QUESTIONS_PER_DAY = "5"
+QUESTIONS_PER_DAY = "10"
 
 [[durable_objects.bindings]]
 name = "LEDGER"
@@ -50,7 +50,7 @@ PRICE_OUTPUT_PER_M = "0.50"
 MONTHLY_BUDGET_USD = "1"
 DAILY_BUDGET_USD = "0.25"
 RUNS_PER_DAY = "5"
-QUESTIONS_PER_DAY = "5"
+QUESTIONS_PER_DAY = "10"
 
 [[env.dev.durable_objects.bindings]]
 name = "LEDGER"

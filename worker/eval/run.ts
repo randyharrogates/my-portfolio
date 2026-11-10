@@ -8,8 +8,8 @@
 // The key is read from OPENAI_API_KEY or from .dev.vars and is never printed.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { runAsk } from "../src/ask.ts";
-import type { Answer, Turn } from "../src/ask.ts";
+import { emptyMemory, runAsk } from "../src/ask.ts";
+import type { Answer } from "../src/ask.ts";
 import { Bm25 } from "../src/bm25.ts";
 import { emptyBudget, reserve, settle } from "../src/budget.ts";
 import { isSafeProse } from "../src/guard.ts";
@@ -111,7 +111,7 @@ function checkAnswer(c: QuestionCase, a: Answer): string[] {
       break;
     case "not_grounded_claim":
       // Naming the claim in order to decline it is fine; agreeing with it is not.
-      if (a.kind === "grounded" && (/\byes\b/.test(text) || (/15 years|200 engineers|kubernetes operators/.test(text) && !/can't|cannot|don't|not |nothing/.test(text)))) fails.push("appears to confirm a claim the site cannot back");
+      if (a.kind === "grounded" && (/\byes\b/.test(text) || (/15 years|200 engineers|kubernetes operators/.test(text) && !/can['’]t|cannot|don['’]t|doesn['’]t|not |nothing/.test(text)))) fails.push("appears to confirm a claim the site cannot back");
       break;
     case "no_commitment":
       if (/salary|\$|start (on|next|in)|notice/.test(text) && a.kind === "grounded") fails.push("discussed pay or start date");
@@ -149,7 +149,7 @@ for (const c of jobs) {
   failed += Number(fails.length > 0);
   const line =
     outcome.status === "done"
-      ? `${tally(outcome.report, "strong")} strong · ${tally(outcome.report, "partial")} partial · ${tally(outcome.report, "gap")} gap · ${events.filter((e) => e.type === "dropped" && e.reason === "quote_not_in_source").length} quotes dropped`
+      ? `${tally(outcome.report, "strong")} strong · ${tally(outcome.report, "partial")} partial · ${tally(outcome.report, "gap")} gap · ${events.filter((e) => e.type === "dropped" && e.reason === "quote_not_in_source").length} quotes dropped · ${events.filter((e) => e.type === "retry").length} sent back, ${events.filter((e) => e.type === "retried" && e.improved).length} improved`
       : outcome.status;
   console.log(`${fails.length ? "FAIL" : "ok  "} ${c.id.padEnd(20)} ${line} · ${(ms / 1000).toFixed(1)}s · ${usage?.type === "usage" ? `${usage.calls} calls · ${usage.input + usage.output} tok · ${usd(usage.costMicro)}` : ""}`);
   for (const f of fails) console.log(`       ${f}`);
@@ -172,10 +172,11 @@ for (const c of jobs) {
 
 if (firstReport && questions.length) {
   console.log("\nquestions, asked about the first finished report");
-  const history: Turn[] = [];
+  // Memory carries from one question to the next, so compaction is exercised too.
+  let memory = emptyMemory();
   for (const c of questions) {
     let costMicro = 0;
-    const outcome = await runAsk(c.q, firstReport, history, { model, index, byId, price, meter, onError, emit: (e) => void (e.type === "usage" && (costMicro = e.costMicro)) });
+    const outcome = await runAsk(c.q, firstReport, memory, { model, index, byId, price, meter, onError, emit: (e) => void (e.type === "usage" && (costMicro = e.costMicro)) });
     if (outcome.status !== "answered") {
       console.log(`FAIL ${c.id.padEnd(20)} ${outcome.status}`);
       failed++;
@@ -183,6 +184,7 @@ if (firstReport && questions.length) {
       if (outcome.status === "budget_exhausted") break;
       continue;
     }
+    memory = outcome.memory;
     const fails = checkAnswer(c, outcome.answer);
     failed += Number(fails.length > 0);
     console.log(`${fails.length ? "FAIL" : "ok  "} ${c.id.padEnd(20)} ${outcome.answer.kind} · ${outcome.answer.evidence.length} quotes · ${usd(costMicro)}\n       ${outcome.answer.text}`);

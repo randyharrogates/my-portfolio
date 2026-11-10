@@ -1,23 +1,36 @@
-// The role-fit pipeline. The shape is fixed in code, not chosen by a model:
-// gate, planner, up to 6 parallel retrievers, critic, writer. At most 10 model
-// calls per run, each with a hard output cap and a budget reservation.
+// The role-fit run: gate → orchestrator → retrievers (parallel) → verifier, with
+// one bounded loop back through the orchestrator → writer.
+//
+// The orchestrator plans the work and, when the verifier rejects evidence, decides
+// whether to search again and with what. Code, not a model, bounds the loop: at
+// most MAX_ROUNDS rounds and MAX_RETRIES requirements sent back, so a run can never
+// make more than MAX_CALLS model calls. Every quote is checked in code against the
+// page it cites, and a verdict can only be raised by new evidence that passes the
+// same checks.
 
 import { cleanInput, isSafeProse, looksLikeInjection, oneLine } from "./guard.ts";
 import { BudgetExhausted, Run, StepFailed, recs } from "./metered.ts";
 import type { RunDeps, Stamped, StepEvent, UsageEvent } from "./metered.ts";
 import type { Step } from "./model.ts";
-import { criticUser, gateUser, plannerUser, retrieverUser, writerUser } from "./prompts.ts";
+import { gateUser, orchestratorUser, replanUser, retrieverUser, verifierUser, writerUser } from "./prompts.ts";
 import { MAX_QUOTE_CHARS, groundQuotes } from "./quote.ts";
 import type { DropReason, EvidenceOut } from "./quote.ts";
 import { JsonStringStream, ScreenedText } from "./stream.ts";
+import type { Chunk } from "./types.ts";
 import { SAY } from "./voice.ts";
 
 export const MIN_JD_CHARS = 80;
 export const MAX_JD_CHARS = 6000;
 export const MAX_REQUIREMENTS = 6;
+export const MAX_ROUNDS = 2;
+export const MAX_RETRIES = 3;
+// gate + orchestrator + retrievers + verifier, then orchestrator + retries + verifier, then writer.
+export const MAX_CALLS = 1 + 1 + MAX_REQUIREMENTS + 1 + 1 + MAX_RETRIES + 1 + 1;
 const TOP_K = 8;
 const MAX_EVIDENCE = 2;
 const MAX_ROLE_CHARS = 120;
+const MAX_SEARCH_CHARS = 120;
+const MAX_REASON_CHARS = 160;
 const MAX_SUMMARY_CHARS = 700;
 
 export type Verdict = "strong" | "partial" | "gap";
@@ -28,9 +41,10 @@ interface Requirement {
   id: string; // r1..r6
   text: string;
   importance: "must" | "nice";
+  search: string; // the orchestrator's search terms for this requirement
 }
 
-export interface RequirementResult extends Requirement {
+export interface RequirementResult extends Omit<Requirement, "search"> {
   verdict: Verdict;
   evidence: EvidenceOut[];
 }
@@ -47,33 +61,44 @@ export type Outcome =
   | { status: "budget_exhausted" }
   | { status: "failed"; step: Step };
 
+type Support = "yes" | "partly" | "no";
+
 // What the page renders, in the order it happened. `id` ties an event to one requirement.
 type OwnEvent =
   | { type: "say"; text: string } // plain-language narration, composed in code
   | { type: "plan"; role: string; requirements: Requirement[] }
-  | { type: "retrieved"; id: string; chunks: { id: string; title: string }[] }
+  | { type: "retrieved"; id: string; round: number; chunks: { id: string; title: string }[] }
   | { type: "verdict"; id: string; verdict: Verdict; evidence: EvidenceOut[] }
-  | { type: "dropped"; id: string; reason: DropReason | "critic_lowered" | "no_evidence" }
+  | { type: "dropped"; id: string; reason: DropReason | "verifier_lowered" | "no_evidence" }
+  | { type: "checked"; id: string; round: number; support: Support; reason: string } // the verifier's finding
+  | { type: "retry"; id: string; search: string; reason: string } // the orchestrator sends one back
+  | { type: "retried"; id: string; improved: boolean }
   | { type: "delta"; text: string } // a piece of the summary, as the writer produces it
   | { type: "summary"; text: string }; // the authoritative summary: replaces any deltas
 
 export type Event = Stamped<OwnEvent | StepEvent | UsageEvent>;
 export type Deps = RunDeps<Event>;
 
-// The planner's reply, reduced to what may be shown: plain one-line text that
-// passes the prose screen. The role and requirements were written by a model
-// from a visitor's text, so they are treated as untrusted too.
+// Text a model wrote from a visitor's text is untrusted too: one plain line that
+// passes the prose screen, or nothing.
+const shown = (v: unknown, max: number) => {
+  const s = typeof v === "string" ? oneLine(v, max) : "";
+  return s && isSafeProse(s) ? s : "";
+};
+
 function parsePlan(plan: Record<string, unknown>): { role: string; requirements: Requirement[] } {
-  const roleText = typeof plan.role === "string" ? oneLine(plan.role, MAX_ROLE_CHARS) : "";
   const requirements = recs(plan.requirements)
-    .filter((r) => typeof r.text === "string" && r.text.trim() !== "" && isSafeProse(r.text))
+    .map((r) => ({ text: shown(r.text, MAX_QUOTE_CHARS), importance: r.importance === "nice" ? ("nice" as const) : ("must" as const), search: shown(r.search, MAX_SEARCH_CHARS) }))
+    .filter((r) => r.text !== "")
     .slice(0, MAX_REQUIREMENTS)
-    .map((r, i) => ({
-      id: `r${i + 1}`,
-      text: oneLine(r.text as string, MAX_QUOTE_CHARS),
-      importance: r.importance === "nice" ? ("nice" as const) : ("must" as const),
-    }));
-  return { role: roleText && isSafeProse(roleText) ? roleText : "this role", requirements };
+    .map((r, i) => ({ id: `r${i + 1}`, ...r }));
+  return { role: shown(plan.role, MAX_ROLE_CHARS) || "this role", requirements };
+}
+
+interface Found {
+  verdict: Verdict;
+  evidence: EvidenceOut[];
+  dropped: number;
 }
 
 export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
@@ -82,15 +107,15 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
   const say = (text: string) => run.emit({ type: "say", text });
 
   // One retriever: search in code, then one model call to judge what search found.
-  async function retrieve(r: Requirement): Promise<{ result: RequirementResult; dropped: number }> {
-    const found = deps.index.offer(r.text, TOP_K);
-    run.emit({ type: "retrieved", id: r.id, chunks: found.map((c) => ({ id: c.id, title: c.title })) });
+  async function retrieve(r: Requirement, query: string, round: number): Promise<Found> {
+    const found: Chunk[] = deps.index.offer(query, TOP_K);
+    run.emit({ type: "retrieved", id: r.id, round, chunks: found.map((c) => ({ id: c.id, title: c.title })) });
     let dropped = 0;
     let verdict: Verdict = "gap";
     let evidence: EvidenceOut[] = [];
     if (found.length > 0) {
       try {
-        const out = await run.call("retriever", retrieverUser(r.text, found), { id: r.id });
+        const out = await run.call("retriever", retrieverUser(r.text, found), { id: r.id, round });
         // The grounding check: enforced here in code, not left to a model.
         evidence = groundQuotes(recs(out.evidence), found, MAX_EVIDENCE, (reason) => {
           dropped++;
@@ -103,13 +128,34 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
       }
     }
     // A verdict above "gap" needs at least one grounded quote to stand on.
-    if (verdict === "gap" || evidence.length === 0) {
-      if (verdict !== "gap" || found.length === 0) run.emit({ type: "dropped", id: r.id, reason: "no_evidence" });
-      verdict = "gap";
-      evidence = [];
+    if (verdict === "gap" || evidence.length === 0) return { verdict: "gap", evidence: [], dropped };
+    return { verdict, evidence, dropped };
+  }
+
+  const asItem = (r: RequirementResult) => ({ id: r.id, requirement: r.text, verdict: r.verdict, quotes: r.evidence.map((e) => e.quote) });
+  const publish = (r: RequirementResult) => run.emit({ type: "verdict", id: r.id, verdict: r.verdict, evidence: r.evidence });
+
+  // The verifier reads each requirement's quotes and says whether they support it.
+  // Its finding can only lower a verdict. Returns why each lowered one was lowered.
+  async function verify(items: RequirementResult[], round: number): Promise<Map<string, string>> {
+    const lowered = new Map<string, string>();
+    const withEvidence = items.filter((r) => r.verdict !== "gap");
+    if (withEvidence.length === 0) return lowered;
+    const out = await run.call("verifier", verifierUser(withEvidence.map(asItem)), { round });
+    for (const item of recs(out.items)) {
+      const r = withEvidence.find((x) => x.id === item.id);
+      if (!r) continue;
+      const support: Support = item.supported === "no" ? "no" : item.supported === "partly" ? "partly" : "yes";
+      const reason = shown(item.reason, MAX_REASON_CHARS);
+      run.emit({ type: "checked", id: r.id, round, support, reason });
+      const to: Verdict = support === "no" ? "gap" : support === "partly" && r.verdict === "strong" ? "partial" : r.verdict;
+      if (RANK[to] >= RANK[r.verdict]) continue;
+      r.verdict = to;
+      if (to === "gap") r.evidence = [];
+      lowered.set(r.id, reason);
+      run.emit({ type: "dropped", id: r.id, reason: "verifier_lowered" });
     }
-    run.emit({ type: "verdict", id: r.id, verdict, evidence });
-    return { result: { ...r, verdict, evidence }, dropped };
+    return lowered;
   }
 
   try {
@@ -120,35 +166,64 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
     if (gate.is_job_description !== true) return { status: "not_a_job_description" };
     say(SAY.isJob);
 
-    // 1. Planner
-    const { role, requirements } = parsePlan(await run.call("planner", plannerUser(jd)));
-    if (requirements.length === 0) throw new StepFailed("planner");
+    // 1. Orchestrator: which requirements matter, and what to search for each.
+    const { role, requirements } = parsePlan(await run.call("orchestrator", orchestratorUser(jd), { round: 1 }));
+    if (requirements.length === 0) throw new StepFailed("orchestrator");
     run.emit({ type: "plan", role, requirements });
     say(SAY.planned(requirements.length));
 
-    // 2. Retrievers, in parallel.
-    const retrieved = await Promise.all(requirements.map(retrieve));
-    const results = retrieved.map((r) => r.result);
+    // 2. Round 1: retrievers in parallel, then the verifier.
+    const first = await Promise.all(requirements.map((r) => retrieve(r, r.search ? `${r.text} ${r.search}` : r.text, 1)));
+    const results: RequirementResult[] = requirements.map((r, i) => ({ id: r.id, text: r.text, importance: r.importance, verdict: first[i].verdict, evidence: first[i].evidence }));
     const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
-    say(SAY.retrieved(results.length - count("gap"), results.length, retrieved.reduce((sum, r) => sum + r.dropped, 0)));
+    say(SAY.retrieved(results.length - count("gap"), results.length, first.reduce((sum, f) => sum + f.dropped, 0)));
+    const lowered = await verify(results, 1);
+    results.forEach(publish);
 
-    const asItems = () => results.map((r) => ({ id: r.id, requirement: r.text, verdict: r.verdict, quotes: r.evidence.map((e) => e.quote) }));
-
-    // 3. Critic: may lower a verdict, can never raise one.
-    if (count("gap") < results.length) {
-      const critic = await run.call("critic", criticUser(asItems()));
-      let lowered = 0;
-      for (const item of recs(critic.items)) {
-        const r = results.find((x) => x.id === item.id);
-        if (!r || !isVerdict(item.verdict) || RANK[item.verdict] >= RANK[r.verdict]) continue;
-        r.verdict = item.verdict;
-        if (item.verdict === "gap") r.evidence = [];
-        lowered++;
-        run.emit({ type: "dropped", id: r.id, reason: "critic_lowered" });
-        run.emit({ type: "verdict", id: r.id, verdict: r.verdict, evidence: r.evidence });
+    // 3. The loop. Requirements the verifier lowered, and must-haves with no evidence,
+    // go back to the orchestrator, which may send each for one more search.
+    const weak = results
+      .filter((r) => lowered.has(r.id) || (r.verdict === "gap" && r.importance === "must"))
+      .sort((a, b) => Number(b.importance === "must") - Number(a.importance === "must"))
+      .slice(0, MAX_RETRIES);
+    let improvedCount = 0;
+    if (weak.length > 0 && MAX_ROUNDS > 1) {
+      const why = (r: RequirementResult) => lowered.get(r.id) || (r.verdict === "gap" ? "the search found no evidence" : "the evidence was weak");
+      const searched = (id: string) => requirements.find((q) => q.id === id)?.search ?? "";
+      let replan: Record<string, unknown> = {};
+      try {
+        replan = await run.call("replan", replanUser(weak.map((r) => ({ id: r.id, requirement: r.text, searched: searched(r.id), problem: why(r) }))), { round: 2 });
+      } catch (e) {
+        if (e instanceof BudgetExhausted) throw e;
+        // a failed second thought is not a failed run: round 1 stands
       }
-      say(SAY.critic(lowered));
+      const again = recs(replan.items)
+        .map((item) => ({ r: weak.find((x) => x.id === item.id), search: item.action === "search_again" ? shown(item.search, MAX_SEARCH_CHARS) : "" }))
+        .filter((x): x is { r: RequirementResult; search: string } => x.r !== undefined && x.search !== "")
+        .filter((x, i, all) => all.findIndex((y) => y.r.id === x.r.id) === i);
+      if (again.length > 0) {
+        say(SAY.retrying(again.length));
+        for (const { r, search } of again) run.emit({ type: "retry", id: r.id, search, reason: why(r) });
+        const second = await Promise.all(again.map(({ r, search }) => retrieve({ ...r, search }, search, 2)));
+        const candidates: RequirementResult[] = again.map(({ r }, i) => ({ ...r, verdict: second[i].verdict, evidence: second[i].evidence }));
+        await verify(candidates, 2);
+        for (const candidate of candidates) {
+          const r = results.find((x) => x.id === candidate.id);
+          if (!r) continue;
+          // New evidence replaces the old only when it survived the same checks and is stronger.
+          const improved = RANK[candidate.verdict] > RANK[r.verdict];
+          if (improved) {
+            r.verdict = candidate.verdict;
+            r.evidence = candidate.evidence;
+            improvedCount++;
+          }
+          run.emit({ type: "retried", id: r.id, improved });
+          publish(r);
+        }
+      }
     }
+    for (const r of results) if (r.verdict === "gap") run.emit({ type: "dropped", id: r.id, reason: "no_evidence" });
+    say(SAY.verified(lowered.size, improvedCount));
 
     // 4. Writer. Its prose is the one thing not checked quote by quote, so it streams
     // a few words behind and only while it passes the screen; if the finished text
@@ -157,7 +232,7 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
     const extract = new JsonStringStream("summary");
     const screened = new ScreenedText(isSafeProse, (text) => run.emit({ type: "delta", text }));
     try {
-      const written = await run.call("writer", writerUser(role, asItems()), { onText: (d) => screened.push(extract.push(d)) });
+      const written = await run.call("writer", writerUser(role, results.map(asItem)), { onText: (d) => screened.push(extract.push(d)) });
       const s = typeof written.summary === "string" ? written.summary.trim() : "";
       if (s && s.length <= MAX_SUMMARY_CHARS && isSafeProse(s)) {
         summary = s;
@@ -173,7 +248,5 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
     if (e instanceof BudgetExhausted) return { status: "budget_exhausted" };
     if (e instanceof StepFailed) return { status: "failed", step: e.step };
     throw e;
-  } finally {
-    run.emitUsage();
   }
 }

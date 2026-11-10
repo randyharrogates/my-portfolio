@@ -3,8 +3,8 @@
 // report out) and POST /ask (a follow-up question about a stored report).
 
 import corpusJson from "../corpus/corpus.json";
-import { MAX_QUESTION_CHARS, MAX_TURNS_REMEMBERED, MIN_QUESTION_CHARS, runAsk } from "./ask.ts";
-import type { AskEvent, AskOutcome, Turn } from "./ask.ts";
+import { MAX_QUESTION_CHARS, MIN_QUESTION_CHARS, emptyMemory, runAsk } from "./ask.ts";
+import type { AskEvent, AskOutcome, Memory } from "./ask.ts";
 import { Bm25 } from "./bm25.ts";
 import { dayOf } from "./budget.ts";
 import { devModel } from "./devmodel.ts";
@@ -49,7 +49,7 @@ const byId = new Map<string, Chunk>(corpus.chunks.map((c) => [c.id, c]));
 const CORPUS_ID = corpus.hash.slice(0, 12);
 
 const MAX_BODY_BYTES = 16_384;
-// Below these there is no point starting: roughly the gate plus planner calls, and one answer call.
+// Below these there is no point starting: roughly the gate plus orchestrator calls, and one answer call.
 const MIN_MICRO: Record<Kind, number> = { run: 1_500, question: 400 };
 const DAY_SEC = 24 * 3600;
 
@@ -234,9 +234,9 @@ async function handleAsk(c: Ctx, body: Record<string, unknown>): Promise<Respons
 
   // Conversation memory lives here, per visitor and report, never in the request.
   const memoryKey = `chat:${reportId}:${visitor}`;
-  const [stored, remembered] = await Promise.all([c.env.CACHE.get<Stored>(`fit:${CORPUS_ID}:${reportId}`, "json"), c.env.CACHE.get<Turn[]>(memoryKey, "json")]);
+  const [stored, remembered] = await Promise.all([c.env.CACHE.get<Stored>(`fit:${CORPUS_ID}:${reportId}`, "json"), c.env.CACHE.get<Memory>(memoryKey, "json")]);
   if (!stored) return json(410, { error: "report_expired" }, c.cors);
-  const history = remembered ?? [];
+  const memory = remembered && Array.isArray(remembered.turns) ? remembered : emptyMemory();
 
   const started = await begin(c, "question", visitor);
   if (started instanceof Response) return started;
@@ -244,14 +244,13 @@ async function handleAsk(c: Ctx, body: Record<string, unknown>): Promise<Respons
   return stream(c.ctx, c.sse, async (send) => {
     let outcome: AskOutcome = { status: "failed" };
     try {
-      outcome = await runAsk(question, stored.report, history, { model: c.model, index, byId, price: c.price, meter: c.meter, emit: send });
+      outcome = await runAsk(question, stored.report, memory, { model: c.model, index, byId, price: c.price, meter: c.meter, emit: send });
       if (outcome.status === "answered") {
-        const turn: Turn = { q: question, a: outcome.answer.text, chunkIds: outcome.answer.evidence.map((e) => e.chunkId) };
-        await c.env.CACHE.put(memoryKey, JSON.stringify([...history, turn].slice(-MAX_TURNS_REMEMBERED)), { expirationTtl: DAY_SEC });
+        await c.env.CACHE.put(memoryKey, JSON.stringify(outcome.memory), { expirationTtl: DAY_SEC });
       }
     } finally {
       await c.ledger.end(started.keys, "question");
-      const asked = [...history.map((t) => t.q), question];
+      const asked = [...memory.turns.map((t) => t.q), question];
       send({ type: "outcome", outcome: { status: outcome.status }, questionsLeft: started.left, suggestions: outcome.status === "answered" ? suggestions(stored.report, asked) : [] });
     }
   });

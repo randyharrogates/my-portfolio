@@ -37,7 +37,7 @@ export interface Totals {
 }
 
 // Sent around every model call. `id` ties a retriever to its requirement; `ms` is how long the call took.
-export type StepEvent = { type: "step"; step: Step; id?: string; state: "start" | "done" | "failed"; usage?: Usage; ms?: number; costMicro?: number };
+export type StepEvent = { type: "step"; step: Step; id?: string; round?: number; state: "start" | "done" | "failed"; usage?: Usage; ms?: number; costMicro?: number };
 export type UsageEvent = { type: "usage" } & Totals;
 
 // `t` is milliseconds since the run started, so a stored run can be replayed at its real pace.
@@ -79,12 +79,12 @@ export class Run<E extends { type: string }> {
   }
 
   // Throws BudgetExhausted before spending anything, or StepFailed after settling.
-  async call(step: Step, user: string, opts: { id?: string; onText?: (delta: string) => void } = {}): Promise<Record<string, unknown>> {
+  async call(step: Step, user: string, opts: { id?: string; round?: number; onText?: (delta: string) => void } = {}): Promise<Record<string, unknown>> {
     const req = { step, system: SYSTEM, user, schemaName: step, schema: SCHEMAS[step], maxOutputTokens: MAX_OUTPUT[step] };
     const worst = worstCase(req, this.deps.price);
     const reservation = await this.deps.meter.reserve(worst);
     if (reservation === null) throw new BudgetExhausted();
-    const tag = opts.id ? { id: opts.id } : {};
+    const tag = { ...(opts.id ? { id: opts.id } : {}), ...(opts.round ? { round: opts.round } : {}) };
     this.emit({ type: "step", step, ...tag, state: "start" });
     const began = this.now();
     let spent = worst; // if the call throws we may still have been billed: assume the worst

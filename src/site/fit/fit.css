@@ -1,4 +1,5 @@
-/* Role fit. Spacing uses the site's φ scale (--s1..--s8); panes split 1 : 1.618 : 1. */
+/* Role fit. Spacing uses the site's φ scale (--s1..--s8). The agent graph and the story split 1.618 : 1;
+   folded, the graph is a rail one φ step wide and the report and chat split 1.618 : 1. */
 .rc-site .fit{--ok:#17703F; --ok-bg:rgba(30,138,85,.12); --amber:#8A5A12; --amber-bg:rgba(183,121,31,.14); --live-bg:rgba(51,70,211,.1)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A}}
 :root[data-theme="dark"] .rc-site .fit{--ok:#5FCB94; --amber:#E0B25A}
@@ -26,17 +27,88 @@
 .rc-site .fit-replays button:hover{border-color:var(--accent)} .rc-site .fit-replays button:active{transform:scale(.97)}
 .rc-site .fit-replays button span{font-size:13px; color:var(--muted)}
 
-/* panes */
-.rc-site .fit-panes{display:flex; flex-wrap:wrap; gap:var(--s4); align-items:flex-start}
-.rc-site .fit-pane{flex:1 1 300px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:21px; overflow:hidden}
-.rc-site .fit-pane > header{padding:var(--s4); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:var(--s3)}
-.rc-site .fit-pane > header > div, .rc-site .fit-chat > header{display:flex; flex-direction:column; gap:2px; align-items:flex-start}
-.rc-site .fit-report{flex:1.618 1 440px; min-width:0; display:flex; flex-direction:column; gap:var(--s4)}
-.rc-site .fit-trace{box-shadow:0 21px 55px rgba(15,21,34,.12), 0 2px 8px rgba(15,21,34,.06); position:sticky; top:var(--s7)}
+/* the bar: one line of status */
+.rc-site .fit-barline{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2) var(--s4); padding:var(--s2) var(--s4); margin-bottom:var(--s4); border:1px solid var(--line); border-radius:13px; background-color:var(--surface); background-image:radial-gradient(var(--line) 1px, transparent 1px); background-size:13px 13px; font-family:var(--f-mono); font-size:13px; color:var(--muted); animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-barline b{font-weight:500; color:var(--ink); font-variant-numeric:tabular-nums}
+.rc-site .fit-barline b.ticking{color:var(--accent)}
+.rc-site .fit-barline .fit-bar{flex:1 1 89px; max-width:233px; margin-left:auto}
+.rc-site .fit-state{display:inline-flex; align-items:center; gap:var(--s2)}
+.rc-site .fit-state.live{color:var(--accent)} .rc-site .fit-state.ok{color:var(--ok)}
+.rc-site .fit-spin{display:inline-block; width:13px; height:13px; box-sizing:border-box; border-radius:50%; border:2px solid var(--live-bg); border-top-color:var(--accent); animation:fitSpin .9s linear infinite; vertical-align:-2px; flex:none}
+.rc-site .fit-bar{height:5px; border-radius:5px; background:var(--line); overflow:hidden}
+.rc-site .fit-bar i{display:block; height:100%; background:var(--accent); border-radius:5px; transition:width .4s var(--ease-io)}
+
+/* the stage: graph beside the story. Folded, the graph is a rail and the story splits 1.618 : 1 */
+.rc-site .fit-stage{display:flex; gap:var(--s4); align-items:flex-start}
+.rc-site .fit-pane{min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:21px; overflow:hidden}
+.rc-site .fit-pane > header, .rc-site .fit-graph-full > header{padding:var(--s3) var(--s4); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap}
+.rc-site .fit-pane > header > div:first-child, .rc-site .fit-graph-full > header > div:first-child{display:flex; flex-direction:column; gap:2px; align-items:flex-start}
+.rc-site .fit-graph{flex:0 0 var(--s7); position:sticky; top:var(--s7); transition:flex-grow .3s var(--ease-io), flex-basis .3s var(--ease-io); background-color:var(--surface); background-image:radial-gradient(var(--line) 1px, transparent 1px); background-size:21px 21px}
+.rc-site .fit-graph.open{flex:1.618 1 0}
+.rc-site .fit-main{flex:1 1 0; min-width:0; display:flex; gap:var(--s4); align-items:flex-start; flex-wrap:wrap}
+.rc-site .fit-stage.folded .fit-main{flex:2.618 1 0; flex-wrap:nowrap}
+.rc-site .fit-report{flex:1.618 1 0; min-width:0; display:flex; flex-direction:column; gap:var(--s4); animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-chat{flex:1 1 0; animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-stage.open .fit-report, .rc-site .fit-stage.open .fit-chat{flex:1 1 100%}
+.rc-site .fit-stage.open .fit-chat{max-height:calc(100vh - 233px)}
+.rc-site .fit-stage.running .fit-chat, .rc-site .fit-stage.open.done.side-report .fit-chat, .rc-site .fit-stage.open.done.side-chat .fit-report{display:none}
 .rc-site .fit-tabs{display:none}
+.rc-site .fit-seg{display:inline-grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:var(--s1); background:var(--line); border-radius:13px; padding:var(--s1)}
+.rc-site .fit-seg.wide{display:grid; flex:1 1 100%}
+.rc-site .fit-seg button, .rc-site .fit-tabs button{font:500 14px var(--f-body); color:var(--muted); background:transparent; border:0; border-radius:8px; min-height:44px; padding:0 var(--s3); cursor:pointer; transition:background .2s var(--ease-io), color .2s, transform .12s var(--ease-out)}
+.rc-site .fit-seg button[aria-selected="true"], .rc-site .fit-tabs button[aria-selected="true"]{font-weight:600; color:var(--ink); background:var(--surface)}
+.rc-site .fit-seg button:active, .rc-site .fit-tabs button:active, .rc-site .fit .chip:active, .rc-site .fit .btn:active:not(:disabled){transform:scale(.97)}
+
+/* graph */
+.rc-site .fit-graph-full{display:flex; flex-direction:column; animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-board-scroll{overflow-x:auto; padding:var(--s4)}
+.rc-site .fit-board{position:relative; width:100%; min-width:520px; max-width:760px; margin:0 auto; aspect-ratio:760 / 608}
+.rc-site .fit-board svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.rc-site .fit-edge{fill:none; stroke:var(--line); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:stroke .3s var(--ease-io)}
+.rc-site .fit-edge.done{stroke:var(--ok)}
+.rc-site .fit-edge.live{stroke:var(--accent); stroke-dasharray:6 8; animation:fitFlow .7s linear infinite}
+.rc-site .fit-edge.loop{stroke:var(--amber)}
+.rc-site .fit-board marker path{fill:var(--amber)}
+.rc-site .fit-node{position:absolute; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:1px; padding:var(--s1) var(--s3); text-align:left; font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:13px; cursor:pointer; overflow:hidden; animation:fitPop .3s var(--ease-out) backwards; transition:border-color .3s var(--ease-io), background .3s var(--ease-io), transform .12s var(--ease-out), box-shadow .3s var(--ease-io)}
+.rc-site .fit-node b{font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:var(--s2); white-space:nowrap}
+.rc-site .fit-node span{font-family:var(--f-mono); font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.rc-site .fit-node.small{padding:var(--s1) var(--s2); text-align:center} .rc-site .fit-node.small b{justify-content:center; font-size:13px}
+.rc-site .fit-node.waiting{border-style:dashed; background:transparent} .rc-site .fit-node.waiting b{color:var(--muted)}
+.rc-site .fit-node.running{border-color:var(--accent); background:var(--live-bg); animation:fitPop .3s var(--ease-out) backwards, fitRing 1.6s var(--ease-io) .3s infinite}
+.rc-site .fit-node.done{border-color:var(--ok)} .rc-site .fit-node.done span{color:var(--ok)}
+.rc-site .fit-node.v-partial{border-color:var(--amber)} .rc-site .fit-node.v-partial span{color:var(--amber)}
+.rc-site .fit-node.v-gap{border-color:var(--muted); border-style:dashed} .rc-site .fit-node.v-gap span{color:var(--muted)}
+.rc-site .fit-node.failed{border-color:var(--amber)}
+.rc-site .fit-node.picked{box-shadow:0 0 0 3px var(--live-bg), 0 8px 21px rgba(15,21,34,.18)}
+.rc-site .fit-node:active{transform:scale(.97)}
+.rc-site .fit-node.ghost{border-style:dashed; align-items:center; cursor:default; font-family:var(--f-mono); font-size:12px; color:var(--muted); background:transparent}
+.rc-site .fit-loop-label{position:absolute; font-family:var(--f-mono); font-size:12px; color:var(--amber); animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-detail{margin:0 var(--s4) var(--s4); padding:var(--s3) var(--s4); background:var(--surface); border:1px solid var(--accent); border-radius:13px; display:flex; flex-direction:column; gap:var(--s2); animation:fitPop .2s var(--ease-out); transform-origin:top center}
+.rc-site .fit-detail dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:var(--s1) var(--s3); font-size:14px}
+.rc-site .fit-detail dt{font-family:var(--f-mono); font-size:12px; color:var(--muted); padding-top:2px} .rc-site .fit-detail dd{margin:0; overflow-wrap:anywhere}
+.rc-site .fit-x{width:44px; height:44px; margin:-13px -13px -13px 0; border:0; background:transparent; color:var(--muted); font-size:21px; cursor:pointer; border-radius:8px}
+.rc-site .fit-usage{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+.rc-site .fit-hint{padding:0 var(--s4) var(--s4); margin:0}
+.rc-site .fit-rail{width:100%; min-height:377px; padding:var(--s3) var(--s1); border:0; background:transparent; color:var(--muted); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:var(--s3); font-family:var(--f-mono); font-size:11px; text-align:center; animation:fitIn .3s var(--ease-out)}
+.rc-site .fit-rail-open{width:44px; height:44px; border:1px solid var(--line); border-radius:13px; background:var(--surface); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:21px; transition:transform .3s var(--ease-out), border-color .2s}
+.rc-site .fit-rail:hover .fit-rail-open{transform:translateX(3px); border-color:var(--accent)}
+.rc-site .fit-rail-title{color:var(--ink)}
+.rc-site .fit-dot{display:flex; flex-direction:column; align-items:center; gap:var(--s1)}
+.rc-site .fit-dot i{width:21px; height:21px; box-sizing:border-box; border-radius:50%; border:2px dashed var(--line); transition:background .3s var(--ease-io), border-color .3s var(--ease-io)}
+.rc-site .fit-dot.done i{background:var(--ok); border:0} .rc-site .fit-dot.failed i{background:var(--amber); border:0}
+.rc-site .fit-dot.running{color:var(--accent)} .rc-site .fit-dot.running i{border:3px solid var(--live-bg); border-top-color:var(--accent); animation:fitSpin .9s linear infinite}
+.rc-site .fit-rail-loop{color:var(--amber)}
+.rc-site .fit-preview{flex:1 1 320px; background-image:radial-gradient(var(--line) 1px, transparent 1px); background-size:21px 21px}
+.rc-site .fit-preview ol{list-style:none; margin:0; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s2)}
+.rc-site .fit-preview li{display:flex; flex-direction:column; gap:1px; padding:var(--s2) var(--s3); background:var(--surface); border:1px dashed var(--line); border-radius:13px; animation:fitIn .35s var(--ease-out) backwards}
+.rc-site .fit-preview li.loop{border-color:var(--amber)} .rc-site .fit-preview li.loop b{color:var(--amber)}
+.rc-site .fit-preview > p{padding:0 var(--s4) var(--s4); margin:0}
+.rc-site .fit-now{display:flex; align-items:center; gap:var(--s2); font-size:15px; color:var(--muted); margin:0; animation:fitIn .3s var(--ease-out)}
 
 /* conversation */
 .rc-site .fit-chat{display:flex; flex-direction:column; position:sticky; top:var(--s7); max-height:calc(100vh - var(--s8))}
+.rc-site .fit-clock{display:inline-flex; align-items:center; gap:var(--s2); font-family:var(--f-mono); font-size:13px; color:var(--accent)}
+.rc-site .fit-context{padding:var(--s3) var(--s4); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:11px; color:var(--muted); animation:fitIn .3s var(--ease-out)}
 .rc-site .fit-log{padding:var(--s4); display:flex; flex-direction:column; gap:var(--s4); overflow-y:auto; overscroll-behavior:contain}
 .rc-site .fit-bubble{display:flex; flex-direction:column; gap:var(--s2); font-size:14px; line-height:1.5; animation:fitIn .3s var(--ease-out)}
 .rc-site .fit-bubble small{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
@@ -60,7 +132,7 @@
 .rc-site .fit-tally b{font:700 34px/1 var(--f-display, inherit); color:var(--ink)}
 .rc-site .fit-tally b.strong{color:var(--ok)} .rc-site .fit-tally b.partial{color:var(--amber)}
 .rc-site .fit-card{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); box-shadow:0 2px 8px rgba(15,21,34,.06); animation:fitIn .35s var(--ease-out) backwards; transition:border-color .3s var(--ease-io)}
-.rc-site .fit-card.pending{border-color:var(--accent)} .rc-site .fit-card.gap{border-style:dashed; box-shadow:none}
+.rc-site .fit-card.pending, .rc-site .fit-card.retrying{border-color:var(--accent)} .rc-site .fit-card.gap{border-style:dashed; box-shadow:none}
 .rc-site .fit-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:var(--s3); flex-wrap:wrap}
 .rc-site .fit-card h3{font-size:19px; line-height:1.25; flex:1 1 260px}
 .rc-site .fit-badge{font-family:var(--f-mono); font-size:12px; border:1px solid var(--line); border-radius:21px; padding:3px 10px; white-space:nowrap; color:var(--muted)}
@@ -78,32 +150,10 @@
 .rc-site .fit-reading{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:12px; color:var(--muted)}
 .rc-site .fit-skel{height:13px; width:92%; border-radius:5px; background:linear-gradient(90deg,var(--line) 25%,var(--bg) 50%,var(--line) 75%); background-size:200% 100%; animation:fitSweep 1.6s var(--ease-io) infinite}
 .rc-site .fit-skel.short{width:64%}
+.rc-site .fit-flags .ok{color:var(--ok)}
 .rc-site .fit-flags{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); font-family:var(--f-mono); font-size:12px; color:var(--amber)}
 .rc-site .fit-foot{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap}
 
-/* trace */
-.rc-site .fit-meter{padding:var(--s4); border-bottom:1px solid var(--line); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s2); background-image:radial-gradient(var(--line) 1px, transparent 1px); background-size:13px 13px}
-.rc-site .fit-meter > div{display:flex; flex-direction:column; font-size:12px; color:var(--muted)}
-.rc-site .fit-meter b{font:500 18px var(--f-mono); color:var(--ink); font-variant-numeric:tabular-nums}
-.rc-site .fit-meter b.ticking{color:var(--accent)}
-.rc-site .fit-steps{list-style:none; margin:0; padding:var(--s2) var(--s4) var(--s3); display:flex; flex-direction:column}
-.rc-site .fit-steps > li{display:flex; gap:var(--s3); padding:var(--s3) 0; border-bottom:1px solid var(--line); transition:opacity .3s var(--ease-io)}
-.rc-site .fit-steps > li:last-child{border-bottom:0}
-.rc-site .fit-steps > li.waiting{opacity:.6}
-.rc-site .fit-steps > li > div{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
-.rc-site .fit-steps b{font-size:15px}
-.rc-site .fit-steps .fit-row span, .rc-site .fit-usage{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
-.rc-site .fit-mark{width:21px; height:21px; border-radius:50%; border:1px solid var(--line); font-family:var(--f-mono); font-size:11px; color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none}
-.rc-site .fit-steps li.done > .fit-mark{background:var(--ok-bg); color:var(--ok); border-color:transparent}
-.rc-site .fit-steps li.failed > .fit-mark{background:var(--amber-bg); color:var(--amber); border-color:transparent}
-.rc-site .fit-steps li.running > .fit-mark{border:2px solid var(--live-bg); border-top-color:var(--accent); animation:fitSpin .9s linear infinite}
-.rc-site .fit-subs{list-style:none; margin:var(--s2) 0; padding:0; display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:11px; color:var(--muted)}
-.rc-site .fit-subs li{display:flex; justify-content:space-between; gap:var(--s2); animation:fitIn .3s var(--ease-out)}
-.rc-site .fit-subs li.running span:first-child{color:var(--accent)} .rc-site .fit-subs li.done span:first-child{color:var(--ok)}
-.rc-site .fit-guard{padding:var(--s4); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s2); font-size:14px}
-.rc-site .fit-cap{padding:var(--s4); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s1); font-size:12px; color:var(--muted)}
-.rc-site .fit-bar{height:8px; border-radius:5px; background:var(--line); overflow:hidden}
-.rc-site .fit-bar i{display:block; height:100%; background:var(--accent); border-radius:5px; transition:width .4s var(--ease-io)}
 .rc-site .fit-turnstile:empty{display:none}
 
 @keyframes fitIn{from{opacity:0; transform:translateY(8px)}}
@@ -111,15 +161,21 @@
 @keyframes fitSweep{from{background-position:200% 0}to{background-position:-200% 0}}
 @keyframes fitSpin{to{transform:rotate(360deg)}}
 @keyframes fitPulse{50%{transform:scale(1.08)}}
+@keyframes fitPop{from{opacity:0; transform:scale(.95)}}
+@keyframes fitFlow{to{stroke-dashoffset:-14}}
+@keyframes fitRing{50%{box-shadow:0 0 0 8px var(--live-bg)}}
 
 /* one pane at a time on a phone */
 @media (max-width: 959px){
   .rc-site .fit-tabs{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s1); background:var(--line); border-radius:13px; padding:var(--s1); margin-bottom:var(--s3); position:sticky; top:var(--s6); z-index:2}
-  .rc-site .fit-tabs button{font:500 14px var(--f-body); color:var(--muted); background:transparent; border:0; border-radius:8px; min-height:44px; cursor:pointer}
-  .rc-site .fit-tabs button[aria-selected="true"]{font-weight:600; color:var(--ink); background:var(--surface)}
-  .rc-site .fit-panes > *{display:none; flex-basis:100%}
-  .rc-site .fit-panes[data-tab="Chat"] > .fit-chat, .rc-site .fit-panes[data-tab="Trace"] > .fit-trace{display:flex; flex-direction:column; position:static; max-height:none}
-  .rc-site .fit-panes[data-tab="Report"] > .fit-report{display:flex}
+  .rc-site .fit-stage, .rc-site .fit-main, .rc-site .fit-stage.folded .fit-main{display:block}
+  .rc-site .fit-seg.wide{display:none}
+  .rc-site .fit-stage .fit-graph, .rc-site .fit-stage .fit-report, .rc-site .fit-stage .fit-chat{display:none; position:static; max-height:none}
+  .rc-site .fit-stage[data-tab="Graph"] .fit-graph{display:block}
+  .rc-site .fit-stage[data-tab="Report"] .fit-report{display:flex}
+  .rc-site .fit-stage[data-tab="Chat"].done .fit-chat{display:flex}
+  .rc-site .fit-stage[data-tab="Chat"].running .fit-main::after{content:"Questions open when the report is done."; color:var(--muted); font-size:14px}
+  .rc-site .fit-barline .fit-bar{display:none}
 }
 @media (prefers-reduced-motion: reduce){
   .rc-site .fit *{animation:none !important; transition:none !important}

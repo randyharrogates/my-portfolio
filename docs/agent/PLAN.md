@@ -213,4 +213,18 @@ official `openai` SDK's model types), and that quality is good enough once the e
     summary and skills lines are now offered to every retriever and answer (`Bm25.offer`).
   - *Summary contradicting the cards:* the writer saw only the first quote per requirement. It now sees all
     of them and is told the verdicts are final. The planner now writes short noun phrases, not advert wording.
+- **Step 5, agent loop, memory and the graph page (done, 2026-11-10):**
+  - *Loop:* planner and critic became orchestrator and verifier. The verifier marks each requirement's quotes
+    yes, partly or no; lowered requirements and must-haves with no evidence go back to the orchestrator, which
+    names new search terms; they are retrieved and verified once more. Bounds in code: 2 rounds, 3 requirements
+    sent back, 15 calls (`MAX_CALLS`). New evidence replaces old only if it is stronger after the same checks.
+  - *Questions:* memory, search, answer, verify, with one more search when nothing was grounded. Memory keeps
+    the last 2 turns word for word and folds older ones into a summary (one small call when it compacts).
+    10 questions a day. Prompt caching: the stable part of the answer prompt comes first, but it is under the
+    provider's 1,024-token minimum, so the cached share reads 0% for now.
+  - *Page:* layout A. The agent graph is the stage during a run and folds to a live rail when it ends; clicking
+    the rail opens it at any time, for the report's loop or the last question's. Two panes at 1.618 : 1, one
+    status bar for time, tokens, cost and calls.
+  - *Real model:* 8 of 8 jobs and 12 of 12 questions pass; a run is about 19 s and $0.0017, up from 17 s and
+    $0.0015 before the loop.
 

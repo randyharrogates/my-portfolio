@@ -1,7 +1,8 @@
 // The one seam between the pipeline and a language model. The pipeline only ever
 // asks for a JSON object matching a schema, with a hard output cap.
 
-export type Step = "gate" | "planner" | "retriever" | "critic" | "writer" | "answer";
+// "orchestrator" plans a run and "replan" is its second move, after the verifier; "memory" compacts a conversation.
+export type Step = "gate" | "orchestrator" | "replan" | "retriever" | "verifier" | "writer" | "answer" | "memory";
 
 export interface ModelRequest {
   step: Step;

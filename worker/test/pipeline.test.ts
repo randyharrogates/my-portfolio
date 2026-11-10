@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { emptyBudget, reserve, settle } from "../src/budget.ts";
 import { ScriptedModel, worstCase } from "../src/model.ts";
-import { MAX_OUTPUT, SYSTEM, gateUser, plannerUser } from "../src/prompts.ts";
+import { MAX_OUTPUT, SYSTEM, gateUser, orchestratorUser } from "../src/prompts.ts";
 import type { ModelRequest, Step } from "../src/model.ts";
-import { runPipeline } from "../src/pipeline.ts";
+import { MAX_CALLS, runPipeline } from "../src/pipeline.ts";
 import type { Meter } from "../src/metered.ts";
 import type { Event } from "../src/pipeline.ts";
 import { byId, corpus, firstExcerpt as excerptIn, freeMeter, index, price } from "./fixtures.ts";
@@ -15,16 +15,17 @@ const firstExcerpt = (req: ModelRequest) => excerptIn(req.user);
 
 const honest: Partial<Record<Step, (r: ModelRequest) => unknown>> = {
   gate: () => ({ is_job_description: true }),
-  planner: () => ({
+  orchestrator: () => ({
     role: "Senior AI Engineer",
     requirements: [
-      { text: "Building multi-agent systems with LangGraph", importance: "must" },
-      { text: "Fine-tuning NLP models", importance: "must" },
-      { text: "Zzyzx qwfp xkcdq", importance: "nice" },
+      { text: "Building multi-agent systems with LangGraph", importance: "must", search: "" },
+      { text: "Fine-tuning NLP models", importance: "must", search: "" },
+      { text: "Zzyzx qwfp xkcdq", importance: "nice", search: "" },
     ],
   }),
   retriever: (r) => ({ verdict: "strong", evidence: [firstExcerpt(r)] }),
-  critic: () => ({ items: [] }),
+  verifier: () => ({ items: [] }),
+  replan: () => ({ items: [] }),
   writer: () => ({ summary: "Strong on multi-agent systems and NLP fine-tuning; no evidence for the embedded work." }),
 };
 
@@ -50,7 +51,7 @@ test("a job description produces a report whose every quote is in the cited sour
   assert.equal(nothing.verdict, "gap");
   assert.deepEqual(nothing.evidence, []);
   assert.equal(model.calls.filter((c) => c.step === "retriever").length, 2);
-  const usage = events.at(-1);
+  const usage = events.findLast((e) => e.type === "usage");
   assert.ok(usage?.type === "usage" && usage.calls === model.calls.length && usage.input > 0);
 });
 
@@ -84,18 +85,74 @@ test("a real quote attributed to an excerpt the retriever was not shown is dropp
   assert.ok(events.some((e) => e.type === "dropped" && e.reason === "unknown_source"));
 });
 
-test("the critic can lower a verdict but never raise one", async () => {
+test("the verifier can lower a verdict but never raise one", async () => {
   const { outcome } = await run({
     ...honest,
     retriever: (r) => ({ verdict: "partial", evidence: [firstExcerpt(r)] }),
-    critic: () => ({ items: [{ id: "r1", verdict: "strong" }, { id: "r2", verdict: "gap" }, { id: "r3", verdict: "strong" }] }),
+    verifier: () => ({ items: [{ id: "r1", supported: "yes", reason: "fine" }, { id: "r2", supported: "no", reason: "about something else" }, { id: "r3", supported: "yes", reason: "fine" }] }),
   });
   assert.ok(outcome.status === "done");
   const [r1, r2, r3] = outcome.report.results;
-  assert.equal(r1.verdict, "partial", "an attempted upgrade is ignored");
+  assert.equal(r1.verdict, "partial", "a yes does not upgrade");
   assert.equal(r2.verdict, "gap");
   assert.deepEqual(r2.evidence, []);
   assert.equal(r3.verdict, "gap", "a gap cannot be argued up");
+});
+
+test("partly supported evidence lowers strong to partial", async () => {
+  const { outcome } = await run({ ...honest, verifier: () => ({ items: [{ id: "r1", supported: "partly", reason: "shows agents, not LangGraph" }] }) });
+  assert.ok(outcome.status === "done");
+  assert.equal(outcome.report.results[0].verdict, "partial");
+  assert.equal(outcome.report.results[1].verdict, "strong");
+});
+
+test("the loop: rejected evidence goes back for a second search, and better evidence that passes the checks wins", async () => {
+  let verifierCalls = 0;
+  const { outcome, model, events } = await run({
+    ...honest,
+    verifier: () => (verifierCalls++ === 0 ? { items: [{ id: "r2", supported: "no", reason: "the quote is about retrieval" }] } : { items: [{ id: "r2", supported: "yes", reason: "shows fine-tuning" }] }),
+    replan: () => ({ items: [{ id: "r2", action: "search_again", search: "BioClinicalBERT fine-tuned named-entity recognition" }] }),
+  });
+  assert.ok(outcome.status === "done");
+  const r2 = outcome.report.results[1];
+  assert.equal(r2.verdict, "strong");
+  assert.ok(byId.get(r2.evidence[0].chunkId)!.text.includes(r2.evidence[0].quote));
+  assert.equal(verifierCalls, 2);
+  assert.equal(model.calls.filter((c) => c.step === "replan").length, 1);
+  assert.equal(model.calls.filter((c) => c.step === "retriever").length, 3);
+  assert.ok(events.some((e) => e.type === "retry" && e.id === "r2"));
+  assert.ok(events.some((e) => e.type === "retried" && e.id === "r2" && e.improved));
+});
+
+test("the loop: a second search that finds nothing better leaves the first verdict standing", async () => {
+  let retrieverCalls = 0;
+  const { outcome, events } = await run({
+    ...honest,
+    retriever: (r) => (retrieverCalls++ < 2 ? { verdict: "strong", evidence: [firstExcerpt(r)] } : { verdict: "strong", evidence: [{ excerpt_id: firstExcerpt(r).excerpt_id, quote: "an invented quote that is in no source at all" }] }),
+    verifier: () => ({ items: [{ id: "r1", supported: "partly", reason: "only part of it" }] }),
+    replan: () => ({ items: [{ id: "r1", action: "search_again", search: "LangGraph agents orchestration" }] }),
+  });
+  assert.ok(outcome.status === "done");
+  assert.equal(outcome.report.results[0].verdict, "partial");
+  assert.equal(outcome.report.results[0].evidence.length, 1);
+  assert.ok(events.some((e) => e.type === "retried" && e.id === "r1" && !e.improved));
+});
+
+test("the loop is bounded in code: one second round, whatever the models ask for", async () => {
+  const many = Array.from({ length: 40 }, (_, i) => ({ text: `Experience with agents and LangGraph, variant ${i}`, importance: "must", search: "agents" }));
+  const ids = ["r1", "r2", "r3", "r4", "r5", "r6"];
+  const { outcome, model } = await run({
+    ...honest,
+    orchestrator: () => ({ role: "x", requirements: many }),
+    verifier: () => ({ items: ids.map((id) => ({ id, supported: "no", reason: "not convinced" })) }),
+    replan: () => ({ items: [...ids, ...ids].map((id) => ({ id, action: "search_again", search: "LangGraph multi-agent" })) }),
+  });
+  assert.ok(outcome.status === "done");
+  assert.equal(model.calls.filter((c) => c.step === "replan").length, 1);
+  assert.equal(model.calls.filter((c) => c.step === "verifier").length, 2);
+  assert.equal(model.calls.filter((c) => c.step === "retriever").length, 6 + 3);
+  assert.ok(model.calls.length <= MAX_CALLS, `made ${model.calls.length}`);
+  assert.equal(MAX_CALLS, 15);
 });
 
 test("a summary making a forbidden claim is replaced by one computed from the verdicts", async () => {
@@ -104,12 +161,12 @@ test("a summary making a forbidden claim is replaced by one computed from the ve
   assert.match(outcome.report.summary, /^Of 3 requirements for Senior AI Engineer, my published work shows strong evidence for 2/);
 });
 
-test("a run never makes more than 10 model calls, whatever the planner returns", async () => {
-  const many = Array.from({ length: 40 }, (_, i) => ({ text: `Experience with agents and LangGraph, variant ${i}`, importance: "must" }));
-  const { outcome, model } = await run({ ...honest, planner: () => ({ role: "x", requirements: many }) });
+test("a run never makes more than 15 model calls, whatever the orchestrator returns", async () => {
+  const many = Array.from({ length: 40 }, (_, i) => ({ text: `Experience with agents and LangGraph, variant ${i}`, importance: "must", search: "" }));
+  const { outcome, model } = await run({ ...honest, orchestrator: () => ({ role: "x", requirements: many }) });
   assert.ok(outcome.status === "done");
   assert.equal(outcome.report.results.length, 6);
-  assert.ok(model.calls.length <= 10, `made ${model.calls.length}`);
+  assert.ok(model.calls.length <= MAX_CALLS, `made ${model.calls.length}`);
 });
 
 test("the job description is cut to 6,000 characters and fenced as data", async () => {
@@ -123,10 +180,10 @@ test("the job description is cut to 6,000 characters and fenced as data", async 
 
 test("when the budget runs out mid-run, the run stops and nothing more is spent", async () => {
   const state = emptyBudget(Date.UTC(2026, 10, 10));
-  // room for the gate and planner reservations only
-  const sized = (step: "gate" | "planner", user: string) =>
+  // room for the gate and orchestrator reservations only
+  const sized = (step: "gate" | "orchestrator", user: string) =>
     worstCase({ step, system: SYSTEM, user, schemaName: step, schema: {}, maxOutputTokens: MAX_OUTPUT[step] }, price);
-  const cfg = { monthlyMicro: 10_000_000, dailyMicro: sized("gate", gateUser(JD)) + sized("planner", plannerUser(JD)) };
+  const cfg = { monthlyMicro: 10_000_000, dailyMicro: sized("gate", gateUser(JD)) + sized("orchestrator", orchestratorUser(JD)) };
   let refused = 0;
   const meter: Meter = {
     reserve: async (amount) => {
@@ -147,8 +204,8 @@ test("when the budget runs out mid-run, the run stops and nothing more is spent"
 test("a model that returns junk fails the step cleanly and its reservation is still settled", async () => {
   let open = 0;
   const meter: Meter = { reserve: async () => (open++, "r"), settle: async () => void open-- };
-  const { outcome } = await run({ ...honest, planner: () => "not an object" }, meter);
-  assert.deepEqual(outcome, { status: "failed", step: "planner" });
+  const { outcome } = await run({ ...honest, orchestrator: () => "not an object" }, meter);
+  assert.deepEqual(outcome, { status: "failed", step: "orchestrator" });
   assert.equal(open, 0);
 });
 

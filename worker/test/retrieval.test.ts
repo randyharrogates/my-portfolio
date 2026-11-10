@@ -19,7 +19,7 @@ test("tokenizer folds the spellings job descriptions use", () => {
   assert.deepEqual(tokenize("Node.js, C++ and the API."), ["node.js", "c++", "api"]);
 });
 
-// Requirement-style queries, as the planner will produce them, and where the evidence lives.
+// Requirement-style queries, as the orchestrator will produce them, and where the evidence lives.
 const CASES: [string, RegExp][] = [
   ["Experience building multi-agent systems with LangGraph", /credit-memo|agent-pilot|trustplus/],
   ["Fine-tuning transformer models for NLP", /clinical-nlp|ai-singapore/],

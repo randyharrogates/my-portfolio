@@ -2,8 +2,8 @@ import { isClean } from "./guard.ts";
 import type { Chunk } from "./types.ts";
 
 // The grounding check. A model's evidence quote is shown to a visitor only if it
-// really appears in the chunk it cites. This runs in code, after the critic, and
-// overrides whatever the critic decided.
+// really appears in the chunk it cites. This runs in code, after the verifier, and
+// overrides whatever a model decided.
 
 const MIN_QUOTE_CHARS = 12;
 

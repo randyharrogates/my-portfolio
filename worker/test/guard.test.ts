@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { runAsk } from "../src/ask.ts";
+import { runAsk, emptyMemory } from "../src/ask.ts";
 import { cleanInput, isSafeProse, looksLikeInjection } from "../src/guard.ts";
 import { ScriptedModel } from "../src/model.ts";
 import { runPipeline } from "../src/pipeline.ts";
@@ -92,7 +92,7 @@ test("a model that is talked into a commitment or a link has its prose replaced 
   for (const answer of ["I can start next week and my salary expectation is modest.", "Read more at https://phish.example about my MCP work."]) {
     const deltas: string[] = [];
     const model = new ScriptedModel({ answer: (r) => ({ in_scope: true, evidence: [firstExcerpt(r.user)], answer }) });
-    const outcome = await runAsk("What did you build with MCP servers?", report, [], {
+    const outcome = await runAsk("What did you build with MCP servers?", report, emptyMemory(), {
       model, index, byId, price, meter,
       emit: (e) => void (e.type === "delta" && deltas.push(e.text)),
     });
@@ -104,7 +104,7 @@ test("a model that is talked into a commitment or a link has its prose replaced 
 test("a role title or requirement the model wrote unsafely never reaches the report", async () => {
   const model = new ScriptedModel({
     gate: () => ({ is_job_description: true }),
-    planner: () => ({
+    orchestrator: () => ({
       role: "<script>alert(1)</script> Engineer",
       requirements: [
         { text: "Building multi-agent systems with LangGraph", importance: "must" },

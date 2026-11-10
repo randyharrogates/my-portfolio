@@ -59,9 +59,10 @@ test("a forbidden phrase is never released, even partially", () => {
 
 const script = (summary: string): Partial<Record<Step, (r: ModelRequest) => unknown>> => ({
   gate: () => ({ is_job_description: true }),
-  planner: () => ({ role: "Senior AI Engineer", requirements: [{ text: "Building multi-agent systems with LangGraph", importance: "must" }] }),
+  orchestrator: () => ({ role: "Senior AI Engineer", requirements: [{ text: "Building multi-agent systems with LangGraph", importance: "must", search: "" }] }),
   retriever: (r) => ({ verdict: "strong", evidence: [firstExcerpt(r.user)] }),
-  critic: () => ({ items: [] }),
+  verifier: () => ({ items: [] }),
+  replan: () => ({ items: [] }),
   writer: () => ({ summary }),
 });
 
@@ -117,9 +118,9 @@ test("every event is timestamped in order, and steps carry time, tokens and cost
     events.filter((e) => e.type === "say").map((e) => e.type === "say" && e.text),
     [
       "That's a job description. Reading the role.",
-      "I picked the one requirement the advert stresses most. A retriever is now searching my case studies and CV.",
-      "Evidence found for 1 of 1. A critic is now challenging the evidence.",
-      "The critic kept every verdict. Writing the summary.",
+      "I picked the one requirement the advert stresses most. A retriever is searching my case studies and CV.",
+      "Evidence found for 1 of 1. A verifier is checking every citation.",
+      "The verifier kept every verdict. Writing the summary.",
     ],
   );
 });
