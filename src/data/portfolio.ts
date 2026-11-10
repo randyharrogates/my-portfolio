@@ -5,8 +5,8 @@ import type { PortfolioData, TechItem } from "./portfolio-types.ts";
 export const portfolioData: PortfolioData = {
   identity: {
     name: "Randy Chan",
-    role: "GenAI Solutions Engineer",
-    yoe: 7,
+    role: "AI Software Engineer",
+    yoe: 8,
     location: "Singapore",
     status: "available",
     belief: "I believe AI is the future of software development.",

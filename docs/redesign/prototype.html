@@ -1,0 +1,954 @@
+<title>Randy Chan Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: four pages (Home, Work, About, Résumé), hash routed. Work and case studies switch the site into "project mode":
+   blueprint grid ground + breadcrumb bar + index rows. Splits at 1.618:1. Spacing in phi steps 5·8·13·21·34·55·89·144. */
+:root{
+  --bg:#F3F4F7; --surface:#FFFFFF; --stage:#E9ECF3; --ink:#0F1522; --muted:#566074; --line:#D9DEE8;
+  --accent:#3346D3; --accent-soft:rgba(51,70,211,.10); --accent-ink:#FFFFFF; --live:#1E8A55; --warn:#B7791F;
+  --dot:rgba(15,21,34,.09); --grid:rgba(51,70,211,.07); --shadow:0 21px 55px rgba(15,21,34,.12), 0 2px 8px rgba(15,21,34,.06);
+  --f-display:"Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s1:5px; --s2:8px; --s3:13px; --s4:21px; --s5:34px; --s6:55px; --s7:89px; --s8:144px;
+  --ease-out:cubic-bezier(.22,1,.36,1); --ease-io:cubic-bezier(.65,0,.35,1);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B0E15; --surface:#121723; --stage:#161C2A; --ink:#E8ECF4; --muted:#9AA4B8; --line:#252D3D;
+  --accent:#8E9BFF; --accent-soft:rgba(142,155,255,.14); --accent-ink:#0B0E15; --live:#4ADE80; --warn:#F6C35B;
+  --dot:rgba(232,236,244,.08); --grid:rgba(142,155,255,.07); --shadow:0 21px 55px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B0E15; --surface:#121723; --stage:#161C2A; --ink:#E8ECF4; --muted:#9AA4B8; --line:#252D3D;
+  --accent:#8E9BFF; --accent-soft:rgba(142,155,255,.14); --accent-ink:#0B0E15; --live:#4ADE80; --warn:#F6C35B;
+  --dot:rgba(232,236,244,.08); --grid:rgba(142,155,255,.07); --shadow:0 21px 55px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0}
+body{background:var(--bg); color:var(--ink); font:16px/1.6 var(--f-body); -webkit-font-smoothing:antialiased}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:30; background:var(--bg)}
+a{color:inherit}
+.wrap{max-width:1200px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+h1,h2,h3,h4{font-family:var(--f-display); text-wrap:balance; margin:0; letter-spacing:-.02em}
+p{margin:0}
+.mono{font-family:var(--f-mono); font-size:12px; letter-spacing:.02em}
+.eyebrow{font-family:var(--f-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.note{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:5px}
+
+/* Nav */
+.nav{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter:blur(13px); border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex; align-items:center; gap:var(--s4); padding-block:var(--s3)}
+.brand{display:flex; align-items:center; gap:var(--s2); text-decoration:none; font-weight:600; white-space:nowrap}
+.brand img{width:28px; height:28px; border-radius:50%; object-fit:cover}
+.links{display:flex; gap:var(--s5); margin-left:auto; font-size:15px}
+.links a{text-decoration:none; color:var(--muted); padding-block:var(--s1); border-bottom:2px solid transparent; transition:color .2s, border-color .2s}
+.links a:hover{color:var(--ink)} .links a[aria-current="page"]{color:var(--ink); border-color:var(--accent)}
+.btn{display:inline-flex; align-items:center; gap:var(--s2); min-height:40px; padding:0 var(--s4); border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 14px var(--f-body); text-decoration:none; cursor:pointer; transition:transform .12s var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.kbd{font-family:var(--f-mono); font-size:11px; border:1px solid var(--line); border-radius:5px; padding:1px 5px; color:var(--muted)}
+.icon-btn{width:40px; padding:0; justify-content:center}
+
+/* Project mode: Work + case studies look like a catalogue, not like the rest of the site */
+body[data-mode="work"] main{background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:34px 34px; background-position:-1px -1px}
+.crumbs{position:sticky; top:calc(env(safe-area-inset-top,0px) + 66px); z-index:15; background:color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter:blur(13px); border-bottom:1px solid var(--line)}
+.crumbs .wrap{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2) var(--s4); padding-block:var(--s2); font-family:var(--f-mono); font-size:12px; color:var(--muted)}
+.crumbs a{text-decoration:none} .crumbs a:hover{color:var(--ink)} .crumbs b{color:var(--ink); font-weight:500}
+.crumbs .sep{opacity:.5}
+.crumbs .count{margin-left:auto}
+
+.page{padding-block:var(--s7) var(--s8)}
+.page.enter{animation:pageIn .45s var(--ease-out)}
+@keyframes pageIn{from{transform:translateY(13px)}}
+
+/* HOME */
+.hero{position:relative; padding-block:var(--s7) var(--s6)}
+.hero::before{content:""; position:absolute; inset:0; background-image:radial-gradient(var(--dot) 1.2px, transparent 1.3px); background-size:21px 21px; mask-image:linear-gradient(to bottom, #000 40%, transparent); pointer-events:none}
+.hero .wrap{position:relative; display:grid; grid-template-columns:minmax(0,1.618fr) minmax(0,1fr); gap:var(--s6); align-items:center}
+.status{display:inline-flex; align-items:center; gap:var(--s2); font-family:var(--f-mono); font-size:12px; color:var(--muted); border:1px solid var(--line); background:var(--surface); border-radius:21px; padding:var(--s1) var(--s3)}
+.dot{width:8px; height:8px; border-radius:50%; background:var(--live); animation:ping 2.4s var(--ease-out) infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--live) 55%, transparent)} 70%,100%{box-shadow:0 0 0 8px transparent}}
+.hero h1{font-size:clamp(40px, 6vw, 74px); line-height:1.02; font-weight:800; margin-top:var(--s4)}
+.hero h1 em{font-style:normal; color:var(--accent)}
+.lede{font-size:18px; color:var(--muted); max-width:36em; margin-top:var(--s4)}
+.cta{display:flex; flex-wrap:wrap; gap:var(--s3); margin-top:var(--s5)}
+.portrait{justify-self:end; width:100%; max-width:340px; display:flex; flex-direction:column; gap:var(--s3)}
+.portrait figure{margin:0; border-radius:21px; overflow:hidden; background:var(--stage); box-shadow:var(--shadow); aspect-ratio:1/1.272}
+.portrait img{width:100%; height:100%; object-fit:cover; display:block}
+.facts{display:grid; grid-template-columns:1fr 1fr; gap:var(--s2)}
+.fact{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s2) var(--s3); font-size:12px; color:var(--muted); line-height:1.4}
+.fact b{display:block; color:var(--ink); font-family:var(--f-display); font-size:16px; letter-spacing:-.01em}
+.fact.wide{grid-column:1 / -1}
+.pillars{grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s4); margin-top:var(--s6); border-top:1px solid var(--line); padding-top:var(--s4)}
+.pillar{text-decoration:none; display:flex; flex-direction:column; gap:var(--s2)}
+.pillar h3{font-size:20px; font-weight:700}
+.pillar p{font-size:14px; color:var(--muted)}
+.pillar .mono{color:var(--accent)}
+.pillar .go{font-size:13px; font-weight:500}
+.pillar:hover h3{color:var(--accent)}
+.strip{border-block:1px solid var(--line); padding-block:var(--s4)}
+.strip .wrap{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3) var(--s5); font-family:var(--f-display); font-weight:700; font-size:17px; color:var(--muted)}
+.strip .eyebrow{font-weight:400}
+.section{padding-top:var(--s8)}
+.head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:end; gap:var(--s4); margin-bottom:var(--s5)}
+.head h2{font-size:clamp(28px,3.6vw,44px); line-height:1.05; font-weight:800; max-width:18em}
+.head a{font-weight:500; text-decoration:none; border-bottom:1px solid var(--line)}
+.featured{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s4)}
+.feat{display:flex; flex-direction:column; gap:var(--s3); padding:var(--s4); border-radius:21px; background:var(--stage); text-decoration:none; transition:transform .3s var(--ease-out), box-shadow .3s var(--ease-out)}
+.feat:hover{transform:translateY(-3px); box-shadow:var(--shadow)}
+.feat h3{font-size:22px; font-weight:800}
+.feat .thumb{box-shadow:none}
+.thumb > img{transform:none; width:100%; height:100%; object-fit:cover; object-position:top center; display:block}
+.thumb .badge,.cover figcaption{position:absolute; right:8px; bottom:8px; font-family:var(--f-mono); font-size:10px; color:var(--muted); background:color-mix(in srgb, var(--surface) 88%, transparent); border:1px solid var(--line); border-radius:5px; padding:2px 6px; transform:none; width:auto}
+.cover{margin:var(--s6) 0 0; border-radius:21px; overflow:hidden; border:1px solid var(--line); position:relative; box-shadow:var(--shadow); background:var(--stage)}
+.cover img{display:block; width:100%; aspect-ratio:2.618/1; object-fit:cover; object-position:top center}
+.cover figcaption{right:13px; bottom:13px; font-size:11px; padding:3px 8px}
+.cover.shots{display:grid; grid-template-columns:minmax(0,1.618fr) minmax(0,1fr); gap:var(--s3); padding:var(--s3); box-shadow:none}
+.cover.shots img{aspect-ratio:auto; height:100%; border-radius:13px; border:1px solid var(--line)}
+@media (max-width:600px){.cover.shots{grid-template-columns:minmax(0,1fr)}}
+.cover.shots.phones{grid-template-columns:repeat(4,minmax(0,1fr)); background:var(--stage)}
+.cover.shots.phones img{height:auto; border-radius:13px}
+@media (max-width:600px){.cover.shots.phones{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.thumb.text{display:grid; place-items:center; font-family:var(--f-mono); font-size:12px; color:var(--muted); text-align:center; padding:var(--s3)}
+.thumb.text > *{transform:none; width:auto}
+.feat p{color:var(--muted); font-size:15px}
+.feat .go{margin-top:auto; font-weight:500; font-size:14px}
+.home-end{padding-block:var(--s8) var(--s7)}
+
+/* WORK index */
+.work-head{display:grid; grid-template-columns:minmax(0,1.618fr) minmax(0,1fr); gap:var(--s6); align-items:end}
+.work-head h1{font-size:clamp(40px,5.4vw,68px); line-height:1.02; font-weight:800}
+.work-head p{color:var(--muted)}
+.filters{display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s5)}
+.chip{font:500 13px var(--f-body); border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:21px; padding:var(--s1) var(--s3); min-height:34px; cursor:pointer; transition:background .2s, color .2s, transform .12s var(--ease-out)}
+.chip:active{transform:scale(.97)}
+.chip[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.chip .n{font-family:var(--f-mono); font-size:11px; opacity:.7; margin-left:var(--s1)}
+.theme{margin-top:var(--s7)}
+.theme-head{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.618fr); gap:var(--s5); align-items:baseline; padding-bottom:var(--s3); border-bottom:2px solid var(--ink)}
+.theme-head h2{font-size:clamp(24px,2.8vw,34px); font-weight:800}
+.theme-head p{color:var(--muted); font-size:15px}
+.prow{display:grid; grid-template-columns:233px minmax(0,1fr) 189px; gap:var(--s5); align-items:center; padding-block:var(--s4); border-bottom:1px solid var(--line); text-decoration:none; transition:background .25s}
+.prow:hover{background:color-mix(in srgb, var(--surface) 70%, transparent)}
+.thumb{border-radius:8px; overflow:hidden; aspect-ratio:1.618/1; background:var(--stage); position:relative; box-shadow:0 2px 8px rgba(15,21,34,.08)}
+.thumb{background:var(--surface); border:1px solid var(--line)}
+.thumb > .browser{border:0; border-radius:0; box-shadow:none}
+.thumb > *{transform:scale(.5); transform-origin:top left; width:200%; pointer-events:none}
+.thumb .phone{width:120%; transform:scale(.42) translate(60%, 4%); }
+.prow h3{font-size:22px; font-weight:800; transition:color .2s}
+.prow:hover h3{color:var(--accent)}
+.prow .one{color:var(--muted); margin-top:var(--s1); font-size:15px}
+.prow .tags{margin-top:var(--s2)}
+.prow .meta{display:flex; flex-direction:column; gap:var(--s1); font-family:var(--f-mono); font-size:12px; color:var(--muted); align-items:flex-start}
+.prow .arrow{font-family:var(--f-mono); color:var(--accent); transition:transform .3s var(--ease-out)} .prow:hover .arrow{transform:translateX(5px)}
+.pill{display:inline-flex; align-items:center; gap:var(--s1); font-family:var(--f-mono); font-size:11px; border-radius:21px; padding:2px 8px; border:1px solid var(--line); background:var(--surface); color:var(--muted)}
+.pill.live{color:var(--live); border-color:color-mix(in srgb, var(--live) 40%, var(--line))}
+.pill.live::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--live)}
+.pill.oss{color:var(--accent); border-color:color-mix(in srgb, var(--accent) 40%, var(--line))}
+.tags{display:flex; flex-wrap:wrap; gap:var(--s2)}
+.tag{font-family:var(--f-mono); font-size:11px; border:1px solid var(--line); background:var(--surface); border-radius:5px; padding:3px 8px; color:var(--muted)}
+.archive .arow{display:grid; grid-template-columns:189px minmax(0,1fr); gap:var(--s4); padding-block:var(--s3); border-bottom:1px solid var(--line); font-size:15px}
+.archive .arow span:first-child{font-family:var(--f-mono); font-size:12px; color:var(--muted); padding-top:2px}
+
+/* CASE study */
+.case-top{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.618fr); gap:var(--s6); align-items:center}
+.case-top h1{font-size:clamp(34px,4.4vw,56px); line-height:1.04; font-weight:800; margin-top:var(--s3)}
+.case-top .lede{margin-top:var(--s3)}
+.case-meta{display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s4)}
+.stagebox{background:var(--stage); border-radius:21px; padding:var(--s5); position:relative; overflow:hidden; border:1px solid var(--line)}
+.stagebox::before{content:""; position:absolute; inset:0; background:radial-gradient(60% 80% at 30% 20%, var(--accent-soft), transparent 70%); pointer-events:none}
+.stagebox > *{position:relative}
+.glance{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s4); background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); margin-top:var(--s6)}
+.glance b{font-family:var(--f-display); font-size:30px; line-height:1.05; display:block; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.glance span{font-size:13px; color:var(--muted)}
+.case-body{display:grid; grid-template-columns:189px minmax(0,1fr); gap:var(--s6); margin-top:var(--s7)}
+.toc{position:sticky; top:150px; align-self:start; display:flex; flex-direction:column; gap:var(--s2); font-size:14px}
+.toc button{all:unset; cursor:pointer; color:var(--muted); padding-left:var(--s3); border-left:2px solid var(--line)}
+.toc button:hover{color:var(--ink); border-color:var(--accent)}
+.toc button:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+.blocks{display:flex; flex-direction:column; gap:var(--s6); min-width:0}
+.block h2{font-size:26px; font-weight:800; margin-bottom:var(--s3)}
+.block p, .block li{color:var(--muted); font-size:17px; max-width:40em}
+.block ul{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:var(--s2)}
+.role{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:var(--s3) var(--s4)}
+.role p{color:var(--ink)}
+.flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:var(--s2)}
+.fstep{flex:1 1 160px; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s3); display:flex; flex-direction:column; gap:var(--s1); position:relative}
+.fstep .k{font-family:var(--f-mono); font-size:11px; color:var(--accent)}
+.fstep b{font-family:var(--f-display); font-size:16px; letter-spacing:-.01em}
+.fstep span{font-size:13px; color:var(--muted)}
+.farrow{align-self:center; font-family:var(--f-mono); color:var(--accent)}
+.decisions{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--s3)}
+.decision{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s3) var(--s4); color:var(--ink); font-size:15px}
+.case-nav{display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--s3); margin-top:var(--s7); padding-top:var(--s4); border-top:2px solid var(--ink)}
+.case-nav a{text-decoration:none; display:flex; flex-direction:column; gap:3px; max-width:48%}
+.case-nav a span{font-family:var(--f-mono); font-size:11px; color:var(--muted)} .case-nav a b{font-family:var(--f-display); font-size:20px}
+.case-nav a:last-child{text-align:right; margin-left:auto}
+.case-nav a:hover b{color:var(--accent)}
+.links-row{display:flex; flex-wrap:wrap; gap:var(--s3); font-size:15px}
+.links-row a{font-weight:500; text-decoration:none; border-bottom:1px solid var(--line)} .links-row a:hover{border-color:var(--ink)}
+
+/* Device frames + recreated UIs */
+.browser{border-radius:13px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); overflow:hidden}
+.browser .bar{display:flex; align-items:center; gap:var(--s2); padding:var(--s2) var(--s3); border-bottom:1px solid var(--line)}
+.browser .bar i{width:10px; height:10px; border-radius:50%; background:var(--line)}
+.browser .url{margin-left:var(--s3); flex:1; min-width:0; font-family:var(--f-mono); font-size:11px; color:var(--muted); background:var(--bg); border-radius:5px; padding:3px 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.browser img{display:block; width:100%; height:auto}
+.phone{width:min(290px,100%); margin-inline:auto; border-radius:34px; padding:10px; background:#0D1018; box-shadow:var(--shadow)}
+.phone .screen{border-radius:26px; overflow:hidden; background:var(--surface); aspect-ratio:9/17; display:flex; flex-direction:column}
+.ui{font-size:13px; line-height:1.5}
+.chat-head{display:flex; align-items:center; gap:var(--s2); padding:var(--s3); border-bottom:1px solid var(--line); font-weight:600}
+.chat-head small{font-weight:400; color:var(--muted); font-family:var(--f-mono); font-size:10px}
+.av{width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font:700 11px var(--f-mono)}
+.thread{flex:1; display:flex; flex-direction:column; gap:var(--s3); padding:var(--s3); overflow:hidden}
+.msg{display:flex; flex-direction:column; gap:3px}
+.msg .who{font-weight:600; font-size:12px} .msg .who small{color:var(--muted); font-weight:400; font-family:var(--f-mono); font-size:10px}
+.card-mini{border:1px solid var(--line); border-radius:8px; padding:var(--s2) var(--s3); background:var(--bg)}
+.approval{border:1px solid color-mix(in srgb, var(--warn) 55%, var(--line)); background:color-mix(in srgb, var(--warn) 9%, var(--surface)); border-radius:8px; padding:var(--s2) var(--s3); font-family:var(--f-mono); font-size:11px}
+.approval .act{display:flex; gap:var(--s2); margin-top:var(--s2)}
+.approval .act span{border:1px solid var(--line); border-radius:5px; padding:2px 8px; background:var(--surface)}
+.approval .act span:first-child{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.voice{display:flex; align-items:center; gap:3px; height:24px} .voice i{width:3px; border-radius:2px; background:var(--accent)}
+.memo{display:grid; grid-template-columns:minmax(0,.618fr) minmax(0,1fr)}
+.memo aside{border-right:1px solid var(--line); padding:var(--s3); display:flex; flex-direction:column; gap:var(--s2); background:var(--bg)}
+.memo aside div{padding:var(--s1) var(--s2); border-radius:5px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:var(--s2)}
+.memo aside div.on{background:var(--accent-soft); color:var(--ink)}
+.memo main{padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); min-width:0}
+.memo h4{margin:0; font-family:var(--f-display); font-size:18px}
+.cite{font-family:var(--f-mono); font-size:10px; color:var(--accent); border:1px solid var(--accent-soft); background:var(--accent-soft); border-radius:4px; padding:0 4px; white-space:nowrap}
+.check{display:flex; gap:var(--s2); align-items:center; font-family:var(--f-mono); font-size:11px; color:var(--live)}
+.bars{display:flex; flex-direction:column; gap:var(--s2)}
+.fieldrow{display:grid; grid-template-columns:minmax(0,1fr) 89px 34px; gap:var(--s2); align-items:center; font-size:12px}
+.meter{height:6px; border-radius:3px; background:var(--line); overflow:hidden} .meter i{display:block; height:100%; background:var(--accent)}
+.fieldrow .pct{font-family:var(--f-mono); font-size:10px; color:var(--muted); text-align:right}
+.ent{border-radius:4px; padding:0 3px; font-weight:500}
+.ent small{font-family:var(--f-mono); font-size:9px; margin-left:3px; opacity:.75}
+.ent.drug{background:var(--accent-soft); color:var(--accent)} .ent.dose{background:color-mix(in srgb, var(--live) 14%, transparent); color:var(--live)} .ent.cond{background:color-mix(in srgb, var(--warn) 16%, transparent); color:var(--warn)}
+.term{padding:var(--s4); font-family:var(--f-mono); font-size:12px; line-height:1.9; color:var(--muted); min-height:160px}
+.term .k{color:var(--accent)} .term .ok{color:var(--live)} .term .w{color:var(--warn)}
+
+/* ABOUT */
+.about-top{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.618fr); gap:var(--s6); align-items:start}
+.about-top figure{margin:0; border-radius:21px; overflow:hidden; aspect-ratio:1/1.272; box-shadow:var(--shadow); max-width:380px}
+.about-top figure img{width:100%; height:100%; object-fit:cover; display:block}
+.prose{display:flex; flex-direction:column; gap:var(--s4); font-size:18px; max-width:38em}
+.prose h1{font-size:clamp(40px,5.4vw,68px); line-height:1.02; font-weight:800}
+.prose p{color:var(--muted)} .prose p strong{color:var(--ink); font-weight:600}
+.subnav{display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s2)}
+.asec{margin-top:var(--s8); scroll-margin-top:110px}
+.asec-head{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.618fr); gap:var(--s5); align-items:baseline; padding-bottom:var(--s3); border-bottom:2px solid var(--ink); margin-bottom:var(--s5)}
+.asec-head h2{font-size:clamp(28px,3.4vw,40px); font-weight:800}
+.asec-head p{color:var(--muted)}
+.loop{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s3); position:relative; margin-top:var(--s4)}
+.step{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s2); min-width:0}
+.step .who{font-family:var(--f-mono); font-size:12px; color:var(--accent)}
+.step h3{font-size:20px; font-weight:700}
+.step p{font-size:14px; color:var(--muted)}
+.pulse{position:absolute; left:0; right:0; top:-13px; height:2px; background:var(--line); border-radius:2px; overflow:hidden}
+.pulse i{position:absolute; top:0; height:100%; width:21%; background:var(--accent); border-radius:2px; animation:travel 4.2s var(--ease-io) infinite}
+@keyframes travel{0%{left:-21%} 100%{left:100%}}
+.principles{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--s5); margin-top:var(--s6)}
+.principles h3{font-size:20px; font-weight:800; margin-bottom:var(--s2)}
+.principles p{color:var(--muted); font-size:15px}
+.bigstat{display:flex; flex-wrap:wrap; gap:var(--s4); align-items:baseline; margin-top:var(--s6); color:var(--muted)}
+.bigstat b{font-family:var(--f-display); font-size:44px; color:var(--ink); letter-spacing:-.02em}
+.two{display:grid; grid-template-columns:minmax(0,1.618fr) minmax(0,1fr); gap:var(--s6)}
+.two h3{font-size:20px; font-weight:800; margin-bottom:var(--s3)}
+.rows{border-top:1px solid var(--line)}
+.row{display:grid; grid-template-columns:89px minmax(0,1fr); gap:var(--s3); padding-block:var(--s3); border-bottom:1px solid var(--line); font-size:15px}
+.row .yr{font-family:var(--f-mono); font-size:12px; color:var(--muted); padding-top:3px; font-variant-numeric:tabular-nums}
+.row b{font-weight:600} .row .sub{display:block; color:var(--muted); font-size:14px}
+.post{display:grid; grid-template-columns:144px minmax(0,1fr) auto; gap:var(--s4); align-items:baseline; padding-block:var(--s4); border-bottom:1px solid var(--line); text-decoration:none}
+.post .mono{color:var(--muted)} .post b{font-family:var(--f-display); font-size:22px; letter-spacing:-.015em; display:block} .post span{color:var(--muted)}
+.post .arrow{font-family:var(--f-mono); color:var(--accent); transition:transform .3s var(--ease-out)} .post:hover .arrow{transform:translateX(5px)}
+
+/* RÉSUMÉ */
+.cv-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:end; gap:var(--s4); margin-bottom:var(--s5)}
+.cv-head h1{font-size:clamp(40px,5.4vw,68px); line-height:1.02; font-weight:800}
+.cv{display:flex; flex-direction:column; gap:var(--s5); align-items:center}
+.sheet{width:min(860px,100%); background:#fff; border-radius:5px; box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line)}
+.sheet img{display:block; width:100%; height:auto}
+
+/* Contact + footer */
+.contact{border-top:1px solid var(--line); padding-block:var(--s7); background:var(--bg)}
+.contact .wrap{display:grid; grid-template-columns:minmax(0,1.618fr) minmax(0,1fr); gap:var(--s6); align-items:center}
+.contact h2{font-size:clamp(30px,4.4vw,54px); line-height:1.03; font-weight:800}
+.email{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s4)}
+.email code{font-family:var(--f-mono); font-size:15px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:var(--s2) var(--s3); user-select:all; overflow-wrap:anywhere}
+.hall{display:block; border-radius:21px; overflow:hidden; position:relative; text-decoration:none; box-shadow:var(--shadow); color:#fff}
+.hall img{display:block; width:100%; height:auto; aspect-ratio:1.618/1; object-fit:cover; transition:transform .6s var(--ease-out)}
+.hall:hover img{transform:scale(1.03)}
+.hall span{position:absolute; left:var(--s4); bottom:var(--s4); right:var(--s4); font-family:var(--f-display); font-weight:700; font-size:21px; text-shadow:0 2px 13px rgba(0,0,0,.6)}
+.hall small{display:block; font-family:var(--f-mono); font-weight:400; font-size:11px; opacity:.85}
+footer{padding-block:var(--s5); border-top:1px solid var(--line); color:var(--muted); font-size:13px}
+footer .wrap{display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--s3)}
+
+/* Ask palette */
+.scrim{position:fixed; inset:0; z-index:40; background:rgba(8,10,16,.42); backdrop-filter:blur(3px); display:grid; place-items:start center; padding:max(13vh, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) 16px max(16px, env(safe-area-inset-left,0px)); animation:fade .2s var(--ease-out)}
+.palette{width:min(640px,100%); background:var(--surface); border:1px solid var(--line); border-radius:13px; box-shadow:var(--shadow); overflow:hidden; transform-origin:var(--ox,50%) var(--oy,0); animation:pop .22s var(--ease-out)}
+.scrim.closing{animation:fade .16s var(--ease-io) reverse forwards} .scrim.closing .palette{animation:pop .16s var(--ease-io) reverse forwards}
+@keyframes fade{from{opacity:0}} @keyframes pop{from{opacity:0; transform:scale(.95)}}
+.pal-in{display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); border-bottom:1px solid var(--line)}
+.pal-in input{flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--ink); font:16px var(--f-body); padding-block:var(--s2)}
+.pal-list{max-height:min(46vh,380px); overflow:auto; padding:var(--s2)}
+.qa{width:100%; text-align:left; display:flex; justify-content:space-between; gap:var(--s3); padding:var(--s3); border:0; border-radius:8px; background:transparent; color:var(--ink); font:15px var(--f-body); cursor:pointer}
+.qa:hover,.qa[aria-selected="true"]{background:var(--accent-soft)}
+.qa .mono{color:var(--muted)}
+.answer{padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); border-top:1px solid var(--line)}
+.answer .trace{font-family:var(--f-mono); font-size:11px; color:var(--muted); border-left:2px solid var(--line); padding-left:var(--s3); line-height:1.8}
+.answer .trace span{color:var(--accent)}
+.pal-foot{display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--s2); padding:var(--s2) var(--s4); border-top:1px solid var(--line); font-family:var(--f-mono); font-size:11px; color:var(--muted); background:var(--bg)}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important; transition:none !important}}
+
+@media (max-width: 960px){
+  .links{gap:var(--s4); font-size:14px}
+  .hero .wrap,.work-head,.case-top,.about-top,.two,.contact .wrap,.theme-head,.asec-head{grid-template-columns:minmax(0,1fr)}
+  .portrait{justify-self:start; max-width:320px}
+  .featured,.principles,.decisions{grid-template-columns:minmax(0,1fr)}
+  .pillars,.glance{grid-template-columns:minmax(0,1fr)}
+  .loop{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .prow{grid-template-columns:144px minmax(0,1fr)}
+  .prow .meta{grid-column:2; flex-direction:row; flex-wrap:wrap; gap:var(--s2)}
+  .case-body{grid-template-columns:minmax(0,1fr)}
+  .theme-head,.asec-head{gap:var(--s2)}
+  .toc{display:none}
+  .stagebox{padding:var(--s4)}
+  .post{grid-template-columns:minmax(0,1fr)} .post .arrow{display:none}
+  .crumbs{top:calc(env(safe-area-inset-top,0px) + 62px)}
+}
+@media (max-width: 600px){
+  .brand span{display:none}
+  .links{gap:var(--s3)}
+  .ask-label,#askBtn .kbd{display:none}
+  .ask-short{display:inline !important}
+  .loop{grid-template-columns:minmax(0,1fr)}
+  .memo{grid-template-columns:minmax(0,1fr)} .memo aside{display:none}
+  .prow{grid-template-columns:minmax(0,1fr)} .prow .thumb{display:none} .prow .meta{grid-column:1}
+  .archive .arow{grid-template-columns:minmax(0,1fr); gap:0}
+  .page{padding-block:var(--s6) var(--s7)}
+  .crumbs .count{display:none}
+  .flow{flex-direction:column} .fstep{flex:none} .farrow{display:none}
+}
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#home"><img src="img/randy.webp" alt=""><span>Randy Chan</span></a>
+    <nav class="links" aria-label="Pages"><a href="#work" data-nav="work">Work</a><a href="#about" data-nav="about">About</a><a href="#resume" data-nav="resume">Résumé</a></nav>
+    <button class="btn" id="askBtn" type="button" aria-haspopup="dialog"><span class="ask-label">Ask about Randy</span><span class="ask-short" style="display:none">Ask</span><span class="kbd">⌘K</span></button>
+    <button class="btn icon-btn" id="themeBtn" type="button" aria-label="Switch theme">◐</button>
+  </div>
+</header>
+<div class="crumbs" id="crumbs" hidden><div class="wrap" id="crumbsIn"></div></div>
+
+<main>
+
+<!-- HOME -->
+<div data-page="home">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="status"><span class="dot"></span>Open to AI and full-stack roles · Singapore</span>
+        <h1>AI software engineer building <em>AI-native</em> products and multi-agent systems.</h1>
+        <p class="lede">I design AI-driven workflows end to end, from the first workshop to production and on-call, and I build them with coding agents every day. Now Head of Technology and AI at The Assembly Place.</p>
+        <div class="cta"><a class="btn primary" href="#work">See all projects</a><a class="btn" href="#resume">Résumé</a><a class="btn" href="https://github.com/randyharrogates" target="_blank" rel="noopener">GitHub ↗</a></div>
+      </div>
+      <div class="portrait">
+        <figure><img src="img/randy.webp" alt="Portrait of Randy Chan"></figure>
+        <div class="facts">
+          <div class="fact"><b>8+ years</b>in software, since 2019</div>
+          <div class="fact"><b>14 years</b>total working experience</div>
+          <div class="fact wide"><b>Claude Code + Codex</b>in parallel, every day</div>
+        </div>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="pillars" id="pillars"></div>
+    </div>
+  </section>
+  <div class="strip"><div class="wrap"><span class="eyebrow">Worked at</span><span>The Assembly Place</span><span>TrustPlus AI</span><span>BGC Group</span><span>AI Singapore</span><span>NCS</span><span>Bitopia Technology</span><span>Napshot</span><span>Singapore Army</span></div></div>
+</div>
+
+<!-- WORK -->
+<div data-page="work" hidden>
+  <section class="page"><div class="wrap">
+    <div class="work-head"><h1>Projects</h1><p id="workIntro">Every project I'd put my name to, grouped by what it shows. Each one opens a full case study.</p></div>
+    <div class="filters" role="group" aria-label="Filter by theme" id="filters"></div>
+    <div id="themes"></div>
+  </div></section>
+</div>
+
+<!-- CASE -->
+<div data-page="case" hidden>
+  <section class="page"><div class="wrap" id="caseRoot"></div></section>
+</div>
+
+<!-- ABOUT -->
+<div data-page="about" hidden>
+  <section class="page"><div class="wrap">
+    <div class="about-top">
+      <figure><img src="img/randy.webp" alt="Portrait of Randy Chan" loading="lazy"></figure>
+      <div class="prose">
+        <h1>About</h1>
+        <p><strong>I'm an AI software engineer in Singapore.</strong> I build AI-native products, AI-driven workflows and multi-agent systems, and I build them with coding agents. I care about the parts that make AI trustworthy in production: citations, judges, approvals and audit trails.</p>
+        <p>Before software I spent seven years as a regular in the Singapore Army, leading and training teams. Since 2019 I have built platforms for small businesses, logistics systems, a nation-wide public healthcare application at NCS, clinical NLP at AI Singapore, and AI products in fintech. I now lead technology and AI at The Assembly Place.</p>
+        <div class="subnav"><button class="chip" type="button" data-jump="how">How I work</button><button class="chip" type="button" data-jump="career">Career</button><button class="chip" type="button" data-jump="writing">Writing</button></div>
+      </div>
+    </div>
+
+    <section class="asec" id="sec-how">
+      <div class="asec-head"><h2>How I work</h2><p>AI-native from the first commit: coding agents do most of the typing; I do the planning, the reviewing and the owning.</p></div>
+      <div class="loop" id="loop"></div>
+      <div class="principles">
+        <div><h3>Plan before code</h3><p>Claude reads the codebase and writes a plan with concrete steps before any agent touches a file. The plan is what I review first.</p></div>
+        <div><h3>Loops until green</h3><p>Codex implements in its own git worktree and keeps going until the tests and checks pass. Reviewer agents send gaps back.</p></div>
+        <div><h3>People own the merge</h3><p>Nothing ships without me reading the diff. Shared standards, skills and hooks steer every agent the same way.</p></div>
+      </div>
+      <div class="bigstat"><b>~4 → ~20</b><span>releases a month after I moved a team onto this way of working.</span></div>
+    </section>
+
+    <section class="asec" id="sec-career">
+      <div class="asec-head"><h2>Career</h2><p>8+ years in software, 14 years working in total.</p></div>
+      <div class="two">
+        <div class="rows" id="careerRows"></div>
+        <div><h3>Education and certifications</h3><div class="rows">
+          <div class="row"><span class="yr">B.Sc.</span><span><b>Singapore University of Social Sciences</b><span class="sub">ICT, Minor in Data Science · GPA 4.2/5</span></span></div>
+          <div class="row"><span class="yr">Cert</span><span><b>Certified Associate AI Engineer</b><span class="sub">AI Professionals Singapore</span></span></div>
+          <div class="row"><span class="yr">Cert</span><span><b>ECBA</b><span class="sub">IIBA, business analysis</span></span></div>
+          <div class="row"><span class="yr">Speaks</span><span><b>English · Mandarin</b><span class="sub">Mandarin conversational</span></span></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="asec" id="sec-writing">
+      <div class="asec-head"><h2>Writing</h2><p>Notes from running agents in production.</p></div>
+      <div class="rows">
+        <a class="post" href="https://randyharrogates.github.io/my-portfolio/#/blog" target="_blank" rel="noopener"><span class="mono">19 May 2026</span><span><b>LLM-as-a-judge in the hot path</b><span>Production lessons, and when a schema is the better judge.</span></span><span class="arrow">↗</span></a>
+        <a class="post" href="https://randyharrogates.github.io/my-portfolio/#/blog" target="_blank" rel="noopener"><span class="mono">14 Apr 2026</span><span><b>Building an MCP server for a production app</b><span>Acting-user sign-in, token refresh, and a small tool list.</span></span><span class="arrow">↗</span></a>
+        <a class="post" href="https://randyharrogates.github.io/my-portfolio/#/blog" target="_blank" rel="noopener"><span class="mono">12 Mar 2026</span><span><b>Multi-agent orchestration patterns in production</b><span>Routers, specialists, judges, and where each breaks.</span></span><span class="arrow">↗</span></a>
+      </div>
+    </section>
+  </div></section>
+</div>
+
+<!-- RESUME -->
+<div data-page="resume" hidden>
+  <section class="page"><div class="wrap">
+    <div class="cv-head"><div><h1>Résumé</h1><p class="note" style="margin-top:var(--s2)">Updated 10 Nov 2026 · two pages · generated from my career notes</p></div><a class="btn primary" href="Randy_Chan_Resume.pdf" target="_blank" rel="noopener">Open the PDF ↗</a></div>
+    <div class="cv">
+      <div class="sheet"><img src="img/cv-1.webp" alt="Résumé page 1 of 2" loading="lazy" width="1241" height="1754"></div>
+      <div class="sheet"><img src="img/cv-2.webp" alt="Résumé page 2 of 2" loading="lazy" width="1241" height="1754"></div>
+    </div>
+  </div></section>
+</div>
+</main>
+
+<section class="contact">
+  <div class="wrap">
+    <div>
+      <h2>Building something with agents? Let's talk.</h2>
+      <div class="email"><code id="emailText">randychan_92@outlook.com</code><button class="btn" id="copyBtn" type="button">Copy email</button><a class="btn" href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener">LinkedIn ↗</a></div>
+      <p class="note" style="margin-top:var(--s3)" id="copyNote" aria-live="polite">Email is fastest.</p>
+    </div>
+    <a class="hall" href="#home" aria-label="Explore the 3D Hall, the interactive version of this site">
+      <img src="img/hall.webp" alt="" loading="lazy" width="1600" height="1041">
+      <span>Explore the 3D Hall<small>the interactive version · opt-in, heavier</small></span>
+    </a>
+  </div>
+</section>
+<footer><div class="wrap"><span>© 2026 Randy Chan · Singapore</span><span>Built with Claude Code and Codex. Every claim here is on my CV.</span></div></footer>
+
+<template id="vis-memo">
+  <div class="browser ui" role="img" aria-label="Recreated credit memo screen with cited sections and a judge check">
+    <div class="bar"><i></i><i></i><i></i><span class="url">app · credit memo · Acme Trading Pte Ltd (sample)</span></div>
+    <div class="memo">
+      <aside><div class="on">Executive summary <span class="cite">✓</span></div><div>Financial analysis <span class="cite">✓</span></div><div>Industry outlook <span class="cite">✓</span></div><div>KYB checks <span class="cite">✓</span></div><div>Risk rating <span class="cite">review</span></div></aside>
+      <main>
+        <h4>Executive summary</h4>
+        <p>Revenue grew 18% year on year to S$4.2m <span class="cite">[FS 2025 p.3]</span>, while the current ratio fell to 1.1 <span class="cite">[FS 2025 p.7]</span>. Directors match the registry record <span class="cite">[KYB]</span>.</p>
+        <div class="check">✓ Judge model: every figure traced to a source</div>
+        <div class="approval">HIGH-RISK DECISION · needs analyst approval<div class="act"><span>Approve</span><span>Send back</span></div></div>
+        <p class="note">Sample company and figures. Recreated screen, no client data.</p>
+      </main>
+    </div>
+  </div>
+</template>
+<template id="vis-jarvis">
+  <div class="phone"><div class="screen ui" role="img" aria-label="Recreated chat with Jarvis showing a morning brief and an approval request">
+    <div class="chat-head"><span class="av">J</span><span>Jarvis<br><small>long-running agent · online</small></span></div>
+    <div class="thread">
+      <div class="msg"><span class="who">Jarvis <small>08:45</small></span><div class="card-mini">Morning brief: 3 meetings, 2 replies owed, run club at 19:00. Air quality is fine to run.</div></div>
+      <div class="msg"><span class="who">Randy <small>09:02</small></span><div class="voice" aria-hidden="true"><i style="height:8px"></i><i style="height:16px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:20px"></i><i style="height:14px"></i><i style="height:7px"></i><span class="mono" style="margin-left:8px">0:06 voice note</span></div></div>
+      <div class="msg"><span class="who">Jarvis <small>09:02</small></span><div class="approval">APPROVAL · send reply to recruiter<div class="act"><span>yes a1f3</span><span>no</span></div></div></div>
+      <div class="msg"><span class="who">Jarvis <small>23:30</small></span><div class="card-mini">Filed 6 facts from today into your notes.</div></div>
+    </div>
+  </div></div>
+</template>
+<template id="vis-kestrel">
+  <div class="browser ui" role="img" aria-label="Recreated Kestrel screen showing extracted fields with confidence and citations">
+    <div class="bar"><i></i><i></i><i></i><span class="url">kestrel · policy review (sample)</span></div>
+    <div style="padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3)">
+      <div class="bars">
+        <div class="fieldrow"><span>Sum assured · S$500,000 <span class="cite">p.2</span></span><span class="meter"><i style="width:96%"></i></span><span class="pct">0.96</span></div>
+        <div class="fieldrow"><span>Premium term · 20 years <span class="cite">p.3</span></span><span class="meter"><i style="width:91%"></i></span><span class="pct">0.91</span></div>
+        <div class="fieldrow"><span>Riders · critical illness <span class="cite">p.5</span></span><span class="meter"><i style="width:74%"></i></span><span class="pct">0.74</span></div>
+      </div>
+      <div class="approval">ADVISER CONFIRMATION REQUIRED · 1 field below 0.80<div class="act"><span>Confirm</span><span>Edit</span></div></div>
+    </div>
+  </div>
+</template>
+<template id="vis-nlp">
+  <div class="browser ui" role="img" aria-label="Recreated clinical NLP view with highlighted entities">
+    <div class="bar"><i></i><i></i><i></i><span class="url">clinical notes · entity view (sample)</span></div>
+    <div style="padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3)">
+      <p style="font-size:14px; line-height:1.9">Patient with <span class="ent cond">type 2 diabetes<small>COND</small></span> started on <span class="ent drug">metformin<small>DRUG</small></span> <span class="ent dose">500 mg twice daily<small>DOSE</small></span>; review in two weeks.</p>
+      <div class="check">→ intervention predicted · explained by contributing entities</div>
+      <p class="note">Invented sample sentence. No patient data.</p>
+    </div>
+  </div>
+</template>
+<template id="vis-leeseidon"><div class="browser"><div class="bar"><i></i><i></i><i></i><span class="url">leeseidon.com</span></div><img src="img/leeseidon.webp" alt="Leeseidon sign-in screen" loading="lazy" width="1280" height="800"></div></template>
+<template id="vis-twc"><div class="browser"><div class="bar"><i></i><i></i><i></i><span class="url">randyharrogates.github.io/twc</span></div><img src="img/twc.webp" alt="TWC landing page: split, settle, done" loading="lazy" width="1280" height="800"></div></template>
+<template id="vis-verona"><div class="browser"><div class="bar"><i></i><i></i><i></i><span class="url">verona.leeseidon.com</span></div><img src="img/verona.webp" alt="Verona wedding planner landing page" loading="lazy" width="1280" height="900"></div></template>
+
+
+
+<div class="scrim" id="scrim" hidden>
+  <div class="palette" role="dialog" aria-modal="true" aria-labelledby="palTitle">
+    <div class="pal-in"><span class="mono" style="color:var(--accent)" id="palTitle">Ask</span><label for="palInput" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Ask about Randy</label><input id="palInput" type="text" maxlength="200" placeholder="Ask about Randy's work…" autocomplete="off"><span class="kbd">esc</span></div>
+    <div class="pal-list" id="palList" role="listbox" aria-label="Questions"></div>
+    <div class="answer" id="palAnswer" hidden></div>
+    <div class="pal-foot"><span>Answers come only from Randy's CV, with sources.</span><span>Preview: curated answers</span></div>
+  </div>
+</div>
+<script>
+(function(){
+  const root = document.documentElement;
+  const $ = (s, el=document) => el.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  const THEMES = [
+    { id:"multi", name:"Multi-agent systems", blurb:"Specialist agents that research, extract and check each other's work, with a person approving the decisions that matter." },
+    { id:"workflows", name:"AI-driven workflows", blurb:"Agents wired into real systems (mail, chat, CRMs, product APIs) that act as the signed-in user and ask before they act." },
+    { id:"products", name:"AI-native products", blurb:"Live products where an agent is part of the product, not a bolt-on." },
+    { id:"tooling", name:"Tooling for AI work", blurb:"Tools I built to make agent work repeatable: generated documents and evaluations with a spend cap." },
+    { id:"ml", name:"Applied ML and RAG", blurb:"Models and retrieval in production: clinical NLP, an on-premise RAG assistant and speech." }
+  ];
+
+  const P = [
+    // ---------- Multi-agent systems
+    { id:"credit-memo", theme:"multi", vis:"vis-memo", org:"TrustPlus AI", year:"2025–26", status:"Employer", featured:true,
+      title:"Credit memos in minutes, every figure cited",
+      card:"Eight specialist agents read statements, filings and the web, then write a credit memo that a judge model checks.",
+      lede:"A multi-agent credit-risk and KYB product for financial institutions. Specialist agents research a company and write a cited credit memo; a second model checks every section, and high-risk calls wait for an analyst.",
+      role:"Designed and built most of the product across the stack, from requirements and customer proofs of concept to production, and was on call for it.",
+      problem:"Analysts spent most of a day assembling a credit memo from financial statements, filings and web research, then checking it by hand. The answer had to be faster without becoming less trustworthy.",
+      flow:[["Ingest","Statements, filings and web results enter an event-driven pipeline"],["Research","8 specialist agents in LangGraph, each owning part of the memo"],["Retrieve","Hybrid search with rank fusion and reranking over FAISS"],["Check","A judge model checks each section against its sources"],["Approve","High-risk calls wait for an analyst; a chat edits the finished memo"]],
+      system:["8 specialist research agents orchestrated in LangGraph, with tool calling","Hybrid retrieval with reciprocal rank fusion and reranking over FAISS","A judge model, different from the writer, checks each section against its sources","Evaluation before release: golden test sets re-run on prompt and model changes, RAGAS for retrieval, LangFuse evaluations","Event-driven backend on Azure Service Bus with a LangChain multi-provider LLM layer and an Amazon Bedrock fallback"],
+      decisions:["Moved vector search from MongoDB to in-memory FAISS when parallel load hit I/O limits and a bigger tier cost too much","Separate judge and writer models, so a model never grades its own work","Per-step timing and error fields in the run state, so failures are visible to users and to on-call","Human approval only where the risk is high, so analysts review decisions, not typing"],
+      results:[["5–60 min","per memo, down from 6–24 hours"],["~85%","faster retrieval (700–1,400 ms to 100–250 ms)"],["~4 → ~20","releases a month after the move to Claude Code"]],
+      tags:["LangGraph","LangChain","FastAPI","React","FAISS","Azure Service Bus","LangFuse"], links:[] },
+    { id:"kestrel", theme:"multi", vis:"vis-kestrel", org:"Personal", year:"2026", status:"Private", featured:true,
+      title:"Kestrel, policy review for financial advisers",
+      card:"Four agents read an insurance policy, with confidence and a citation on every field, and nothing saves until an adviser confirms.",
+      lede:"A multi-agent system that reads old insurance policies for financial advisers. Every field comes with a confidence score and a citation, and nothing is saved until an adviser confirms it.",
+      role:"Solo: product, design and build.",
+      problem:"Advisers re-key old policies by hand before they can review a client's cover, and every insurer formats documents differently. A wrong field is a compliance problem, not just a typo.",
+      flow:[["Read","OCR on the policy document"],["Extract","Four agents fill about 19 fields, each with confidence and a citation"],["Clarify","Batched questions instead of guesses"],["Gate","Deterministic compliance checks"],["Confirm","The adviser confirms; an audit trail is written"]],
+      system:["OCR, then four field-group agents on the open-source claw-code agent runtime","Per-field confidence and citations back to the page","Batched clarification questions instead of guesses","Deterministic compliance gates, a required human confirmation and an immutable audit trail","Run progress streamed to a React front end over Server-Sent Events"],
+      decisions:["Known cases are handled by rules, so the LLM only handles the edge cases","Per-insurer memory playbooks grow through versioned updates with rollback","Descriptive only: it never gives advice"],
+      results:[["~19","fields extracted per policy"],["4","specialist extraction agents"],["3","swappable LLM providers"]],
+      tags:["Multi-agent","OCR","FastAPI","React","SSE","audit trail"], links:[] },
+    { id:"leetee", theme:"multi", org:"Personal", year:"2026", status:"Private", url:"leetee · research run (sample)",
+      term:[["k","→ "],"scout     story beats in the company history",null,["k","→ "],"research  one agent per beat",null,["k","→ "],"judge     10 criteria · 7 gating",null,["ok","✓ "],"verdict   cited · with a buy ladder"],
+      title:"LeeTee, a cited stock-research agent",
+      card:"Claude skills and multi-agent workflows that research a growth stock and write a cited verdict.",
+      lede:"Research skills and multi-agent workflows that study a growth company against ten criteria and write a cited verdict, published to a private multi-tenant catalogue. Research only; it never trades.",
+      role:"Solo.",
+      problem:"Stock research is slow, and most summaries skip the hard history and the sources.",
+      flow:[["Scout","Finds the real story beats in the company's history"],["Research","One agent per beat"],["Judge","Ten criteria, seven of them gating"],["Publish","A cited verdict with a buy ladder, to a private catalogue"]],
+      system:["A scout pass finds the story beats, then one research agent runs per beat","A ten-criteria pipeline with gating rules and a cited report","A private multi-tenant catalogue on Next.js and Supabase"],
+      decisions:["The company story is told but never scored, so narrative cannot sway the verdict","Valuation sets the buy ladder, not the verdict","Research only: no trading path exists"],
+      results:[["10","criteria, 7 of them gating"],["2–24","story chapters, sized to the company"],["0","trades: research only"]],
+      tags:["Claude skills","Multi-agent","Python","Next.js","Supabase"], links:[] },
+    { id:"agent-pilot", theme:"multi", org:"AI Singapore", year:"2024", status:"Research pilot", url:"planner · agents (sample)",
+      term:[["k","→ "],"agent  venue discovery",null,["k","→ "],"agent  activity recommendation",null,["k","→ "],"agent  itinerary optimisation",null,["ok","✓ "],"plan returned · LangGraph"],
+      title:"A multi-agent RAG planner",
+      card:"Three LangGraph agents plan an outing together. A research pilot, not a production system.",
+      lede:"A research pilot at AI Singapore: specialist LangGraph agents discover venues, recommend activities and optimise an itinerary over a retrieval layer.",
+      role:"Part of the team on a research pilot.",
+      problem:"Testing how specialist agents coordinate on a planning task with real retrieval.",
+      flow:[["Discover","A venue agent searches the retrieval layer"],["Recommend","An activity agent proposes what to do"],["Optimise","An itinerary agent orders the plan"],["Return","LangGraph assembles the result"]],
+      system:["LangGraph orchestration of three specialist agents","FastAPI and Pinecone for retrieval","A React chat front end, deployed on AWS ECS with ECR"],
+      decisions:["Kept as a research pilot; the clinical NLP work was the production system"],
+      results:[["3","specialist agents"],["AWS","ECS and ECR"],["Pilot","research, not production"]],
+      tags:["LangGraph","RAG","Pinecone","FastAPI","AWS"], links:[] },
+
+    // ---------- AI-driven workflows
+    { id:"jarvis", theme:"workflows", vis:"vis-jarvis", org:"Personal", year:"2026", status:"Private", featured:true,
+      title:"Jarvis, the agent I run my day on",
+      card:"One long-lived Claude Code session that briefs me, keeps my notes, and asks before it sends anything.",
+      lede:"My own long-running agent, built on Claude Code and in daily use since early 2026. It wakes on timers and on new mail, calendar and chat events, briefs me, files what I tell it, and asks my phone before it sends anything.",
+      role:"Solo. I designed it, and built it by planning with Claude and implementing with Codex.",
+      problem:"Mail, calendar, notes, training and job search lived in separate apps. I wanted one assistant that remembers, works in the background, and never acts on my behalf without asking.",
+      flow:[["Wake","launchd timers and mail, calendar and chat watchers queue events"],["Recall","Reads the Markdown vault and its search index"],["Act","Runs one of 27 skills: brief, triage, log, draft"],["Gate","Outbound or destructive actions ask my phone first"],["Learn","My corrections become standing rules"]],
+      system:["One long-lived Claude Code session woken by launchd jobs and local watchers","An event queue with cursors and idempotent handling, so every pass is safe to repeat","A Markdown knowledge base as the source of truth, with a rebuildable SQLite and vector index","Voice notes over chat with on-device speech-to-text and text-to-speech","A pre-tool-use hook that gates outbound and destructive actions and relays approvals to my phone"],
+      decisions:["Explored OpenClaw and ClaudeClaw early in 2026, then built my own","Every email and web page is untrusted data, never instructions","Timing lives in the operating system's scheduler, not in the agent"],
+      results:[["27","custom skills"],["46","test files"],["9","architecture decision records"]],
+      tags:["Claude Code","MCP","Python","SQLite + vectors","on-device speech"], links:[] },
+    { id:"mcp-pack", theme:"workflows", org:"TrustPlus AI", year:"2025–26", status:"Employer", url:"claude · tools (sample)",
+      term:[["k","$ "],"claude mcp list",null,["","app-mcp   connected · 8 tools"],null,["k","→ "],"call memo.create  as the signed-in analyst",null,["ok","✓ "],"scope inherited · audit logged",null,["k","$ "],"skills regenerate --from openapi.json",null,["ok","✓ "],"14 skills · new endpoints picked up"],
+      title:"An MCP server and skill pack generated from the API",
+      card:"Assistants drive the product as the signed-in user, and the skill pack regenerates from the OpenAPI spec.",
+      lede:"A tool surface for AI assistants: an MCP server where every call runs as the signed-in user, and a Claude Code skill pack generated from the OpenAPI spec so new endpoints become agent tools automatically.",
+      role:"Built the MCP server and the generator for the skill pack.",
+      problem:"Assistants, skills and tests each needed their own way into the product, with their own authentication, and every new endpoint meant hand-writing another tool.",
+      flow:[["Spec","The product's OpenAPI spec"],["Generate","14 Claude Code skills, one per router"],["Serve","An MCP server with 8 tools"],["Sign in","OAuth and JWT as the acting user"],["Audit","Every call logged under that user"]],
+      system:["An MCP server over the product API with OAuth and JWT sign-in as the acting user","Transparent re-authentication when a session expires","A Claude Code skill pack and CLI shim generated from the OpenAPI spec, one skill per router"],
+      decisions:["Generate the tool surface from the API contract instead of hand-writing it","Scopes inherit the acting user, so permissions and the audit trail stay correct"],
+      results:[["8","MCP tools"],["14","skills generated from the spec"],["1","auth flow shared by every client"]],
+      tags:["MCP","Claude Code skills","OpenAPI","OAuth","JWT"], links:[] },
+    { id:"kestrel-mcp", theme:"workflows", org:"Personal", year:"2026", status:"Private", url:"claude · kestrel tools (sample)",
+      term:[["k","→ "],"tool  upload_document  policy.pdf",null,["k","→ "],"tool  validate_and_save_record",null,["ok","✓ "],"35 fields mapped · confidence + citations",null,["w","⚠ "],"3 gaps flagged for the adviser"],
+      title:"Kestrel MCP, policy review inside an assistant",
+      card:"The MCP-native sibling of Kestrel: an AI assistant reviews policies through tools on one Cloudflare Worker.",
+      lede:"An MCP-native version of Kestrel. Instead of another app, an adviser's AI assistant reviews old insurance policies through MCP tools served from a single Cloudflare Worker.",
+      role:"Solo.",
+      problem:"Advisers already work inside an AI assistant; they needed policy review there, with the same validation as the full app.",
+      flow:[["Upload","A policy document through an MCP tool"],["Map","A 35-field roster with confidence and citations"],["Flag","Gaps flagged for the adviser"],["Save","Server-side validation on every save"]],
+      system:["An MCP server on one Cloudflare Worker","Document upload, field mapping with confidence and citations, gap flags","Validated saves of records, summaries and customer reports"],
+      decisions:["Ship the product as tools for an assistant, not a separate UI","Validation happens on the server for every save, whatever the assistant sends"],
+      results:[["35","policy fields in the roster"],["~19","MCP tools"],["1","Cloudflare Worker"]],
+      tags:["MCP","Cloudflare Workers","TypeScript"], links:[] },
+    { id:"lee-rooms", theme:"workflows", org:"Personal", year:"2026", status:"Private", url:"whatsapp · concierge (sample)",
+      term:[["k","← "],"guest: is the room near the MRT?",null,["k","→ "],"ground  listings knowledge",null,["k","→ "],"draft   reply with the matching listing",null,["w","⏸ "],"booking → owner approves on Telegram"],
+      title:"A WhatsApp concierge with an approval gate",
+      card:"An agent that answers rental enquiries on WhatsApp and books only with the owner's approval.",
+      lede:"A WhatsApp concierge agent for a co-living rental brand. It answers enquiries from listing data and saves a booking only after the owner approves it on Telegram.",
+      role:"Solo.",
+      problem:"Rental enquiries arrive at all hours, and most are the same questions about rooms, prices and location.",
+      flow:[["Receive","An enquiry arrives on WhatsApp"],["Ground","The answer is drawn from the listings"],["Draft","The agent drafts a reply"],["Approve","The owner approves bookings, or every reply, on Telegram"]],
+      system:["A long-lived agent session wired to WhatsApp","Answers grounded in the listings, with completeness checks","A Telegram approval gate for bookings, or for every reply","A local dashboard for the owner"],
+      decisions:["Approval is configurable per mode instead of all or nothing","No outbound messages to people who did not write first"],
+      results:[["1","long-lived agent session"],["2","approval modes"],["0","unsolicited messages"]],
+      tags:["Claude Code","WhatsApp","Telegram","TypeScript"], links:[] },
+
+    // ---------- AI-native products
+    { id:"twc", theme:"products", vis:"vis-twc", img:"img/twc.webp", shots:["img/twc.webp","img/twc-chat.webp"], org:"Personal", year:"2025", status:"Live · Open source",
+      title:"TWC, an expense splitter with its own agent loop",
+      card:"Drop in a receipt photo and an agent drafts the split for one-tap approval, entirely in the browser.",
+      lede:"A group expense splitter whose centrepiece is a receipt-reading agent. It runs entirely in the browser, on an agent loop I wrote from scratch.",
+      role:"Solo: design and build; open source.",
+      problem:"Splitting a group dinner from a receipt photo, in mixed currencies, is slow and error-prone.",
+      flow:[["Upload","A receipt photo, in the browser"],["Read","A vision model returns line items, validated by Zod"],["Plan","The agent drafts the split with idempotent tools"],["Approve","One tap to accept; nothing is written before"]],
+      system:["An agent loop of up to 32 iterations with streamed phase labels and permission-gated tool dispatch","Receipt vision with structured outputs validated by Zod","One client interface over Anthropic, OpenAI and local OpenAI-compatible servers, each a hand-written fetch call","API keys stay in a passphrase-encrypted vault in the browser, with spend caps"],
+      decisions:["Plan mode removes write tools from the schema instead of trusting the prompt","Conversation pruning at 60% of the context budget","Money held in integer minor units so balances reconcile to zero"],
+      results:[["32","max iterations per agent run"],["0","servers or databases"],["5","idempotent tools"]],
+      tags:["Agent loop","Vision","React","TypeScript","Zod"], links:[["Try the demo","https://randyharrogates.github.io/twc/"],["Code","https://github.com/randyharrogates/twc"]] },
+    { id:"leeseidon", theme:"products", vis:"vis-leeseidon", img:"img/leeseidon.webp", org:"Personal", year:"2026", status:"Live",
+      title:"Leeseidon, investment tracking with an encryption-blind server",
+      card:"Agents read your statements; the sync server only ever stores ciphertext.",
+      lede:"A privacy-first investment tracker. Agents turn statements, PDFs and screenshots into trades, and the sync server only ever sees ciphertext.",
+      role:"Solo: product, design and build.",
+      problem:"Portfolio trackers want your financial data on their servers. I wanted the analytics without handing that over.",
+      flow:[["Drop","A CSV, PDF or screenshot"],["Extract","A multi-turn agent turns it into trades through schematized tools"],["Reconcile","The same engine as manual entry"],["Sync","Encrypted on the device; the server stores ciphertext"]],
+      system:["Multi-turn agents extract trades from CSV, PDF and images through schematized tools","A model-agnostic tool executor with streaming, retries and rate-limit handling","One isomorphic TypeScript core powers the web app and a CLI that ships Claude Code skills","Heavy simulations run in Web Workers"],
+      decisions:["The vault passphrase never leaves the device","AI-parsed statements go through the same engine as manual entry"],
+      results:[["E2E","encrypted sync"],["1","TypeScript core for web and CLI"],["Live","at leeseidon.com"]],
+      tags:["React","TypeScript","Cloudflare Workers","AES-GCM"], links:[["Visit leeseidon.com","https://leeseidon.com"]] },
+    { id:"tide-tally", theme:"products", url:"tide tally · agent (sample)", term:[["k","← "],"receipt.jpg  · read once, not stored",null,["k","→ "],"draft  Kopi  $3.40  Food & Drink",null,["k","→ "],"draft  Lunch $8.50  Food & Drink",null,["w","⏸ "],"review 2 drafts before saving",null,["ok","✓ "],"saved · synced when back online"], img:"img/tally.webp", pos:"left center", shots:["img/tally-1.webp","img/tally-2.webp","img/tally-3.webp","img/tally-4.webp"], phones:true, org:"Personal", year:"2026", status:"Live",
+      title:"Tide Tally, an offline-first expense tracker with an agent",
+      card:"Three taps to log a spend, even with no signal; hand the agent a receipt or statement and review what it drafts.",
+      lede:"A mobile-first expense tracker built around one number and one gesture: how much is left, and three taps to log what you just spent. It works offline, and an agent turns receipts and statements into draft expenses you review before anything is saved.",
+      role:"Solo: product, design and build, with Claude Code.",
+      problem:"Most budgeting apps open onto a dashboard, need a signal, and nag. Logging a $3.40 coffee should take seconds, in a basement food court or on the MRT.",
+      flow:[["Capture","The numpad is the home screen: amount, category, save"],["Store","Every write lands on the device first (IndexedDB)"],["Sync","A Cloudflare Pages Function and D1 sync in the background"],["Ask","The agent reads a receipt or statement and drafts expenses"],["Review","You confirm drafts; other software can log through OAuth"]],
+      system:["React 19, TypeScript and Tailwind on Vite, with a hand-written WebGL shader for the water","Offline-first storage in IndexedDB (Dexie) with background sync to a Cloudflare Pages Function and D1, on one origin","An agent that turns an uploaded receipt or statement into draft expenses on the same review screen as manual entry","An OAuth device flow with three scopes, so a coding agent or a script can log an expense, with an OpenAPI spec generated from the route table and a skill package published by CI","Android and iOS builds with Capacitor; Vitest, Playwright (including an offline-capture suite) and invariant checks in CI"],
+      decisions:["Uploaded documents are read once in the request and never stored","The agent only drafts; nothing reaches the ledger until you save it","Dropped end-to-end encryption that depended on a key another app could rotate, and said so plainly in the privacy note","A free stack by design: Cloudflare Pages, Functions and D1"],
+      results:[["3","taps to log an expense"],["Offline","every write lands on the device first"],["Live","at tally.leeseidon.com"]],
+      tags:["React","TypeScript","IndexedDB","Cloudflare D1","WebGL","Capacitor","OAuth"], links:[["Visit Tide Tally","https://tally.leeseidon.com"]] },
+    { id:"verona", theme:"products", vis:"vis-verona", img:"img/verona.webp", org:"Personal", year:"2026", status:"Live",
+      title:"Verona, a wedding app an agent can drive",
+      card:"Guest list to dance floor: RSVPs, seating and a live photo wall, with an API an agent can use.",
+      lede:"A mobile-first wedding app, from guest list to the dance floor. An OpenAPI contract keeps the API in step with the UI, so an agent can do anything a guest or couple can.",
+      role:"Solo: product, design and build.",
+      problem:"Wedding planning is spread across spreadsheets, chat groups and paper seating plans.",
+      flow:[["Contract","One OpenAPI contract for the UI and the API"],["App","A Next.js PWA on Cloudflare Workers"],["Data","Supabase Postgres with row-level security and realtime"],["Agent","A bring-your-own agent can use every feature"]],
+      system:["Next.js (App Router) PWA on Cloudflare Workers","Supabase Postgres with row-level security, Google sign-in and realtime updates","Photo uploads to object storage and a moderated live photo wall","Playwright tests and CI auto-deploy; English, Chinese and Malay"],
+      decisions:["An OpenAPI parity contract so an agent can use every feature","Free-tier-only infrastructure as a cost guardrail"],
+      results:[["3","languages"],["RLS","row-level security in Postgres"],["Live","at verona.leeseidon.com"]],
+      tags:["Next.js","Supabase","row-level security","PWA"], links:[["Visit Verona","https://verona.leeseidon.com"]] },
+
+    // ---------- Tooling
+    { id:"resume-builder", theme:"tooling", org:"Personal", year:"2026", status:"Private", url:"claude code · /resume (sample)",
+      term:[["k","$ "],"/resume tailor jd.md",null,["k","→ "],"read     career notes · 8 roles",null,["k","→ "],"tool     compile · ats-check",null,["ok","✓ "],"resume.pdf · 2 pages · ATS ok"],
+      title:"Résumé Builder, a Claude Code plugin",
+      card:"Three skills and an MCP server that turn career notes into tailored, ATS-safe résumés.",
+      lede:"A Claude Code plugin that turns career notes into tailored, ATS-safe résumés and cover letters, with the deterministic build steps exposed as MCP tools.",
+      role:"Solo. I directed Claude Code, which wrote most of the code.",
+      problem:"Every application meant rewriting a CV from a blank page, and claims drifted from what actually happened.",
+      flow:[["Notes","One source of truth for career facts"],["Tailor","A skill maps a job description to evidence"],["Build","MCP tools compile the PDF"],["Check","An ATS check on every build"]],
+      system:["Skills for building the career notes, tailoring a résumé and writing a cover letter","An MCP server that exposes the deterministic build steps (compile, checks) as tools","A local companion app alongside the plugin"],
+      decisions:["Every CV is generated from one source of truth","Deterministic steps are tools; judgement stays with the model and the person"],
+      results:[["3","skills"],["15","MCP tools"],["ATS","check on every build"]],
+      tags:["Claude Code plugin","MCP","LaTeX","Python"], links:[] },
+    { id:"eval-code", theme:"tooling", org:"Personal", year:"2026", status:"Early", url:"eval-code · workspace (sample)",
+      term:[["k","→ "],"ingest   raw dataset",null,["k","→ "],"clean    + explore with charts",null,["k","→ "],"eval     target system · hard spend cap",null,["ok","✓ "],"compare runs · drill into failures"],
+      title:"eval-code, an agent-first eval workbench",
+      card:"A workspace for LLM, RAG and agent projects: data in, evals run under a hard spend cap, failures compared.",
+      lede:"A workbench that replaces notebooks for LLM, RAG and multi-agent projects: ingest and clean data, define an eval target, run evals under a hard spend cap and compare runs.",
+      role:"Solo; early stage.",
+      problem:"LLM projects live in scattered notebooks, and eval runs can quietly burn money.",
+      flow:[["Ingest","A raw dataset"],["Explore","Clean it and chart it"],["Evaluate","Run against a target under a hard spend cap"],["Compare","Compare runs and drill into failures"]],
+      system:["Dataset ingest, cleaning and chart-based exploration","Eval targets for RAG and agent systems","A spend tracker that stops runs at a cap"],
+      decisions:["Agent-first: the same tools serve the UI and an agent","Spend limits are enforced, not just reported"],
+      results:[["Hard","spend cap on every run"],["1","workspace from raw data to compared runs"],["May","2026 start"]],
+      tags:["Python","LLM evals","RAG","agents"], links:[] },
+
+    // ---------- Applied ML and RAG
+    { id:"clinical-nlp", theme:"ml", vis:"vis-nlp", org:"AI Singapore", year:"2024", status:"Employer",
+      title:"Clinical NLP in production",
+      card:"Fine-tuned BioClinicalBERT and a downstream classifier, explained to clinicians.",
+      lede:"A production NLP pipeline for a healthcare environment: entity extraction from clinical notes feeding a classifier that predicts clinical interventions, with explanations clinicians can read.",
+      role:"AI engineer on the project: data preparation, fine-tuning, evaluation and serving. Also mentored 12 apprentices across two cohorts.",
+      problem:"Clinical notes are unstructured, and clinicians need to see why a model made each call before they trust it.",
+      flow:[["Prepare","Clean and explore clinical notes"],["Extract","Fine-tuned BioClinicalBERT tags entities"],["Predict","A classifier predicts interventions"],["Explain","EBM shows clinicians why"],["Serve","FastAPI and Docker, tracked in MLflow"]],
+      system:["Data cleaning and exploration of unstructured clinical notes","BioClinicalBERT fine-tuned in PyTorch for named-entity recognition, with other BERT models as baselines","Extracted entities feed a downstream intervention classifier","Evaluated on held-out data (precision, recall, F1); Kedro pipelines and MLflow tracking","Served with FastAPI and Docker, and handed over with documentation"],
+      decisions:["Explainable Boosting Machines so clinicians can read each prediction","Hyperparameter tuning with documented quality, latency and compute-cost trade-offs"],
+      results:[["5","models in the pipeline"],["12","apprentices mentored"],["EBM","explanations for clinicians"]],
+      tags:["PyTorch","BioClinicalBERT","Kedro","MLflow","FastAPI"], links:[] },
+    { id:"defence-rag", theme:"ml", org:"BGC Group", year:"2024–25", status:"Employer", url:"assistant · on-premise (sample)",
+      term:[["k","→ "],"retrieve  top chunks · vector store",null,["k","→ "],"answer    cited · 2 sources",null,["w","⚠ "],"complex request → hand off to a human",null,["ok","✓ "],"session state kept across turns"],
+      title:"An on-premise RAG assistant for a defence-sector client",
+      card:"A knowledge assistant on a fully on-premise stack, with hand-off to a person for complex requests.",
+      lede:"An enterprise knowledge assistant for a Singapore defence-sector client. The data could not leave the environment, so the whole stack ran on premise.",
+      role:"Led the on-premise deployment of the whole stack with Docker, built the React front end, worked with the client's business users, and handed the system over with documentation.",
+      problem:"Staff needed answers from internal documents that could not leave the client's environment.",
+      flow:[["Chunk","Semantic-aware chunking of internal documents"],["Retrieve","Vector search, on premise"],["Answer","Cited answers in multi-turn sessions"],["Escalate","Complex requests hand off to a person"]],
+      system:["A FastAPI application layer and middleware to the model endpoints","Stateful multi-turn sessions with escalation to a human agent","Semantic-aware chunking, tuned with embedding visualisations","Weaviate for vectors, MongoDB for state, a React front end and Docker CI/CD across three environments"],
+      decisions:["A fully on-premise stack instead of a cloud model API","Hand complex intents to a person rather than guess"],
+      results:[["On-prem","the data never left"],["3","environments: dev, staging, production"],["HITL","hand-off to a person"]],
+      tags:["RAG","FastAPI","Weaviate","MongoDB","React","Docker"], links:[] },
+    { id:"speech", theme:"ml", org:"Personal", year:"2024", status:"Open source", url:"speech · transcribe (sample)",
+      term:[["k","$ "],"upload meeting.m4a",null,["k","→ "],"whisper  transcribe",null,["ok","✓ "],"saved to history · searchable"],
+      title:"Speech-to-text with Whisper",
+      card:"Whisper transcription served with FastAPI, with history and a React front end.",
+      lede:"An end-to-end model-serving app: Whisper transcription behind FastAPI, a SQLite history and a React front end, all in Docker.",
+      role:"Solo; open source.",
+      problem:"A simple, private way to transcribe recordings and keep them searchable.",
+      flow:[["Upload","An audio file"],["Transcribe","Whisper behind FastAPI"],["Store","SQLite history"],["Search","A React front end"]],
+      system:["Whisper inference behind a FastAPI gateway","SQLite for transcript history","A React front end, all containerised"],
+      decisions:["A small split of gateway, inference and storage that can scale out later"],
+      results:[["Whisper","served with FastAPI"],["Docker","end to end"],["Multi","language and format support"]],
+      tags:["Whisper","FastAPI","React","Docker"], links:[["Code","https://github.com/randyharrogates/speech"]] }
+  ];
+  P.forEach(p => { if(!p.img){ p.img = "img/gen/" + p.id + ".webp"; p.gen = true; } });
+  const ORDER = THEMES.flatMap(t => P.filter(p => p.theme === t.id));
+  const themeOf = id => THEMES.find(t => t.id === id);
+
+  const CAREER = [
+    ["2026–now","The Assembly Place","Head of Technology and AI","Leads a small team building the company's CRM, internal tools and an AI-agent console with approvals."],
+    ["2025–26","TrustPlus AI","Senior AI Software Engineer","Built most of a multi-agent credit-risk and KYB product."],
+    ["2024–25","BGC Group","Senior Software Engineer (AI)","An on-premise RAG assistant for a defence-sector client."],
+    ["2024","AI Singapore","AI Engineer","Clinical NLP in production; mentored 12 apprentices."],
+    ["2022–23","NCS","Business Systems Analyst","Automation for a nation-wide public healthcare application."],
+    ["2022","Bitopia","Full-Stack Software Engineer","Logistics and real-estate platforms."],
+    ["2019–21","Napshot","Solutions and Software Engineer","Custom platforms for small businesses."],
+    ["2012–18","Singapore Army","Combat Engineer, Regular","Led and trained teams before moving into software."]
+  ];
+  const LOOP = [["claude","Plan","Reads the codebase and breaks the work into concrete steps."],["codex × several","Build","Implements in parallel worktrees and runs the tests until they pass."],["claude","Review","Checks the diff against the plan and sends gaps back."],["randy","Own it","Reads, approves, merges and stands behind every change."]];
+  const PILLARS = [
+    ["01","AI-native development","Claude Code and Codex in parallel every day; I plan, review and own every merge.","#about","How I work →"],
+    ["02","AI-driven workflows","Agents wired into mail, chat, CRMs and product APIs, acting as the signed-in user and asking before they act.","#work/workflows","See the workflows →"],
+    ["03","Multi-agent systems","Specialist agents that research, extract and check each other's work, with people approving what matters.","#work/multi","See the systems →"]
+  ];
+
+  // ---------- Rendering helpers
+  const clone = id => document.getElementById(id).content.cloneNode(true);
+  function visual(p){
+    if(!p.term) return clone(p.vis);
+    const d = document.createElement("div"); d.className = "browser ui"; d.setAttribute("role","img"); d.setAttribute("aria-label", "Sample run of " + p.title);
+    let body = "";
+    p.term.forEach(x => { if(x === null) body += "<br>"; else if(Array.isArray(x)) body += (x[0] ? '<span class="' + x[0] + '">' : "<span>") + esc(x[1]) + "</span>"; else body += esc(x); });
+    d.innerHTML = '<div class="bar"><i></i><i></i><i></i><span class="url">' + esc(p.url) + '</span></div><div class="term">' + body + "</div>";
+    return d;
+  }
+  const tagsHTML = t => '<div class="tags">' + t.map(x => '<span class="tag">' + esc(x) + "</span>").join("") + "</div>";
+  const pill = s => '<span class="pill' + (/^Live/.test(s) ? " live" : /Open source/.test(s) ? " oss" : "") + '">' + esc(s) + "</span>";
+  function thumb(p){
+    const d = document.createElement("div"); d.className = "thumb"; d.setAttribute("aria-hidden","true");
+    const im = new Image(); im.src = p.img; im.alt = ""; if(p.pos) im.style.objectPosition = p.pos; im.loading = "lazy"; im.decoding = "async";
+    im.onerror = () => { d.innerHTML = ""; d.appendChild(visual(p)); };
+    d.appendChild(im);
+    if(p.gen) d.insertAdjacentHTML("beforeend", '<span class="badge">AI illustration</span>');
+    return d;
+  }
+  function cover(p){
+    if(p.shots) return '<figure class="cover shots' + (p.phones ? ' phones' : '') + '">' + p.shots.map(s => '<img src="' + esc(s) + '" alt="Screenshot of ' + esc(p.title.split(",")[0]) + '" loading="lazy">').join("") + "</figure>";
+    return '<figure class="cover"><img src="' + esc(p.img) + '" alt="' + (p.gen ? "" : "Screenshot of " + esc(p.title.split(",")[0])) + '" loading="lazy" onerror="this.parentNode.remove()"><figcaption>' + (p.gen ? "AI illustration" : "Screenshot") + "</figcaption></figure>";
+  }
+
+  // Home
+  $("#pillars").innerHTML = PILLARS.map(x => '<a class="pillar" href="' + x[3] + '"><span class="mono">' + x[0] + "</span><h3>" + esc(x[1]) + "</h3><p>" + esc(x[2]) + '</p><span class="go">' + esc(x[4]) + "</span></a>").join("");
+
+  // About
+  $("#loop").innerHTML = '<div class="pulse" aria-hidden="true"><i></i></div>' + LOOP.map(s => '<div class="step"><span class="who">' + esc(s[0]) + "</span><h3>" + esc(s[1]) + "</h3><p>" + esc(s[2]) + "</p></div>").join("");
+  $("#careerRows").innerHTML = CAREER.map(c => '<div class="row"><span class="yr">' + esc(c[0]) + "</span><span><b>" + esc(c[1]) + "</b> · " + esc(c[2]) + '<span class="sub">' + esc(c[3]) + "</span></span></div>").join("");
+  document.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => {
+    const el = document.getElementById("sec-" + b.dataset.jump);
+    el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start" });
+  }));
+
+  // Work index
+  function row(p){
+    const a = document.createElement("a"); a.className = "prow"; a.href = "#case-" + p.id;
+    a.appendChild(thumb(p));
+    a.insertAdjacentHTML("beforeend", "<div><h3>" + esc(p.title) + '</h3><p class="one">' + esc(p.card) + "</p>" + tagsHTML(p.tags.slice(0,4)) + '</div><div class="meta"><span>' + esc(p.org) + "</span><span>" + esc(p.year) + "</span>" + pill(p.status) + '<span class="arrow">Case study →</span></div>');
+    return a;
+  }
+  const TAP_ROW = '<div class="prow"><div class="thumb text"><span>Current employer<br>no public case study</span></div><div><h3>CRM, internal tools and an AI-agent console</h3><p class="one">' + esc(CAREER[0][3]) + '</p></div><div class="meta"><span>The Assembly Place</span><span>2026–now</span>' + pill("Employer") + "</div></div>";
+  const ARCHIVE = '<section class="theme archive"><div class="theme-head"><h2>Earlier builds</h2><p>Before AI was the product.</p></div>'
+    + '<div class="arow"><span>HR system</span><span><b>HR management system.</b> Node.js and Express API with a React and TypeScript front end: employee records, Excel import and export, an admin dashboard.</span></div>'
+    + '<div class="arow"><span>Bookings</span><span><b>Holiday booking app.</b> Flask and SQL: package browsing, bookings with availability checks, and an admin interface.</span></div>'
+    + '<div class="arow"><span>Storefront</span><span><b>VietMala Eatery.</b> A responsive Vue storefront for a food and beverage shop.</span></div>'
+    + '<div class="arow"><span>Video</span><span><b>Programmatic social reels.</b> Short videos built in code with Remotion.</span></div></section>';
+  function renderWork(theme){
+    const chips = [["", "All", P.length]].concat(THEMES.map(t => [t.id, t.name, P.filter(p => p.theme === t.id).length]));
+    $("#filters").innerHTML = chips.map(c => '<button class="chip" type="button" data-theme="' + c[0] + '" aria-pressed="' + String((theme || "") === c[0]) + '">' + esc(c[1]) + '<span class="n">' + c[2] + "</span></button>").join("");
+    $("#filters").querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { location.hash = b.dataset.theme ? "#work/" + b.dataset.theme : "#work"; }));
+    const box = $("#themes"); box.innerHTML = "";
+    THEMES.filter(t => !theme || t.id === theme).forEach(t => {
+      const s = document.createElement("section"); s.className = "theme";
+      const n = P.filter(p => p.theme === t.id).length;
+      s.innerHTML = '<div class="theme-head"><h2>' + esc(t.name) + '</h2><p>' + esc(t.blurb) + ' <span class="mono">' + n + (n === 1 ? " project" : " projects") + "</span></p></div>";
+      P.filter(p => p.theme === t.id).forEach(p => s.appendChild(row(p)));
+      if(t.id === "workflows") s.insertAdjacentHTML("beforeend", TAP_ROW);
+      box.appendChild(s);
+    });
+    if(!theme) box.insertAdjacentHTML("beforeend", ARCHIVE);
+  }
+
+  // Case study
+  function renderCase(p){
+    const r = $("#caseRoot"), t = themeOf(p.theme);
+    const i = ORDER.indexOf(p), prev = ORDER[(i - 1 + ORDER.length) % ORDER.length], next = ORDER[(i + 1) % ORDER.length];
+    const sections = [["overview","Overview"],["role","My role"],["problem","The problem"],["how","How it works"],["built","What I built"],["decisions","Key decisions"],["stack","Stack and links"]];
+    r.innerHTML = '<div class="case-top"><div><span class="eyebrow">' + esc(t.name) + '</span><h1>' + esc(p.title) + '</h1><p class="lede">' + esc(p.lede) + '</p><div class="case-meta">' + pill(p.status) + '<span class="pill">' + esc(p.org) + '</span><span class="pill">' + esc(p.year) + '</span></div></div><div class="stagebox" id="caseVis"></div></div>' + cover(p)
+      + '<div class="glance" id="c-overview">' + p.results.map(x => "<div><b>" + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></div>").join("") + "</div>"
+      + '<div class="case-body"><nav class="toc" aria-label="On this page">' + sections.map(s => '<button type="button" data-to="c-' + s[0] + '">' + s[1] + "</button>").join("") + '</nav><div class="blocks">'
+      + '<div class="block" id="c-role"><h2>My role</h2><div class="role"><p>' + esc(p.role) + "</p></div></div>"
+      + '<div class="block" id="c-problem"><h2>The problem</h2><p>' + esc(p.problem) + "</p></div>"
+      + '<div class="block" id="c-how"><h2>How it works</h2><div class="flow">' + p.flow.map((f, k) => (k ? '<span class="farrow" aria-hidden="true">→</span>' : "") + '<div class="fstep"><span class="k">' + String(k + 1).padStart(2, "0") + "</span><b>" + esc(f[0]) + "</b><span>" + esc(f[1]) + "</span></div>").join("") + "</div></div>"
+      + '<div class="block" id="c-built"><h2>What I built</h2><ul>' + p.system.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul></div>"
+      + '<div class="block" id="c-decisions"><h2>Key decisions</h2><div class="decisions">' + p.decisions.map(x => '<div class="decision">' + esc(x) + "</div>").join("") + "</div></div>"
+      + '<div class="block" id="c-stack"><h2>Stack and links</h2>' + tagsHTML(p.tags) + (p.links.length ? '<div class="links-row" style="margin-top:var(--s4)">' + p.links.map(l => '<a href="' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[0]) + " ↗</a>").join("") + "</div>" : '<p class="note" style="margin-top:var(--s3)">' + (p.status === "Employer" ? "Employer work: described at résumé level, no code or internals." : "Private repository.") + "</p>") + "</div>"
+      + "</div></div>"
+      + '<nav class="case-nav" aria-label="More projects"><a href="#case-' + prev.id + '"><span>← Previous</span><b>' + esc(prev.title.split(",")[0]) + '</b></a><a href="#case-' + next.id + '"><span>Next →</span><b>' + esc(next.title.split(",")[0]) + "</b></a></nav>";
+    $("#caseVis").appendChild(visual(p));
+    r.querySelectorAll(".toc button").forEach(b => b.addEventListener("click", () => document.getElementById(b.dataset.to).scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start" })));
+  }
+
+  // Router: #home · #work · #work/<theme> · #case-<id> · #about · #resume
+  let last = "";
+  function crumbs(page, theme, proj){
+    const c = $("#crumbs"), w = $("#crumbsIn");
+    if(page !== "work" && page !== "case"){ c.hidden = true; document.body.dataset.mode = ""; return; }
+    c.hidden = false; document.body.dataset.mode = "work";
+    const sep = '<span class="sep">/</span>';
+    if(page === "work"){
+      w.innerHTML = '<a href="#home">Randy Chan</a>' + sep + (theme ? '<a href="#work">Work</a>' + sep + "<b>" + esc(themeOf(theme).name) + "</b>" : "<b>Work</b>") + '<span class="count">' + P.length + " case studies · " + THEMES.length + " themes</span>";
+    } else {
+      const t = themeOf(proj.theme);
+      w.innerHTML = '<a href="#home">Randy Chan</a>' + sep + '<a href="#work">Work</a>' + sep + '<a href="#work/' + t.id + '">' + esc(t.name) + "</a>" + sep + "<b>" + esc(proj.title.split(",")[0]) + '</b><span class="count">Case ' + String(ORDER.indexOf(proj) + 1).padStart(2, "0") + " of " + ORDER.length + "</span>";
+    }
+  }
+  function route(){
+    const h = (location.hash || "#home").slice(1);
+    let page = h, theme = "", proj = null;
+    if(h.startsWith("case-")){ proj = P.find(p => "case-" + p.id === h); page = proj ? "case" : "work"; }
+    else if(h.startsWith("work")){ page = "work"; theme = h.split("/")[1] || ""; if(theme && !themeOf(theme)) theme = ""; }
+    if(!["home","work","case","about","resume"].includes(page)) page = "home";
+    if(page === "work") renderWork(theme);
+    if(proj) renderCase(proj);
+    crumbs(page, theme, proj);
+    document.querySelectorAll("[data-page]").forEach(el => {
+      const on = el.dataset.page === page; el.hidden = !on;
+      if(on && last.split("/")[0] !== page){ const s = el.querySelector(".page"); if(s){ s.classList.remove("enter"); void s.offsetWidth; s.classList.add("enter"); } }
+    });
+    const navKey = page === "case" ? "work" : page;
+    document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === navKey ? a.setAttribute("aria-current","page") : a.removeAttribute("aria-current"));
+    if(!(page === "work" && last.split("/")[0] === "work")) window.scrollTo(0,0);
+    last = page + "/" + theme;
+  }
+  addEventListener("hashchange", route); route();
+
+  // Theme toggle
+  try{ const t = localStorage.getItem("rc-theme"); if(t) root.setAttribute("data-theme", t); }catch(e){}
+  $("#themeBtn").addEventListener("click", () => {
+    const dark = root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = dark ? "light" : "dark"; root.setAttribute("data-theme", next);
+    try{ localStorage.setItem("rc-theme", next); }catch(e){}
+  });
+
+  // Copy email
+  $("#copyBtn").addEventListener("click", async () => {
+    const note = $("#copyNote"), txt = $("#emailText").textContent;
+    try{ await navigator.clipboard.writeText(txt); note.textContent = "Copied. Email is fastest."; }
+    catch(e){ const r = document.createRange(); r.selectNodeContents($("#emailText")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); note.textContent = "Selected. Press ⌘C to copy."; }
+  });
+
+  // Ask palette: curated, sourced answers (a guarded live model replaces this at launch)
+  const QA = [
+    { q:"What has he shipped?", tag:"4 sources", trace:["search  cv · projects","read    TrustPlus AI, Jarvis, TWC, Leeseidon"], a:"A multi-agent credit-risk and KYB product at TrustPlus AI, Jarvis (his own long-running agent), and live side products: Leeseidon, TWC and Verona.", src:"CV · TrustPlus AI · Projects" },
+    { q:"How does he use coding agents?", tag:"2 sources", trace:["search  cv · \"Claude Code\"","read    TrustPlus AI · The Assembly Place"], a:"Claude Code plans and reviews while Codex implements and runs the tests, in parallel git worktrees. Moving a team onto this took releases from about 4 a month to about 20.", src:"CV · TrustPlus AI · The Assembly Place" },
+    { q:"Has he built multi-agent systems?", tag:"2 sources", trace:["search  cv · \"agents\"","read    TrustPlus AI · Kestrel"], a:"Yes. Eight specialist LangGraph agents that write cited credit memos checked by a judge model, and Kestrel, where four agents extract policy fields with confidence and citations before an adviser confirms.", src:"CV · TrustPlus AI · Projects" },
+    { q:"How does he evaluate AI output?", tag:"2 sources", trace:["search  cv · \"evaluation\"","read    TrustPlus AI · AI Singapore"], a:"Golden test sets re-run on prompt and model changes, RAGAS for retrieval, LangFuse evaluations, a judge model checking each section against its sources, and human approval on high-risk decisions. For classic ML, precision, recall and F1 on held-out data.", src:"CV · TrustPlus AI · AI Singapore" },
+    { q:"Has he built MCP servers?", tag:"2 sources", trace:["search  cv · \"MCP\"","read    TrustPlus AI · The Assembly Place"], a:"Yes. At TrustPlus, an MCP server where assistants sign in as the acting user. At The Assembly Place, an MCP server over the company CRM with a confirmation step before any write.", src:"CV · TrustPlus AI · The Assembly Place" },
+    { q:"What is his background?", tag:"1 source", trace:["read    cv · roles (8)"], a:"8+ years in software since 2019: platforms for small businesses, NCS, clinical NLP at AI Singapore, AI products in fintech, and now Head of Technology and AI at The Assembly Place. Before that, seven years in the Singapore Army.", src:"CV · Experience" }
+  ];
+  const scrim = $("#scrim"), list = $("#palList"), input = $("#palInput"), ans = $("#palAnswer"), btn = $("#askBtn");
+  let sel = 0, opener = null;
+  function render(filter){
+    const f = (filter||"").toLowerCase().trim();
+    const items = QA.filter(x => !f || x.q.toLowerCase().includes(f));
+    list.innerHTML = "";
+    items.forEach((x,k) => {
+      const b = document.createElement("button"); b.type="button"; b.className="qa"; b.setAttribute("role","option"); b.setAttribute("aria-selected", k===sel ? "true":"false");
+      b.innerHTML = "<span>" + esc(x.q) + '</span><span class="mono">' + esc(x.tag) + "</span>";
+      b.addEventListener("click", () => show(x)); list.appendChild(b);
+    });
+    if(!items.length) list.innerHTML = '<p class="note" style="padding:13px">Live answers to your own questions arrive when the site launches. For now, pick a question.</p>';
+  }
+  function show(x){
+    ans.hidden = false;
+    ans.innerHTML = '<div class="trace">' + x.trace.map(t => "<div><span>→</span> " + esc(t) + "</div>").join("") + "<div><span>✓</span> answer · cited</div></div><p>" + esc(x.a) + '</p><span class="note">Source: ' + esc(x.src) + "</span>";
+  }
+  function open(){
+    opener = document.activeElement;
+    const r = btn.getBoundingClientRect(), pal = scrim.querySelector(".palette");
+    pal.style.setProperty("--ox", (r.left + r.width/2 - (innerWidth - Math.min(640, innerWidth-32))/2) + "px"); pal.style.setProperty("--oy", "-40px");
+    scrim.classList.remove("closing"); scrim.hidden = false; sel = 0; input.value=""; ans.hidden = true; render(""); input.focus();
+  }
+  function close(){
+    scrim.classList.add("closing");
+    setTimeout(() => { scrim.hidden = true; scrim.classList.remove("closing"); if(opener) opener.focus(); }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 160);
+  }
+  btn.addEventListener("click", open);
+  scrim.addEventListener("click", e => { if(e.target === scrim) close(); });
+  input.addEventListener("input", () => { sel = 0; render(input.value); });
+  document.addEventListener("keydown", e => {
+    if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); scrim.hidden ? open() : close(); return; }
+    if(scrim.hidden) return;
+    if(e.key === "Escape") close();
+    const opts = list.querySelectorAll(".qa");
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){ e.preventDefault(); if(!opts.length) return; sel = (sel + (e.key==="ArrowDown"?1:-1) + opts.length) % opts.length; opts.forEach((o,k)=>o.setAttribute("aria-selected", k===sel?"true":"false")); }
+    if(e.key === "Enter" && opts[sel]){ e.preventDefault(); opts[sel].click(); }
+  });
+})();
+</script>
+

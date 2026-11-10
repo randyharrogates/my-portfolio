@@ -9,15 +9,17 @@ import {
   useLocation,
   useNavigate,
   Navigate,
+  useParams,
 } from "react-router-dom";
 import "./App.css";
+import SiteLayout from "./site/SiteLayout.tsx";
+import HomePage from "./site/HomePage.tsx";
+import WorkPage from "./site/WorkPage.tsx";
+import CasePage from "./site/CasePage.tsx";
+import AboutPage from "./site/AboutPage.tsx";
+import ResumePage from "./site/ResumePage.tsx";
 
-import AboutMe from "./pages/AboutMe.tsx";
-import Projects from "./pages/Projects.tsx";
-import Skills from "./pages/Skills.tsx";
 import Blog from "./pages/Blog.tsx";
-import Contact from "./pages/Contact.tsx";
-import Resume from "./pages/Resume.tsx";
 // Eager-loaded loader (not lazy) — it's the Suspense fallback for the
 // lazy HallLanding chunk so it must already be present in the main bundle.
 // CSS module weight is ~1 KB gzipped, so this trade-off is essentially
@@ -27,22 +29,17 @@ import { isMobileViewport } from "./landing/use-low-power.ts";
 
 // Lazy-load the canvases so R3F doesn't bloat the main bundle.
 const AmbientCanvas = React.lazy(
-  () => import("./components/ambient-3d/AmbientCanvas.tsx")
+  () => import("./components/ambient-3d/AmbientCanvas.tsx"),
 );
-const WorkstationLanding = React.lazy(
-  () => import("./landing/WorkstationLanding.tsx")
-);
-const HallLanding = React.lazy(
-  () => import("./landing/Hall/HallLanding.tsx")
-);
+const HallLanding = React.lazy(() => import("./landing/Hall/HallLanding.tsx"));
 
 const TABS = [
-  { path: "/about",    label: "about",    exact: true },
+  { path: "/about", label: "about", exact: true },
   { path: "/projects", label: "projects", num: 1 },
-  { path: "/skills",   label: "skills",   num: 2 },
-  { path: "/blog",     label: "blog",     num: 3 },
-  { path: "/resume",   label: "resume",   num: 4 },
-  { path: "/contact",  label: "contact",  num: 5 },
+  { path: "/skills", label: "skills", num: 2 },
+  { path: "/blog", label: "blog", num: 3 },
+  { path: "/resume", label: "resume", num: 4 },
+  { path: "/contact", label: "contact", num: 5 },
 ];
 
 const TerminalApp: React.FC = () => {
@@ -50,7 +47,8 @@ const TerminalApp: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = React.useMemo(() => isMobileViewport(), []);
 
-  const isHallPath = location.pathname === "/hall" || location.pathname.startsWith("/hall/");
+  const isHallPath =
+    location.pathname === "/hall" || location.pathname.startsWith("/hall/");
 
   // Keyboard arrow-key navigation between tabs + global ESC → home.
   // The Hall manages its own ESC handler (close map → fly to hub → leave
@@ -66,7 +64,7 @@ const TerminalApp: React.FC = () => {
         t.exact
           ? location.pathname === t.path
           : location.pathname === t.path ||
-            location.pathname.startsWith(t.path + "/")
+            location.pathname.startsWith(t.path + "/"),
       );
       if (idx === -1) return;
       if (e.key === "ArrowRight" && idx < TABS.length - 1) {
@@ -84,18 +82,6 @@ const TerminalApp: React.FC = () => {
       ? location.pathname === tab.path
       : location.pathname === tab.path ||
         location.pathname.startsWith(tab.path + "/");
-
-  // Landing route: render the 3D Workstation full-bleed without terminal chrome.
-  // On mobile (≤ 800px), redirect straight to the terminal AboutMe page — the
-  // workstation UI is uncomfortable to operate on touch + small viewports.
-  if (location.pathname === "/") {
-    if (isMobile) return <Navigate to="/about" replace />;
-    return (
-      <Suspense fallback={<div style={{ background: "#0c0b0a", height: "100vh" }} />}>
-        <WorkstationLanding />
-      </Suspense>
-    );
-  }
 
   // Hall (experimental, opt-in via /#/hall) — also full-bleed, no terminal chrome.
   // Matches /hall and any deep-linked /hall/<alcove>. URL-flag-gated through
@@ -117,7 +103,6 @@ const TerminalApp: React.FC = () => {
 
       {/* ── Terminal Window ── */}
       <div className="terminal-window">
-
         {/* Title Bar */}
         <div className="terminal-titlebar">
           <div className="traffic-lights">
@@ -126,7 +111,8 @@ const TerminalApp: React.FC = () => {
             <span className="light green" />
           </div>
           <span className="terminal-title">
-            terminal — <span className="title-name">Randy Chan</span> · GenAI Solutions Portfolio
+            terminal — <span className="title-name">Randy Chan</span> · GenAI
+            Solutions Portfolio
           </span>
           {!isMobile && (
             <button
@@ -162,14 +148,7 @@ const TerminalApp: React.FC = () => {
 
         {/* Page Content */}
         <main className="terminal-content">
-          <Routes>
-            <Route path="/about"         element={<AboutMe />}     />
-            <Route path="/projects/*"    element={<Projects />}    />
-            <Route path="/skills"        element={<Skills />}      />
-            <Route path="/blog"          element={<Blog />}        />
-            <Route path="/resume"        element={<Resume />}      />
-            <Route path="/contact"       element={<Contact />}     />
-          </Routes>
+          <Blog />
         </main>
 
         {/* Status Bar */}
@@ -180,13 +159,27 @@ const TerminalApp: React.FC = () => {
           </div>
           <div className="status-right">
             <footer className="terminal-footer">
-              <a href="mailto:randychan_92@outlook.com">randychan_92@outlook.com</a>
+              <a href="mailto:randychan_92@outlook.com">
+                randychan_92@outlook.com
+              </a>
               {" · "}
-              <a href="https://github.com/randyharrogates" target="_blank" rel="noopener noreferrer">github</a>
+              <a
+                href="https://github.com/randyharrogates"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                github
+              </a>
               {" · "}
-              <a href="https://www.linkedin.com/in/randychan112" target="_blank" rel="noopener noreferrer">linkedin</a>
+              <a
+                href="https://www.linkedin.com/in/randychan112"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                linkedin
+              </a>
             </footer>
-            <span>genai solutions engineer · 7 yoe</span>
+            <span>ai software engineer · 8+ yoe</span>
           </div>
         </div>
       </div>
@@ -194,10 +187,46 @@ const TerminalApp: React.FC = () => {
   );
 };
 
+const LEGACY: Record<string, string> = {
+  "credit-memo": "credit-memo",
+  "kyb-pipeline": "credit-memo",
+  jarvis: "jarvis",
+  kestrel: "kestrel",
+  twc: "twc",
+  leeseidon: "leeseidon",
+  verona: "verona",
+  "speech-to-text": "speech",
+  "multi-agent-rag": "agent-pilot",
+  "mcp-server": "mcp-pack",
+  "resume-builder": "resume-builder",
+};
+function LegacyProject() {
+  const { slug } = useParams();
+  return (
+    <Navigate
+      to={slug && LEGACY[slug] ? "/work/" + LEGACY[slug] : "/work"}
+      replace
+    />
+  );
+}
 const App: React.FC = () => (
-  <Router>
-    <TerminalApp />
+  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <Routes>
+      <Route path="/hall/*" element={<TerminalApp />} />
+      <Route path="/blog" element={<TerminalApp />} />
+      <Route path="/projects" element={<Navigate to="/work" replace />} />
+      <Route path="/projects/:slug" element={<LegacyProject />} />
+      <Route path="/skills" element={<Navigate to="/about" replace />} />
+      <Route path="/contact" element={<Navigate to="/about" replace />} />
+      <Route element={<SiteLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="/work" element={<WorkPage />} />
+        <Route path="/work/:id" element={<CasePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/resume" element={<ResumePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   </Router>
 );
-
 export default App;
