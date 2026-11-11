@@ -6,7 +6,7 @@ preview_urls = false # no per-version preview addresses
 
 [vars]
 ALLOWED_ORIGINS = "https://randyharrogates.github.io"
-AGENT_ENABLED = "false"          # the kill switch: "true" turns live runs on
+AGENT_ENABLED = "true"           # the kill switch: "true" turns live runs on
 ENVIRONMENT = "production"
 OPENAI_MODEL = "gpt-6-luna"
 # "low" keeps hidden reasoning small. Left unset, it sometimes used up a step's whole output cap and the reply was cut off.
