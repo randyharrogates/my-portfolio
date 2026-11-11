@@ -148,7 +148,7 @@ official `openai` SDK's model types), and that quality is good enough once the e
   limits (`limits.ts`), anonymous identity (`visitor.ts`), the ledger Durable Object, the Worker entry and
   the OpenAI adapter. 43 tests with a scripted model; `tsc` clean; smoke-tested under `wrangler dev`
   (origin check, Turnstile, a full run over SSE, cache replay, burst 429, daily cap 429, edge rate limit).
-  **Not yet run against a real model, and not deployed.**
+  (Run against the real model in step 5 and deployed; live runs went on in step 7.)
 - **Changed from the plan:** the visitor id travels in an `X-Visitor` header kept in `localStorage`, not a
   cookie. The site and the Worker are on different origins, so a cookie would be third-party and browsers
   block those. Free-text "notes" from the model were dropped from the report: a requirement shows a
@@ -178,7 +178,8 @@ official `openai` SDK's model types), and that quality is good enough once the e
   same budget ledger. `/ask` needs the signed visitor token that `/run` issues after the human check, and a
   report this Worker stored in the last day (`reportId` arrives in the run's final frame). 59 tests;
   exercised under `wrangler dev` (401 without a token, 410 unknown report, 429 too fast, memory carried,
-  off-topic refusal, 429 at the sixth question). **Not yet run against a real model.**
+  off-topic refusal, 429 at the sixth question). (Run against the real model from step 5. Replaced by the
+  agent loop in step 7.)
 - **Step 3, voice, guardrails, page, case study (done, 2026-11-10):**
   - *Voice:* the agent answers as me, in first person (`voice.ts` holds the style notes and every fixed line).
   - *Guardrails in code (`guard.ts`):* hidden characters stripped and text folded before anything reads it;
@@ -248,4 +249,34 @@ official `openai` SDK's model types), and that quality is good enough once the e
     node and shrinks back; no flat surfaces (page grid, pane dot grid, card grain).
   - *Real model:* 11 of 11 jobs and 24 of 24 questions pass, including markup, fenced-excerpt, encoded,
     false-authority and non-English cases. A run is about 15 to 25 s and $0.002; a question about $0.0003.
-
+- **Step 7, live runs, the chat team, retries, the résumé drawer (done, 2026-11-11):**
+  - *Live:* `AGENT_ENABLED = "true"` in production; Turnstile site key set as a repo variable, secrets set in
+    the Worker. The human check now runs inside the form before the run starts ("Checking you're human…"),
+    not under the graph while the page says agents are working.
+  - *Chat is an agent loop (`ask.ts`, replaces the single answer call):* a lead agent must call one function
+    a turn: `decline`, `answer_directly` (fast path, first turn only), `dispatch_researchers` (up to 3 in
+    parallel, each a retriever sub-agent), or `write_answer`. Researchers' findings go through the verifier
+    and back to the lead, which can send one sub-question out again by id. Bounds in code: 3 turns, 3 tasks a
+    dispatch, 9 model calls a question (10 when memory compacts); with no room left code forces the write.
+    The report pipeline keeps its fixed shape (it must be repeatable); both share `workers.ts`.
+  - *Confidence, computed in code:* checks passed over checks made (each quote grounded or not, the prose
+    screen, each sub-question: verifier yes 1, partly 0.5, gap 0). High from 0.8, medium from 0.5. A fast
+    answer under 0.8 is not shown and escalates to the team. A low final score is shown with a caution and
+    an Email action. With no grounded quote the fixed "not shown" reply stands: no source, no claim.
+  - *Fallbacks:* lead fails → fast path (turn 1) or forced write; writer fails → verified quotes alone;
+    the report summary's code fallback is now marked in the graph.
+  - *Retry with exponential backoff (`metered.ts`):* only for calls rejected before any output (429, 5xx,
+    connection). Two retries, 400 ms × 2^(n−1) with ±25% jitter, inside one reservation; the graph shows
+    "retrying" with the wait. A call that says nothing for 20 s is treated
+    as hung and tried once more; the abandoned attempt is settled at its worst case and the retry takes its
+    own reservation, so the cap still holds. Bad output is never retried.
+  - *Prices:* read from OpenAI's own pricing page on 2026-11-11: input $0.10, cached $0.01, output $0.50 per
+    million, as assumed. That page also lists a cache-write rate ($0.125); the meter now reads
+    `cache_write_tokens` and prices them, and reservations assume every input token is a write.
+  - *Page:* the question graph has the same shape as the report's (lead, researchers fanned out, verifier,
+    writer, check) with the loop arrows drawn when taken; each node is tagged model, code, or code + model.
+    Report cards label the job description's line and my own words separately. A CV source opens the résumé
+    in a drawer at 38.2% of the width with the passage highlighted (`CvDrawer.tsx`; word positions from
+    `pdftotext -bbox`, written to `public/site/cv-words.json` by `corpus/build.ts --cv`). New favicon.
+  - *Real model:* see the eval output in `public/site/fit/replays.json`; fast path 2 calls, about 4 s and
+    $0.0004; team 7 to 9 calls, 10 to 18 s and $0.0011 to $0.0016.

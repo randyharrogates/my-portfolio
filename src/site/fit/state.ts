@@ -2,7 +2,7 @@
 // One reducer, so a live run, a cached run and a recorded replay all render the
 // same way.
 
-import type { Action, Answer, Evidence, Frame, Support, Totals, Verdict } from "./types.ts";
+import type { Action, Answer, Evidence, Frame, MoveAction, Support, Totals, Verdict } from "./types.ts";
 
 export interface Card {
   id: string;
@@ -28,6 +28,16 @@ export interface GraphNode {
   tokens: number;
   costMicro: number;
   tools: string[]; // the functions this node's model calls invoked
+  retries: number; // calls the provider turned away that were tried again
+  waitMs: number; // the backoff wait in progress, 0 when there is none
+}
+
+// One move of the chat's orchestrator. `forced`: code made it, not the model.
+export interface Move {
+  turn: number;
+  action: MoveAction;
+  forced: boolean;
+  why: string;
 }
 
 export interface Graph {
@@ -36,7 +46,8 @@ export interface Graph {
   round: number;
   looping: boolean; // the loop back is in progress
   looped: boolean; // the loop back was taken at least once
-  search?: string; // a question's loop: the keywords the model passed to the search tool
+  moves: Move[]; // a question's loop: what the orchestrator did, turn by turn
+  escalated: boolean; // a question's fast answer failed its checks and went to the researchers
 }
 
 export type ChatItem =
@@ -66,6 +77,8 @@ export interface FitState {
   role: string;
   chat: ChatItem[];
   cards: Card[];
+  tasks: Card[]; // the last question's researchers: one card per part of the question
+  summaryFallback: boolean; // the summary was computed in code because the writer's was not usable
   run: Graph; // the report's loop
   question: Graph | null; // the last question's loop
   context: Context | null;
@@ -81,21 +94,33 @@ export interface FitState {
   askNote: string; // time, tokens and cost of the answer being written
 }
 
-const node = (key: string, state: GraphNode["state"] = "waiting"): GraphNode => ({ key, state, calls: 0, ms: 0, tokens: 0, costMicro: 0, tools: [] });
-const runGraph = (): Graph => ({ kind: "run", nodes: ["gate", "orchestrator", "verifier", "writer"].map((k) => node(k)), round: 1, looping: false, looped: false });
-const chatGraph = (): Graph => ({ kind: "chat", nodes: [node("question", "done"), node("memory", "running"), node("search"), node("answer"), node("verify")], round: 1, looping: false, looped: false });
+const node = (key: string, state: GraphNode["state"] = "waiting"): GraphNode => ({ key, state, calls: 0, ms: 0, tokens: 0, costMicro: 0, tools: [], retries: 0, waitMs: 0 });
+const graph = (kind: Graph["kind"], nodes: GraphNode[]): Graph => ({ kind, nodes, round: 1, looping: false, looped: false, moves: [], escalated: false });
+const runGraph = (): Graph => graph("run", ["gate", "orchestrator", "verifier", "writer"].map((k) => node(k)));
+const chatGraph = (): Graph => graph("chat", [node("memory", "running"), node("lead"), node("verifier"), node("answer"), node("verify")]);
 
-export const NODE_NAMES: Record<string, { name: string; does: string }> = {
-  gate: { name: "Gate", does: "is this a job description?" },
-  orchestrator: { name: "Orchestrator", does: "plans the work and directs the retrievers by function call" },
-  retriever: { name: "Retrievers", does: "search my pages and quote the evidence exactly" },
-  verifier: { name: "Verifier", does: "checks every citation, can send one back" },
-  writer: { name: "Writer", does: "streams the summary" },
-  question: { name: "Question", does: "what you asked" },
-  memory: { name: "Memory", does: "keeps the conversation small" },
-  search: { name: "Search", does: "finds excerpts in my pages" },
-  answer: { name: "Answer", does: "writes from the quotes only, or calls the search tool first" },
-  verify: { name: "Verify", does: "checks each quote against its page" },
+// The workers an orchestrator hands to: a report's retrievers (r1…), a question's researchers (q1…),
+// or the fast path's one search. They join the graph when the orchestrator names them.
+export const isWorker = (n: { key: string }) => /^[rq]\d+$/.test(n.key) || n.key === "search";
+const addWorker = (g: Graph, key: string, state: GraphNode["state"] = "waiting"): Graph => {
+  if (g.nodes.some((n) => n.key === key)) return g;
+  const at = g.nodes.findIndex((n) => n.key === "verifier");
+  return { ...g, nodes: [...g.nodes.slice(0, at), node(key, state), ...g.nodes.slice(at)] };
+};
+
+// What each stage is, and who does it: a model call, plain code, or code around one model call.
+export const NODE_NAMES: Record<string, { name: string; does: string; by: "model" | "code" | "code + model" }> = {
+  gate: { name: "Gate", does: "is this a job description?", by: "code + model" },
+  orchestrator: { name: "Orchestrator", does: "plans the work and directs the retrievers by function call", by: "model" },
+  retriever: { name: "Retrievers", does: "search in code, then quote the evidence exactly", by: "code + model" },
+  verifier: { name: "Verifier", does: "reads every quote and can lower a verdict", by: "model" },
+  writer: { name: "Writer", does: "streams the summary", by: "model" },
+  memory: { name: "Memory", does: "keeps the conversation small", by: "code + model" },
+  lead: { name: "Orchestrator", does: "picks the next move by function call, every turn", by: "model" },
+  search: { name: "Search", does: "one keyword search, in code", by: "code" },
+  researcher: { name: "Researchers", does: "search in code, then quote the evidence exactly", by: "code + model" },
+  answer: { name: "Writer", does: "writes from the quotes only", by: "model" },
+  verify: { name: "Check", does: "every quote against its page, then a confidence score", by: "code" },
 };
 
 export const initial: FitState = {
@@ -106,6 +131,8 @@ export const initial: FitState = {
   role: "",
   chat: [],
   cards: [],
+  tasks: [],
+  summaryFallback: false,
   run: runGraph(),
   question: null,
   context: null,
@@ -135,6 +162,8 @@ type StepFrame = Extract<Frame, { type: "step" }>;
 type OutcomeFrame = Extract<Frame, { type: "outcome" }>;
 
 const patch = <T extends { id: string }>(list: T[], id: string, change: (item: T) => T) => list.map((x) => (x.id === id ? change(x) : x));
+// A worker's news goes to its card: a question's researchers while one is being answered, the report's retrievers otherwise.
+const work = (s: FitState, id: string, change: (c: Card) => Card): FitState => (s.asking ? { ...s, tasks: patch(s.tasks, id, change) } : { ...s, cards: patch(s.cards, id, change) });
 
 const setNode = (g: Graph, key: string, change: (n: GraphNode) => GraphNode): Graph => ({ ...g, nodes: g.nodes.map((n) => (n.key === key ? change(n) : n)) });
 const mark = (g: Graph, key: string, state: GraphNode["state"]): Graph => setNode(g, key, (n) => ({ ...n, state }));
@@ -154,17 +183,17 @@ function settle(chat: ChatItem[], item: ChatItem): ChatItem[] {
 }
 
 // Which node a model call belongs to. The orchestrator's two moves are one node,
-// and each retriever is its own.
+// and each retriever or researcher is its own.
 const nodeOf = (f: StepFrame) => (f.step === "replan" ? "orchestrator" : f.step === "retriever" ? (f.id ?? "") : f.step);
 
 function applyStep(s: FitState, f: StepFrame): FitState {
   const key = nodeOf(f);
   const update = (g: Graph): Graph =>
-    setNode({ ...g, round: Math.max(g.round, f.round ?? 1) }, key, (n) =>
-      f.state === "start"
-        ? { ...n, state: "running" }
-        : { ...n, state: f.state, calls: n.calls + 1, ms: n.ms + (f.ms ?? 0), tokens: n.tokens + (f.usage ? f.usage.input + f.usage.output : 0), costMicro: n.costMicro + (f.costMicro ?? 0), tools: f.tool ? [...n.tools, f.tool] : n.tools },
-    );
+    setNode({ ...g, round: Math.max(g.round, f.round ?? 1) }, key, (n) => {
+      if (f.state === "start") return { ...n, state: "running", waitMs: 0 };
+      if (f.state === "retrying") return { ...n, state: "running", retries: n.retries + 1, waitMs: f.waitMs ?? 0 };
+      return { ...n, state: f.state, waitMs: 0, calls: n.calls + 1, ms: n.ms + (f.ms ?? 0), tokens: n.tokens + (f.usage ? f.usage.input + f.usage.output : 0), costMicro: n.costMicro + (f.costMicro ?? 0), tools: f.tool ? [...n.tools, f.tool] : n.tools };
+    });
   if (!s.asking) {
     let run = update(s.run);
     // The writer starting means the loop is over, whichever way it went.
@@ -173,12 +202,13 @@ function applyStep(s: FitState, f: StepFrame): FitState {
   }
   if (!s.question) return s;
   let question = update(s.question);
-  // An answer step that ended in a tool call has written nothing to verify yet.
-  if (f.step === "answer" && f.state === "done" && !f.tool) question = mark(question, "verify", "running");
+  // The writer starting means the loop is over; once it has written, code checks what it wrote.
+  if (f.step === "answer" && f.state === "start") question = { ...question, looping: false };
+  if (f.step === "answer" && f.state === "done") question = mark(question, "verify", "running");
   const ctx = s.context;
-  const context = f.step === "answer" && f.state === "done" && f.usage && ctx ? { ...ctx, input: ctx.input + f.usage.input, cached: ctx.cached + f.usage.cached } : ctx;
+  const context = f.state === "done" && f.usage && ctx ? { ...ctx, input: ctx.input + f.usage.input, cached: ctx.cached + f.usage.cached } : ctx;
   const asked = question.nodes.reduce((sum, n) => ({ calls: sum.calls + n.calls, ms: sum.ms + n.ms, tokens: sum.tokens + n.tokens, costMicro: sum.costMicro + n.costMicro }), { calls: 0, ms: 0, tokens: 0, costMicro: 0 });
-  const askNote = asked.calls ? `${asked.calls} ${asked.calls === 1 ? "call" : "calls"} · ${seconds(asked.ms)} · ${asked.tokens.toLocaleString()} tokens · est. ${cost(asked.costMicro)}` : "";
+  const askNote = asked.calls ? `${asked.calls} ${asked.calls === 1 ? "call" : "calls"} · ${asked.tokens.toLocaleString()} tokens · est. ${cost(asked.costMicro)}` : "";
   return { ...s, question, context, askNote };
 }
 
@@ -209,7 +239,7 @@ function applyFrame(prev: FitState, f: Frame): FitState {
       return { ...s, chat: [...s.chat, { from: "agent", text: f.text, note: at }] };
     case "plan": {
       // The retrievers join the graph once the orchestrator has named them.
-      const [gate, orchestrator, ...rest] = s.run.nodes.filter((n) => !/^r\d+$/.test(n.key));
+      const [gate, orchestrator, ...rest] = s.run.nodes.filter((n) => !isWorker(n));
       return {
         ...s,
         role: f.role,
@@ -218,24 +248,35 @@ function applyFrame(prev: FitState, f: Frame): FitState {
       };
     }
     case "retrieved":
-      return { ...s, cards: patch(s.cards, f.id, (c) => ({ ...c, chunks: f.chunks.map((x) => x.title) })) };
+      return work(s, f.id, (c) => ({ ...c, chunks: f.chunks.map((x) => x.title) }));
     case "verdict":
-      return { ...s, cards: patch(s.cards, f.id, (c) => ({ ...c, verdict: f.verdict, evidence: f.evidence })) };
+      return work(s, f.id, (c) => ({ ...c, verdict: f.verdict, evidence: f.evidence, retry: c.retry && s.asking ? { ...c.retry, improved: f.verdict !== "gap" && f.verdict !== c.verdict } : c.retry }));
     case "checked":
-      return { ...s, cards: patch(s.cards, f.id, (c) => ({ ...c, checks: [...c.checks, { round: f.round, support: f.support, reason: f.reason }] })) };
-    case "retry": {
-      const id = f.id;
-      if (id === undefined) {
-        // a question: the answer step called the search tool
-        return s.question ? { ...s, question: mark({ ...s.question, looping: true, looped: true, round: 2, search: f.search }, "search", "running") } : s;
-      }
-      return { ...s, run: { ...s.run, looping: true, looped: true, round: 2 }, cards: patch(s.cards, id, (c) => ({ ...c, retry: { search: f.search, reason: f.reason ?? "" } })) };
+      return work(s, f.id, (c) => ({ ...c, checks: [...c.checks, { round: f.round, support: f.support, reason: f.reason }] }));
+    case "retry":
+      return { ...s, run: { ...s.run, looping: true, looped: true, round: 2 }, cards: patch(s.cards, f.id, (c) => ({ ...c, retry: { search: f.search, reason: f.reason ?? "" } })) };
+    case "move": {
+      if (!s.question) return s;
+      const q = s.question;
+      const escalated = q.escalated || (f.turn > 1 && q.moves.some((m) => m.action === "direct"));
+      let question: Graph = { ...q, round: f.turn, escalated, moves: [...q.moves, { turn: f.turn, action: f.action, forced: f.forced === true, why: f.why ?? "" }] };
+      if (f.action === "direct") question = addWorker(question, "search", "running");
+      // A draft that was being shown and did not pass its checks is taken back: the next one replaces it.
+      const last = s.chat[s.chat.length - 1];
+      return { ...s, question, chat: last?.from === "agent" && last.streaming ? s.chat.slice(0, -1) : s.chat };
+    }
+    case "task": {
+      if (!s.question) return s;
+      const fresh: Card = { id: f.id, text: f.focus, importance: "", search: f.search, chunks: [], evidence: [], dropped: 0, lowered: false, checks: [] };
+      const tasks = f.again ? patch(s.tasks, f.id, (c) => ({ ...c, retry: { search: f.search, reason: "" } })) : [...s.tasks, fresh];
+      const again = f.again || s.question.escalated;
+      return { ...s, tasks, question: { ...addWorker(s.question, f.id), looping: again, looped: s.question.looped || again } };
     }
     case "retried":
       return { ...s, cards: patch(s.cards, f.id, (c) => (c.retry ? { ...c, retry: { ...c.retry, improved: f.improved } } : c)) };
     case "memory": {
       if (!s.question) return s;
-      const question = mark(mark(s.question, "memory", "done"), "search", "running");
+      const question = mark(s.question, "memory", "done");
       return { ...s, question, context: { kept: f.kept, compacted: f.compacted, justCompacted: f.justCompacted, input: 0, cached: 0, excerpts: 0, dropped: 0 } };
     }
     case "searched":
@@ -246,14 +287,14 @@ function applyFrame(prev: FitState, f: Frame): FitState {
       const id = f.id;
       if (!id) return s; // a quote dropped while answering a question: the answer itself reports it
       const quote = f.reason !== "verifier_lowered" && f.reason !== "no_evidence";
-      return { ...s, cards: patch(s.cards, id, (c) => ({ ...c, dropped: c.dropped + Number(quote), lowered: c.lowered || f.reason === "verifier_lowered" })) };
+      return work(s, id, (c) => ({ ...c, dropped: c.dropped + Number(quote), lowered: c.lowered || f.reason === "verifier_lowered" }));
     }
     case "step":
       return applyStep(s, f);
     case "delta":
       return { ...s, chat: streamInto(s.chat, f.text, s.asking ? "answering" : "summary") };
     case "summary":
-      return { ...s, summary: f.text, chat: settle(s.chat, { from: "agent", text: f.text, note: `summary · ${at}` }) };
+      return { ...s, summary: f.text, summaryFallback: f.fallback === true, chat: settle(s.chat, { from: "agent", text: f.text, note: `summary · ${at}` }) };
     case "answer":
       return { ...s, chat: settle(s.chat, { from: "agent", text: f.answer.text, note: s.askNote || undefined, answer: f.answer }) };
     case "usage": {
@@ -275,7 +316,7 @@ export function reduce(s: FitState, e: Event): FitState {
     case "frame":
       return applyFrame(s, e.frame);
     case "ask":
-      return { ...s, asking: true, askNote: "", suggestions: [], question: chatGraph(), context: null, chat: [...s.chat, { from: "visitor", text: e.question }] };
+      return { ...s, asking: true, askNote: "", suggestions: [], question: chatGraph(), tasks: [], context: null, chat: [...s.chat, { from: "visitor", text: e.question }] };
     case "refuse":
       if (s.asking) return { ...s, asking: false, question: s.question && settleGraph(s.question), chat: [...s.chat, { from: "agent", text: ASK_REFUSALS[e.refusal] ?? ASK_REFUSALS.failed, note: "not answered" }] };
       return { ...s, phase: "refused", refusal: RUN_REFUSALS.has(e.refusal) ? (e.refusal as Refusal) : "failed", retryAfterSec: e.retryAfterSec };

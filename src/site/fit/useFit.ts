@@ -2,7 +2,7 @@
 // recorded runs play at the speed they really ran, keeps the clock, and remembers
 // the last finished session in this browser.
 
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { reducedMotion } from "../shared.tsx";
 import { SITE_KEY, store, streamPost } from "./api.ts";
 import type { PostResult } from "./api.ts";
@@ -10,12 +10,13 @@ import { initial, reduce } from "./state.ts";
 import type { FitState } from "./state.ts";
 import type { Frame, Replay } from "./types.ts";
 
-const SESSION_KEY = "fit.session.v3"; // v3: graph nodes record their tool calls
+const SESSION_KEY = "fit.session.v4"; // v4: a question's graph has an orchestrator, researchers and a confidence score
+const HUMAN_CHECK_MS = 90_000; // long enough to tick a box, short enough not to hang for ever
 const SESSION_TTL_MS = 24 * 3600 * 1000;
 const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 interface Turnstile {
-  render(el: HTMLElement, opts: { sitekey: string; execution: "execute"; callback: (token: string) => void; "error-callback": () => void }): string;
+  render(el: HTMLElement, opts: { sitekey: string; execution: "execute"; appearance: "interaction-only"; callback: (token: string) => void; "error-callback": () => void }): string;
   execute(el: HTMLElement): void;
   reset(id: string): void;
 }
@@ -58,7 +59,8 @@ export function useFit() {
   const reportAt = useRef(restored?.at ?? 0);
   const run = useRef({ id: 0, startedAt: 0, lastAt: 0, timers: new Set<number>(), abort: null as AbortController | null });
   const widget = useRef<HTMLDivElement>(null);
-  const widgetId = useRef<string | null>(null);
+  const rendered = useRef<{ el: HTMLElement; id: string } | null>(null); // the widget, and the element it was drawn in
+  const [checking, setChecking] = useState(false); // the human check is running: the run has not started yet
   const pendingToken = useRef<((token: string) => void) | null>(null);
 
   const cancel = useCallback(() => {
@@ -103,16 +105,23 @@ export function useFit() {
     const el = widget.current;
     if (!turnstile || !el) return "";
     return new Promise((resolve) => {
-      pendingToken.current = resolve;
-      if (widgetId.current === null) {
-        widgetId.current = turnstile.render(el, {
+      const timer = window.setTimeout(() => resolve(""), HUMAN_CHECK_MS);
+      pendingToken.current = (token) => {
+        window.clearTimeout(timer);
+        resolve(token);
+      };
+      // The form that holds the widget is unmounted during a run, so the widget is drawn again when its element is new.
+      if (rendered.current?.el === el) {
+        turnstile.reset(rendered.current.id);
+      } else {
+        const id = turnstile.render(el, {
           sitekey: SITE_KEY,
           execution: "execute",
+          appearance: "interaction-only", // nothing is shown unless the visitor has to click
           callback: (token) => pendingToken.current?.(token),
           "error-callback": () => pendingToken.current?.(""),
         });
-      } else {
-        turnstile.reset(widgetId.current);
+        rendered.current = { el, id };
       }
       turnstile.execute(el);
     });
@@ -123,17 +132,20 @@ export function useFit() {
     dispatch({ kind: "refuse", refusal: result.error, retryAfterSec: result.retryAfterSec });
   }, []);
 
+  // The human check comes first, on the form, so the page never says "agents working" while it is only checking.
   const start = useCallback(
     async (jd: string) => {
+      if (checking) return;
+      setChecking(true);
+      const turnstileToken = await humanToken();
+      setChecking(false);
       const id = begin();
       reportAt.current = 0;
+      if (!turnstileToken) return dispatch({ kind: "refuse", refusal: "turnstile_failed", retryAfterSec: 0 });
       dispatch({ kind: "start", jd, replay: false });
-      const turnstileToken = await humanToken();
-      if (run.current.id !== id) return;
-      run.current.startedAt = run.current.lastAt = performance.now();
       refuse(await streamPost("/run", { jd, turnstileToken }, (f) => pace(f, id), run.current.abort!.signal), id);
     },
-    [begin, humanToken, pace, refuse],
+    [begin, checking, humanToken, pace, refuse],
   );
 
   const replay = useCallback(
@@ -161,5 +173,5 @@ export function useFit() {
     dispatch({ kind: "reset" });
   }, [cancel]);
 
-  return { state, start, replay, ask, reset, widget };
+  return { state, start, replay, ask, reset, widget, checking };
 }

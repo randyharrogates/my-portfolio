@@ -8,16 +8,19 @@
 // page it cites, and a verdict can only be raised by new evidence that passes the
 // same checks.
 
-import { cleanInput, isSafeProse, looksLikeInjection, oneLine } from "./guard.ts";
+import { cleanInput, isSafeProse, looksLikeInjection } from "./guard.ts";
 import { BudgetExhausted, Run, StepFailed, recs } from "./metered.ts";
 import type { RunDeps, Stamped, StepEvent, UsageEvent } from "./metered.ts";
 import type { Step } from "./model.ts";
-import { gateUser, orchestratorUser, replanUser, retrieverUser, verifierUser, writerUser } from "./prompts.ts";
-import { MAX_QUOTE_CHARS, groundQuotes } from "./quote.ts";
-import type { DropReason, EvidenceOut } from "./quote.ts";
+import { gateUser, orchestratorUser, replanUser, writerUser } from "./prompts.ts";
+import { MAX_QUOTE_CHARS } from "./quote.ts";
+import type { EvidenceOut } from "./quote.ts";
 import { JsonStringStream, ScreenedText } from "./stream.ts";
-import type { Chunk } from "./types.ts";
 import { SAY } from "./voice.ts";
+import { RANK, retrieve, shown, verify } from "./workers.ts";
+import type { Verdict, WorkerEvent } from "./workers.ts";
+
+export type { Verdict } from "./workers.ts";
 
 export const MIN_JD_CHARS = 80;
 export const MAX_JD_CHARS = 6000;
@@ -26,16 +29,9 @@ export const MAX_ROUNDS = 2;
 export const MAX_RETRIES = 3;
 // gate + orchestrator + retrievers + verifier, then orchestrator + retries + verifier, then writer.
 export const MAX_CALLS = 1 + 1 + MAX_REQUIREMENTS + 1 + 1 + MAX_RETRIES + 1 + 1;
-const TOP_K = 8;
-const MAX_EVIDENCE = 2;
 const MAX_ROLE_CHARS = 120;
 const MAX_SEARCH_CHARS = 120;
-const MAX_REASON_CHARS = 160;
 const MAX_SUMMARY_CHARS = 700;
-
-export type Verdict = "strong" | "partial" | "gap";
-const RANK: Record<Verdict, number> = { gap: 0, partial: 1, strong: 2 };
-const isVerdict = (v: unknown): v is Verdict => v === "strong" || v === "partial" || v === "gap";
 
 interface Requirement {
   id: string; // r1..r6
@@ -61,30 +57,19 @@ export type Outcome =
   | { status: "budget_exhausted" }
   | { status: "failed"; step: Step };
 
-type Support = "yes" | "partly" | "no";
-
 // What the page renders, in the order it happened. `id` ties an event to one requirement.
 type OwnEvent =
+  | WorkerEvent
   | { type: "say"; text: string } // plain-language narration, composed in code
   | { type: "plan"; role: string; requirements: Requirement[] }
-  | { type: "retrieved"; id: string; round: number; chunks: { id: string; title: string }[] }
   | { type: "verdict"; id: string; verdict: Verdict; evidence: EvidenceOut[] }
-  | { type: "dropped"; id: string; reason: DropReason | "verifier_lowered" | "no_evidence" }
-  | { type: "checked"; id: string; round: number; support: Support; reason: string } // the verifier's finding
   | { type: "retry"; id: string; search: string; reason: string } // the orchestrator sends one back
   | { type: "retried"; id: string; improved: boolean }
   | { type: "delta"; text: string } // a piece of the summary, as the writer produces it
-  | { type: "summary"; text: string }; // the authoritative summary: replaces any deltas
+  | { type: "summary"; text: string; fallback?: true }; // the authoritative summary: replaces any deltas. `fallback`: computed in code, the writer's was not usable
 
 export type Event = Stamped<OwnEvent | StepEvent | UsageEvent>;
 export type Deps = RunDeps<Event>;
-
-// Text a model wrote from a visitor's text is untrusted too: one plain line that
-// passes the prose screen, or nothing.
-const shown = (v: unknown, max: number) => {
-  const s = typeof v === "string" ? oneLine(v, max) : "";
-  return s && isSafeProse(s) ? s : "";
-};
 
 function parsePlan(plan: Record<string, unknown>): { role: string; requirements: Requirement[] } {
   const requirements = recs(plan.requirements)
@@ -95,68 +80,13 @@ function parsePlan(plan: Record<string, unknown>): { role: string; requirements:
   return { role: shown(plan.role, MAX_ROLE_CHARS) || "this role", requirements };
 }
 
-interface Found {
-  verdict: Verdict;
-  evidence: EvidenceOut[];
-  dropped: number;
-}
-
 export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
   const jd = cleanInput(jdRaw).slice(0, MAX_JD_CHARS);
   const run = new Run<OwnEvent>(deps);
   const say = (text: string) => run.emit({ type: "say", text });
 
-  // One retriever: search in code, then one model call to judge what search found.
-  async function retrieve(r: Requirement, query: string, round: number): Promise<Found> {
-    const found: Chunk[] = deps.index.offer(query, TOP_K);
-    run.emit({ type: "retrieved", id: r.id, round, chunks: found.map((c) => ({ id: c.id, title: c.title })) });
-    let dropped = 0;
-    let verdict: Verdict = "gap";
-    let evidence: EvidenceOut[] = [];
-    if (found.length > 0) {
-      try {
-        const out = await run.call("retriever", retrieverUser(r.text, found), { id: r.id, round });
-        // The grounding check: enforced here in code, not left to a model.
-        evidence = groundQuotes(recs(out.evidence), found, MAX_EVIDENCE, (reason) => {
-          dropped++;
-          run.emit({ type: "dropped", id: r.id, reason });
-        });
-        verdict = isVerdict(out.verdict) ? out.verdict : "gap";
-      } catch (e) {
-        if (e instanceof BudgetExhausted) throw e;
-        // one failed retriever is a gap for that requirement, not a failed run
-      }
-    }
-    // A verdict above "gap" needs at least one grounded quote to stand on.
-    if (verdict === "gap" || evidence.length === 0) return { verdict: "gap", evidence: [], dropped };
-    return { verdict, evidence, dropped };
-  }
-
   const asItem = (r: RequirementResult) => ({ id: r.id, requirement: r.text, verdict: r.verdict, quotes: r.evidence.map((e) => e.quote) });
   const publish = (r: RequirementResult) => run.emit({ type: "verdict", id: r.id, verdict: r.verdict, evidence: r.evidence });
-
-  // The verifier reads each requirement's quotes and says whether they support it.
-  // Its finding can only lower a verdict. Returns why each lowered one was lowered.
-  async function verify(items: RequirementResult[], round: number): Promise<Map<string, string>> {
-    const lowered = new Map<string, string>();
-    const withEvidence = items.filter((r) => r.verdict !== "gap");
-    if (withEvidence.length === 0) return lowered;
-    const out = await run.call("verifier", verifierUser(withEvidence.map(asItem)), { round });
-    for (const item of recs(out.items)) {
-      const r = withEvidence.find((x) => x.id === item.id);
-      if (!r) continue;
-      const support: Support = item.supported === "no" ? "no" : item.supported === "partly" ? "partly" : "yes";
-      const reason = shown(item.reason, MAX_REASON_CHARS);
-      run.emit({ type: "checked", id: r.id, round, support, reason });
-      const to: Verdict = support === "no" ? "gap" : support === "partly" && r.verdict === "strong" ? "partial" : r.verdict;
-      if (RANK[to] >= RANK[r.verdict]) continue;
-      r.verdict = to;
-      if (to === "gap") r.evidence = [];
-      lowered.set(r.id, reason);
-      run.emit({ type: "dropped", id: r.id, reason: "verifier_lowered" });
-    }
-    return lowered;
-  }
 
   try {
     // 0. Gate: is this a job description at all? Text that addresses the model
@@ -173,11 +103,12 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
     say(SAY.planned(requirements.length));
 
     // 2. Round 1: retrievers in parallel, then the verifier.
-    const first = await Promise.all(requirements.map((r) => retrieve(r, r.search ? `${r.text} ${r.search}` : r.text, 1)));
+    const first = await Promise.all(requirements.map((r) => retrieve(run, deps.index, r, r.search ? `${r.text} ${r.search}` : r.text, 1)));
     const results: RequirementResult[] = requirements.map((r, i) => ({ id: r.id, text: r.text, importance: r.importance, verdict: first[i].verdict, evidence: first[i].evidence }));
     const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
     say(SAY.retrieved(results.length - count("gap"), results.length, first.reduce((sum, f) => sum + f.dropped, 0)));
-    const lowered = await verify(results, 1);
+    // Why each lowered verdict was lowered.
+    const lowered = new Map([...(await verify(run, results, 1))].filter(([, c]) => c.lowered).map(([id, c]) => [id, c.reason]));
     results.forEach(publish);
 
     // 3. The loop. Requirements the verifier lowered, and must-haves with no evidence,
@@ -204,9 +135,9 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
       if (again.length > 0) {
         say(SAY.retrying(again.length));
         for (const { r, search } of again) run.emit({ type: "retry", id: r.id, search, reason: why(r) });
-        const second = await Promise.all(again.map(({ r, search }) => retrieve({ ...r, search }, search, 2)));
+        const second = await Promise.all(again.map(({ r, search }) => retrieve(run, deps.index, r, search, 2)));
         const candidates: RequirementResult[] = again.map(({ r }, i) => ({ ...r, verdict: second[i].verdict, evidence: second[i].evidence }));
-        await verify(candidates, 2);
+        await verify(run, candidates, 2);
         for (const candidate of candidates) {
           const r = results.find((x) => x.id === candidate.id);
           if (!r) continue;
@@ -229,6 +160,7 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
     // a few words behind and only while it passes the screen; if the finished text
     // fails, it is replaced by a summary computed from the verdicts.
     let summary = SAY.fallbackSummary(results.length, count("strong"), count("partial"), role);
+    let fallback = true;
     const extract = new JsonStringStream("summary");
     const screened = new ScreenedText(isSafeProse, (text) => run.emit({ type: "delta", text }));
     try {
@@ -236,13 +168,14 @@ export async function runPipeline(jdRaw: string, deps: Deps): Promise<Outcome> {
       const s = typeof written.summary === "string" ? written.summary.trim() : "";
       if (s && s.length <= MAX_SUMMARY_CHARS && isSafeProse(s)) {
         summary = s;
+        fallback = false;
         screened.flush(s);
       }
     } catch {
       // A failed or unaffordable writer is not a failed run: the verdicts and quotes
       // already paid for stand on their own, with the computed summary.
     }
-    run.emit({ type: "summary", text: summary });
+    run.emit({ type: "summary", text: summary, ...(fallback ? { fallback } : {}) });
     return { status: "done", report: { role, summary, results } };
   } catch (e) {
     if (e instanceof BudgetExhausted) return { status: "budget_exhausted" };

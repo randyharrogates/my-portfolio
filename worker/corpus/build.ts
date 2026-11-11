@@ -182,6 +182,26 @@ export function cvChunks(text: string): Chunk[] {
   return out;
 }
 
+// Where every word of the CV sits on its page, as fractions of the page, so the site can
+// highlight a quoted passage on the picture of the page. `xml` is `pdftotext -bbox` output.
+// The name and contact header (everything above `firstSection`) is left out, as it is
+// from the corpus.
+export function cvWords(xml: string, firstSection: string): { pages: { words: [string, number, number, number, number][] }[] } {
+  const frac = (n: number, of: number) => Math.round((n / of) * 10000) / 10000;
+  const unescape = (t: string) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&amp;/g, "&");
+  let started = false;
+  const pages = [...xml.matchAll(/<page width="([\d.]+)" height="([\d.]+)">([\s\S]*?)<\/page>/g)].map(([, w, h, body]) => {
+    const words: [string, number, number, number, number][] = [];
+    for (const [, x0, y0, x1, y1, raw] of body.matchAll(/<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g)) {
+      const text = unescape(raw);
+      started ||= text === firstSection;
+      if (started) words.push([text, frac(+x0, +w), frac(+y0, +h), frac(+x1 - +x0, +w), frac(+y1 - +y0, +h)]);
+    }
+    return { words };
+  });
+  return { pages };
+}
+
 export function buildCorpus(cvText: string): Corpus {
   const chunks = [...projectChunks(), ...siteChunks(), ...cvChunks(cvText)];
   const ids = new Set<string>();
@@ -196,7 +216,10 @@ export function buildCorpus(cvText: string): Corpus {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes("--cv")) {
     const pdf = join(root, "public", "Resume.pdf");
-    writeFileSync(cvPath, execFileSync("pdftotext", ["-layout", pdf, "-"], { encoding: "utf8" }));
+    const layout = execFileSync("pdftotext", ["-layout", pdf, "-"], { encoding: "utf8" });
+    writeFileSync(cvPath, layout);
+    const firstSection = layout.split("\n").slice(3).map((l) => l.trim()).find((l) => SECTION.test(l)) ?? "";
+    writeFileSync(join(root, "public", "site", "cv-words.json"), JSON.stringify(cvWords(execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8" }), firstSection)));
   }
   if (!existsSync(cvPath)) throw new Error("corpus/cv.txt is missing: run `node corpus/build.ts --cv`");
   const corpus = buildCorpus(readFileSync(cvPath, "utf8"));

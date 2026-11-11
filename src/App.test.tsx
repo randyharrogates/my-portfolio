@@ -27,13 +27,13 @@ test("Home renders the approved headline", () => {
     "AI software engineer building AI-native products and multi-agent systems.",
   );
 });
-test("/work lists all 17 case-study links and filters without scrolling", () => {
+test("/work lists every case-study link and filters without scrolling", () => {
   visit("/work");
   expect(
     screen
       .getAllByRole("link")
       .filter((a) => a.textContent?.includes("Case study →")),
-  ).toHaveLength(17);
+  ).toHaveLength(P.length);
   P.forEach((p) =>
     expect(
       document.querySelector(`a[href="#/work/${p.id}"]`),

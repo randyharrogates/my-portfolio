@@ -170,6 +170,46 @@
 .rc-site .fit-card, .rc-site .fit-form, .rc-site .fit-chat, .rc-site .fit-tally > div, .rc-site .fit-replays button, .rc-site .fit-refusal, .rc-site .fit-detail{background-image:var(--grain), linear-gradient(160deg, var(--tint), transparent 55%)}
 
 .rc-site .fit-turnstile:empty{display:none}
+.rc-site .fit-turnstile{margin-top:var(--s2)}
+.rc-site .fit-form .btn .fit-spin{margin-right:var(--s1)}
+
+/* who does each stage: a model, code, or code around one model call */
+.rc-site .fit-by{font:500 10px var(--f-mono); font-style:normal; letter-spacing:.04em; color:var(--muted); border:1px solid var(--line); border-radius:5px; padding:0 5px; line-height:16px; white-space:nowrap}
+.rc-site .fit-node.backoff{border-style:dashed; border-color:var(--amber)} .rc-site .fit-node.backoff span{color:var(--amber)}
+.rc-site .fit-loop-label.right{text-align:right}
+
+/* whose words are whose: the advert's requirement, and my own pages */
+.rc-site .fit-from{display:inline-block; font:500 11px var(--f-mono); letter-spacing:.06em; text-transform:uppercase; border-radius:5px; padding:0 var(--s2); line-height:21px}
+.rc-site .fit-from.jd{color:var(--amber); background:var(--amber-bg)}
+.rc-site .fit-from.mine{color:var(--ok); background:var(--ok-bg); align-self:flex-start}
+.rc-site .fit-card-head > div:first-child{display:flex; flex-direction:column; align-items:flex-start; gap:var(--s1); flex:1 1 13em; min-width:0}
+.rc-site .fit-card-head > div:first-child h3{flex:none}
+.rc-site .fit-legend{font-size:13px; color:var(--muted); max-width:68ch; line-height:1.9}
+.rc-site .fit-src{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.rc-site button.fit-src{font:inherit; color:inherit; background:var(--surface); cursor:pointer} .rc-site button.fit-src:hover{border-color:var(--accent)} .rc-site button.fit-src:active{transform:scale(.97)}
+.rc-site .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* how far an answer can be trusted */
+.rc-site .fit-bubble small.fit-conf{display:block}
+.rc-site .fit-conf.high{color:var(--ok)} .rc-site .fit-conf.medium{color:var(--amber)} .rc-site .fit-conf.low{color:var(--amber); font-weight:600}
+.rc-site .fit-caution{margin:0; padding:var(--s2) var(--s3); border-radius:8px; font-size:13px; color:var(--amber); background:var(--amber-bg)}
+
+/* the résumé drawer: 38.2% of the window, so the report keeps the other 61.8% */
+.rc-site .fit-cv{position:fixed; z-index:30; top:0; right:0; bottom:0; width:38.2vw; min-width:420px; max-width:100vw; display:flex; flex-direction:column; background-color:var(--surface); background-image:var(--grain), linear-gradient(200deg, var(--tint), transparent 55%); border-left:1px solid var(--line); box-shadow:-21px 0 55px rgba(15,21,34,.18); animation:fitDrawer .25s var(--ease-out)}
+.rc-site .fit-cv.leaving{animation:fitDrawerOut .2s var(--ease-io) forwards}
+.rc-site .fit-cv > header{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); flex-wrap:wrap; padding:var(--s3) var(--s4); border-bottom:1px solid var(--line)}
+.rc-site .fit-cv > header > div:first-child{display:flex; flex-direction:column; gap:2px}
+.rc-site .fit-cv-close{min-width:40px; justify-content:center; font-size:21px; padding:0}
+.rc-site .fit-cv-quote{margin:0; padding:var(--s3) var(--s4); font-size:14px; line-height:1.55; border-bottom:1px solid var(--line); background:var(--ok-bg)}
+.rc-site .fit-cv-quote small{display:block; margin-top:var(--s2); font-family:var(--f-mono); font-size:11px; color:var(--amber)}
+.rc-site .fit-cv-pages{flex:1; overflow-y:auto; overscroll-behavior:contain; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s4); background:var(--stage)}
+.rc-site .fit-cv-page{position:relative; flex:none; background:#fff; border-radius:5px; box-shadow:0 5px 21px rgba(15,21,34,.16); overflow:hidden}
+.rc-site .fit-cv-page img{display:block; width:100%; height:100%}
+/* the highlight is wiped in from the left, line by line, like a marker pen */
+.rc-site .fit-cv-hit{position:absolute; box-sizing:content-box; padding:.25% .4%; margin:-.25% -.4%; border-radius:3px; background:rgba(255,214,10,.5); mix-blend-mode:multiply; animation:fitMark .35s var(--ease-out) backwards}
+@keyframes fitDrawer{from{transform:translateX(100%)}}
+@keyframes fitDrawerOut{to{transform:translateX(100%)}}
+@keyframes fitMark{from{clip-path:inset(0 100% 0 0)} to{clip-path:inset(0 0 0 0)}}
 
 @keyframes fitIn{from{opacity:0; transform:translateY(8px)}}
 @keyframes fitBlink{50%,100%{opacity:0}}
@@ -200,6 +240,9 @@
   .rc-site .fit-board-scroll{padding:var(--s3) var(--s2)}
   .rc-site .fit-node.small{padding:2px} .rc-site .fit-node.small span{display:none}
   .rc-site .fit-loop-label{display:none}
+  .rc-site .fit-by{display:none}
+  .rc-site .fit-cv{width:100vw; min-width:0}
+  .rc-site button.fit-src{min-height:44px}
 }
 @media (prefers-reduced-motion: reduce){
   .rc-site .fit *{animation:none !important; transition:none !important}

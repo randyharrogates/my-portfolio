@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { emptyBudget, remaining, reserve, settle } from "../src/budget.ts";
+import { cost } from "../src/model.ts";
+import { price } from "./fixtures.ts";
 import { begin, emptyLimits, end } from "../src/limits.ts";
 import { hashIp, issueVisitorToken, verifyVisitorToken } from "../src/visitor.ts";
 
@@ -141,4 +143,11 @@ test("question pacing uses its own state, so it cannot clear a run's 10-second g
   assert.ok(begin(questions, qCfg, ["q:v:a", "q:ip:x"], T0 + 6_000).ok); // prunes only question state
   const again = begin(runs, lim, ["v:a", "ip:x"], T0 + 7_000);
   assert.ok(!again.ok && again.reason === "burst");
+});
+
+test("every input token is billed at one rate: cache read, cache write, or plain", () => {
+  const usage = { input: 1_000_000, cached: 400_000, written: 200_000, output: 100_000 };
+  // 400k plain at 0.10 + 400k read at 0.01 + 200k written at 0.125 + 100k out at 0.50, in micro-dollars
+  assert.equal(cost(usage, price), 40_000 + 4_000 + 25_000 + 50_000);
+  assert.equal(cost({ input: 1_000_000, cached: 0, output: 0 }, price), 100_000); // no write count reported: plain rate
 });

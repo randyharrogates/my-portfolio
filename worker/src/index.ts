@@ -36,6 +36,7 @@ interface Env {
   OPENAI_REASONING_EFFORT?: string;
   PRICE_INPUT_PER_M: string;
   PRICE_CACHED_PER_M: string;
+  PRICE_CACHE_WRITE_PER_M: string;
   PRICE_OUTPUT_PER_M: string;
   MONTHLY_BUDGET_USD: string;
   DAILY_BUDGET_USD: string;
@@ -54,7 +55,7 @@ const CORPUS_ID = corpus.hash.slice(0, 12);
 const MAX_BODY_BYTES = 16_384;
 const burst = new Burst(20, 10_000); // the same 20 per 10 seconds as the BURST binding
 // Below these there is no point starting: roughly the gate plus orchestrator calls, and one answer call.
-const MIN_MICRO: Record<Kind, number> = { run: 1_500, question: 400 };
+const MIN_MICRO: Record<Kind, number> = { run: 1_500, question: 1_000 };
 const DAY_SEC = 24 * 3600;
 
 type Headers = Record<string, string>;
@@ -317,7 +318,7 @@ export default {
         sse: { ...corsHeaders, ...SECURE, "Content-Type": "text/event-stream" },
         ledger,
         model: env.OPENAI_API_KEY ? new OpenAIModel(env.OPENAI_API_KEY, env.OPENAI_MODEL, env.OPENAI_REASONING_EFFORT) : devModel(),
-        price: { inputPerM: Number(env.PRICE_INPUT_PER_M), cachedPerM: Number(env.PRICE_CACHED_PER_M), outputPerM: Number(env.PRICE_OUTPUT_PER_M) },
+        price: { inputPerM: Number(env.PRICE_INPUT_PER_M), cachedPerM: Number(env.PRICE_CACHED_PER_M), writePerM: Number(env.PRICE_CACHE_WRITE_PER_M), outputPerM: Number(env.PRICE_OUTPUT_PER_M) },
         meter: { reserve: (m) => ledger.reserve(m), settle: (id, m) => ledger.settle(id, m) },
         visitorHeader: request.headers.get("X-Visitor"),
       },

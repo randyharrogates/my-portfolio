@@ -28,5 +28,6 @@ export const SAY = {
     `Of ${total} ${total === 1 ? "requirement" : "requirements"} for ${role}, my published work shows strong evidence for ${strong}, partial evidence for ${partial}, and none for ${total - strong - partial}.`,
   notShown: "Nothing in my published case studies or CV shows this, so I won't claim it here. Email me and I'll answer it properly.",
   offTopic: "I only answer questions here about my published work and how it fits this role.",
+  checkThis: "I'm not confident this fully answers it: only part of it is backed by my pages. Check the quotes against the pages they link to, or email me.",
   quotesOnly: "Here is what my published work says, in its own words:",
 };

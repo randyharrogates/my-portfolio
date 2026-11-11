@@ -2,9 +2,10 @@ import React, { memo, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { jump } from "../shared.tsx";
 import { API, isLive } from "./api.ts";
-import { NODE_NAMES, cost, seconds } from "./state.ts";
-import type { Card, ChatItem, FitState, Graph, GraphNode, Refusal } from "./state.ts";
+import { NODE_NAMES, cost, isWorker, seconds } from "./state.ts";
+import type { Card, ChatItem, FitState, Graph, GraphNode, Move, Refusal } from "./state.ts";
 import type { Action, Evidence, Replay } from "./types.ts";
+import { CvProvider, useCv } from "./CvDrawer.tsx";
 import { useFit } from "./useFit.ts";
 import "./fit.css";
 
@@ -20,19 +21,24 @@ const QUESTIONS_PER_DAY = 10;
 const count = (n: number) => n.toLocaleString();
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-// A source link is only ever one of the site's own pages or its résumé PDF.
-// Anything else the stream might carry is shown as plain text, never as a link.
+// A source is only ever one of the site's own pages or its résumé. A case study is a
+// link to its page; the résumé opens in a drawer beside the report, with the quote
+// highlighted. Anything else the stream might carry is shown as plain text, never as a link.
 function Source({ evidence }: { evidence: Evidence }) {
+  const openCv = useCv();
   if (/^#\/[a-z0-9/_-]*$/i.test(evidence.url)) return <Link className="fit-src" to={evidence.url.slice(1)}>{evidence.title}</Link>;
-  if (evidence.url === "Resume.pdf") return <a className="fit-src" href="Resume.pdf" target="_blank" rel="noopener noreferrer">{evidence.title}</a>;
+  if (evidence.url === "Resume.pdf") return <button type="button" className="fit-src" onClick={(e) => openCv(evidence.quote, e.currentTarget)}>{evidence.title} <span aria-hidden="true">▸</span><span className="sr-only"> (opens my résumé beside the report)</span></button>;
   return <span className="fit-src">{evidence.title}</span>;
 }
+
+// Whose words a quote is: always mine, from one of three places.
+const origin = (e: Evidence) => (e.url === "Resume.pdf" ? "my résumé" : e.url.startsWith("#/work/") ? "my case study" : "my site");
 
 function Quote({ evidence, small, delay = 0 }: { evidence: Evidence; small?: boolean; delay?: number }) {
   return (
     <figure className={"fit-quote" + (small ? " small" : "")} style={{ animationDelay: `${delay}ms` }}>
       <blockquote>“{evidence.quote}”</blockquote>
-      <figcaption><span className="ok">✓ quote matches source</span><Source evidence={evidence} /></figcaption>
+      <figcaption><span className="ok">✓ exact words from {origin(evidence)}</span><Source evidence={evidence} /></figcaption>
     </figure>
   );
 }
@@ -80,9 +86,13 @@ interface Box { x: number; y: number; w: number; h: number }
 interface Dims { W: number; mid: number; main: { x: number; w: number; h: number }; loopX: number; gap: number; chip: number }
 const WIDE: Dims = { W: 760, mid: 380, main: { x: 280, w: 200, h: 64 }, loopX: 16, gap: 14, chip: 120 };
 const NARROW: Dims = { W: 420, mid: 210, main: { x: 100, w: 220, h: 64 }, loopX: 10, gap: 8, chip: 96 };
-const RETRIEVER_Y = 264;
-const RETRIEVER_H = 56;
-const isRetriever = (n: GraphNode) => /^r\d+$/.test(n.key);
+const WORKER_H = 56;
+// Where each row sits. A question has one more stage than a report, so its rows are closer.
+const ROWS = {
+  run: { gate: 24, orchestrator: 136, workers: 264, verifier: 392, writer: 520 } as Record<string, number>,
+  chat: { memory: 16, lead: 110, workers: 212, verifier: 306, answer: 402, verify: 498 } as Record<string, number>,
+};
+const MAX_TURNS = 3;
 
 function useNarrow(): boolean {
   const query = "(max-width: 959px)";
@@ -97,21 +107,16 @@ function useNarrow(): boolean {
 }
 
 function layout(graph: Graph, d: Dims): Record<string, Box> {
+  const rows = ROWS[graph.kind];
   const boxes: Record<string, Box> = {};
-  if (graph.kind === "chat") {
-    graph.nodes.forEach((n, i) => (boxes[n.key] = { ...d.main, y: 24 + i * 112 }));
-    return boxes;
-  }
-  const retrievers = graph.nodes.filter(isRetriever);
-  const slots = Math.max(retrievers.length, 1);
+  const workers = graph.nodes.filter(isWorker);
+  const slots = Math.max(workers.length, 1);
   const span = d.W - 2 * (d.loopX + d.gap);
-  const w = Math.min(d.chip, (span - (slots - 1) * d.gap) / slots);
+  // The fast path's one search is as wide as a stage; researchers and retrievers share the row.
+  const w = workers[0]?.key === "search" ? d.main.w : Math.min(d.chip, (span - (slots - 1) * d.gap) / slots);
   const x0 = (d.W - (slots * w + (slots - 1) * d.gap)) / 2;
-  boxes.gate = { ...d.main, y: 24 };
-  boxes.orchestrator = { ...d.main, y: 136 };
-  retrievers.forEach((n, i) => (boxes[n.key] = { x: x0 + i * (w + d.gap), y: RETRIEVER_Y, w, h: RETRIEVER_H }));
-  boxes.verifier = { ...d.main, y: 392 };
-  boxes.writer = { ...d.main, y: 520 };
+  for (const n of graph.nodes) if (!isWorker(n)) boxes[n.key] = { ...d.main, y: rows[n.key] };
+  workers.forEach((n, i) => (boxes[n.key] = { x: x0 + i * (w + d.gap), y: rows.workers, w, h: WORKER_H }));
   return boxes;
 }
 
@@ -120,35 +125,57 @@ const into = (n?: GraphNode): EdgeState => (!n || n.state === "waiting" ? "idle"
 
 function edges(graph: Graph, boxes: Record<string, Box>, d: Dims): { d: string; state: EdgeState; loop?: boolean }[] {
   const at = (key: string) => graph.nodes.find((n) => n.key === key);
+  const rows = ROWS[graph.kind];
   const out: { d: string; state: EdgeState; loop?: boolean }[] = [];
-  const back = (from: Box, to: Box) => `M${d.main.x} ${from.y + 32} H${d.loopX} V${to.y + 32} H${d.main.x - 6}`;
-  if (graph.kind === "chat") {
-    graph.nodes.slice(1).forEach((n) => out.push({ d: `M${d.mid} ${boxes[n.key].y - 48} V${boxes[n.key].y}`, state: into(n) }));
-    if (graph.looped) out.push({ d: back(boxes.answer, boxes.search), state: graph.looping ? "live" : "done", loop: true });
-    return out;
-  }
-  out.push({ d: `M${d.mid} 88 V136`, state: into(at("orchestrator")) });
+  const stages = graph.nodes.filter((n) => !isWorker(n));
+  const head = graph.kind === "run" ? "orchestrator" : "lead"; // who hands out the work
+  // straight down between stages, except across the workers' row
+  stages.slice(1).forEach((n, i) => {
+    const from = stages[i];
+    if (from.key !== head) out.push({ d: `M${d.mid} ${rows[from.key] + d.main.h} V${rows[n.key]}`, state: into(n) });
+  });
+  // the fan: out to every worker, and back in to the verifier
+  const top = rows[head] + d.main.h;
+  const fanOut = (top + rows.workers) / 2;
+  const fanIn = (rows.workers + WORKER_H + rows.verifier) / 2;
   const verifier = at("verifier");
-  for (const n of graph.nodes.filter(isRetriever)) {
+  for (const n of graph.nodes.filter(isWorker)) {
     const cx = boxes[n.key].x + boxes[n.key].w / 2;
-    out.push({ d: `M${d.mid} 200 V232 H${cx} V${RETRIEVER_Y}`, state: into(n) });
-    out.push({ d: `M${cx} ${RETRIEVER_Y + RETRIEVER_H} V356 H${d.mid} V392`, state: n.state === "done" || n.state === "failed" ? into(verifier) : "idle" });
+    out.push({ d: `M${d.mid} ${top} V${fanOut} H${cx} V${rows.workers}`, state: into(n) });
+    // The fast path's search goes past the verifier: code checks it, further down.
+    const next = n.key === "search" ? into(at("answer")) : into(verifier);
+    out.push({ d: `M${cx} ${rows.workers + WORKER_H} V${fanIn} H${d.mid} V${rows.verifier}`, state: n.state === "done" || n.state === "failed" ? next : "idle" });
   }
-  out.push({ d: `M${d.mid} 456 V520`, state: into(at("writer")) });
-  if (graph.looped) out.push({ d: back(boxes.verifier, boxes.orchestrator), state: graph.looping ? "live" : "done", loop: true });
+  const live = graph.looping ? "live" : "done";
+  // the loop back: from the verifier to whoever hands out the work, up the left side
+  if (graph.looped) out.push({ d: `M${d.main.x} ${rows.verifier + 32} H${d.loopX} V${rows[head] + 32} H${d.main.x - 6}`, state: live, loop: true });
+  // a question's backup: a fast answer that failed its check goes back up the right side
+  if (graph.escalated) out.push({ d: `M${d.main.x + d.main.w} ${rows.verify + 32} H${d.W - d.loopX} V${rows.lead + 32} H${d.main.x + d.main.w + 6}`, state: "done", loop: true });
   return out;
+}
+
+const SUPPORT: Record<string, string> = { yes: "supported", partly: "partly supported", no: "not supported" };
+const cardsOf = (graph: Graph, s: FitState) => (graph.kind === "chat" ? s.tasks : s.cards);
+const lastAnswer = (s: FitState) => s.chat.findLast((c) => c.from === "agent" && c.answer)?.answer;
+
+function moveText(m: Move, s: FitState): string {
+  const text = { decline: "declined: not about my work", direct: "fast path: one search, then the writer", dispatch: m.turn === 1 ? `started ${plural(s.tasks.length, "researcher")} in parallel` : "sent researchers out again", write: "handed the findings to the writer" }[m.action];
+  return m.forced ? `${text} (decided in code: ${m.why})` : text;
 }
 
 // One line of status under a node's name, read off the state.
 function status(n: GraphNode, graph: Graph, s: FitState): string {
-  const card = s.cards.find((c) => c.id === n.key);
+  if (n.waitMs > 0) return `retry ${n.retries} in ${(n.waitMs / 1000).toFixed(1)}s`;
+  const cards = cardsOf(graph, s);
+  const card = cards.find((c) => c.id === n.key);
   if (card) {
     if (n.state === "running") return card.retry ? "searching again" : card.chunks.length ? `reading ${card.chunks.length}` : "searching";
-    if (!card.verdict) return n.state === "failed" ? "failed" : n.state === "done" ? "verifying" : "queued";
+    if (!card.verdict) return n.state === "failed" ? "failed: a gap" : n.state === "done" ? "verifying" : card.chunks.length || graph.kind === "run" ? "queued" : "searching";
     return card.verdict === "gap" ? "no evidence" : `${card.verdict} · ${card.evidence.length}`;
   }
-  const lowered = s.cards.filter((c) => c.lowered).length;
-  const sentBack = s.cards.filter((c) => c.retry).length;
+  const lowered = cards.filter((c) => c.lowered).length;
+  const sentBack = cards.filter((c) => c.retry).length;
+  const move = graph.moves[graph.moves.length - 1];
   switch (n.key) {
     case "gate":
       return n.state === "running" ? "reading the text" : n.state === "done" ? "a real job advert" : NODE_NAMES.gate.does;
@@ -157,23 +184,31 @@ function status(n: GraphNode, graph: Graph, s: FitState): string {
       return n.state === "done" ? `${s.cards.length} planned${sentBack ? ` · ${sentBack} retried` : ""}` : "plans the work";
     case "verifier":
       if (n.state === "running") return graph.round > 1 ? "checking new quotes" : "checking citations";
-      return n.state === "done" ? (lowered ? `lowered ${lowered}` : "kept every verdict") : "checks every citation";
+      if (n.state === "done") return lowered ? `lowered ${lowered}` : "kept every verdict";
+      if (graph.kind === "chat" && graph.nodes.some((x) => x.key === "search") && !s.tasks.length) return "skipped: one search";
+      return "reads every quote";
     case "writer":
-      return n.state === "running" ? "writing the summary" : n.state === "done" ? "summary written" : "waits for the verifier";
-    case "question":
-      return "asked";
+      return n.state === "running" ? "writing the summary" : n.state === "done" ? (s.summaryFallback ? "fallback: built in code" : "summary written") : n.state === "failed" ? "failed: built in code" : "waits for the verifier";
     case "memory":
       if (n.state === "running") return "compacting";
       if (!s.context) return "skipped";
       if (s.context.kept + s.context.compacted === 0) return "first question";
       return `${plural(s.context.kept, "turn")} kept${s.context.compacted ? ` · ${s.context.compacted} summarised` : ""}`;
+    case "lead":
+      if (n.state === "running") return graph.moves.length ? "reviewing the findings" : "choosing a route";
+      if (!move) return n.state === "failed" ? "failed: code takes over" : "picks the next move";
+      return { decline: "declined", direct: "fast path", dispatch: sentBack ? `sent ${sentBack} back` : plural(s.tasks.length, "researcher"), write: "to the writer" }[move.action] + (move.forced ? " (code)" : "");
     case "search":
-      return n.state === "running" ? "searching my pages" : n.state === "done" && s.context ? plural(s.context.excerpts, "excerpt") : "waits";
+      return n.state === "running" ? "searching my pages" : s.context ? plural(s.context.excerpts, "excerpt") : "done";
     case "answer":
-      if (n.state === "running") return graph.looped ? "reading the new excerpts" : "writing";
-      return n.state === "done" ? (n.tools.length ? "searched, then wrote" : "written") : "waits";
-    case "verify":
-      return n.state === "running" ? "checking quotes" : n.state === "done" ? "quotes checked" : "waits";
+      return n.state === "running" ? "writing" : n.state === "done" ? "written" : n.state === "failed" ? "failed: quotes only" : "waits";
+    case "verify": {
+      if (n.state === "running") return "checking quotes";
+      if (n.state !== "done") return "checks every quote";
+      const confidence = lastAnswer(s)?.confidence;
+      if (s.asking) return graph.escalated ? "did not pass: escalated" : "quotes checked";
+      return confidence ? `${confidence.level} · ${confidence.passed} of ${confidence.total}` : "nothing to show";
+    }
     default:
       return "";
   }
@@ -181,37 +216,47 @@ function status(n: GraphNode, graph: Graph, s: FitState): string {
 
 // What a node was asked and what it returned, for the detail panel. Prompts are never shown.
 function detail(n: GraphNode, graph: Graph, s: FitState): { title: string; rows: [string, string][] } {
-  const card = s.cards.find((c) => c.id === n.key);
+  const cards = cardsOf(graph, s);
+  const card = cards.find((c) => c.id === n.key);
+  const kind = card ? (graph.kind === "chat" ? "researcher" : "retriever") : n.key;
+  const rows: [string, string][] = [["Done by", NODE_NAMES[kind]?.by ?? ""]];
+  if (n.retries) rows.push(["Retried", `${plural(n.retries, "time")}: the provider turned the call away, so it waited and tried again (exponential backoff)`]);
   if (card) {
-    const rows: [string, string][] = [["Asked", card.text]];
+    rows.push(["Asked", card.text]);
     if (card.search) rows.push(["Searched", card.search]);
     if (card.chunks.length) rows.push(["Offered", plural(card.chunks.length, "excerpt")]);
-    for (const c of card.checks) rows.push([`Verifier, round ${c.round}`, `${c.support === "yes" ? "supported" : c.support === "partly" ? "partly supported" : "not supported"}${c.reason ? `: ${c.reason}` : ""}`]);
+    for (const c of card.checks) rows.push([`Verifier, round ${c.round}`, `${SUPPORT[c.support]}${c.reason ? `: ${c.reason}` : ""}`]);
     if (card.retry) rows.push(["Sent back", `${card.retry.reason ? `${card.retry.reason}. ` : ""}New search: ${card.retry.search}${card.retry.improved === undefined ? "" : card.retry.improved ? ". Better evidence found." : ". Nothing better found."}`]);
     if (card.verdict) rows.push(["Returned", card.verdict === "gap" ? "no evidence: reported as a gap" : `${card.verdict}, ${plural(card.evidence.length, "checked quote")}`]);
-    return { title: `${n.key} · Retriever`, rows };
+    return { title: `${n.key} · ${graph.kind === "chat" ? "Researcher" : "Retriever"}`, rows };
   }
-  const name = NODE_NAMES[n.key]?.name ?? n.key;
-  const rows: [string, string][] = [["Job", NODE_NAMES[n.key]?.does ?? ""]];
+  rows.push(["Job", NODE_NAMES[n.key]?.does ?? ""]);
   if (n.state !== "waiting") rows.push(["Now", status(n, graph, s)]);
-  const sentBack = s.cards.filter((c) => c.retry);
+  const sentBack = cards.filter((c) => c.retry);
   const called: Record<string, string> = {
     dispatch_retrievers: `dispatch_retrievers(${plural(s.cards.length, "requirement")}): one retriever started for each`,
     redirect_retrievers: `redirect_retrievers(${sentBack.length} sent back for a second search)`,
-    search_portfolio: `search_portfolio("${graph.search ?? ""}")`,
   };
-  for (const tool of n.tools) rows.push(["Tool call", called[tool] ?? tool]);
-  for (const c of n.key === "orchestrator" ? sentBack : []) rows.push([`Sent ${c.id} back`, c.retry!.search]);
-  if (n.key === "verifier") for (const c of s.cards) for (const k of c.checks.filter((x) => x.support !== "yes")) rows.push([`${c.id}, round ${k.round}`, k.reason || k.support]);
+  if (n.key === "lead") for (const m of graph.moves) rows.push([`Turn ${m.turn}`, moveText(m, s)]);
+  else for (const tool of n.tools) rows.push(["Tool call", called[tool] ?? tool]);
+  for (const c of n.key === "orchestrator" || n.key === "lead" ? sentBack : []) rows.push([`Sent ${c.id} back`, c.retry!.search]);
+  if (n.key === "verifier") for (const c of cards) for (const k of c.checks.filter((x) => x.support !== "yes")) rows.push([`${c.id}, round ${k.round}`, k.reason || k.support]);
+  if (n.key === "writer" && s.summaryFallback) rows.push(["Fallback", "the writer's summary was not usable, so this one was computed from the verdicts"]);
   if (n.key === "memory" && s.context) rows.push(["Context", `${plural(s.context.kept, "turn")} word for word, ${s.context.compacted} older folded into a summary`]);
-  if (n.key === "verify" && s.context?.dropped) rows.push(["Dropped", plural(s.context.dropped, "quote") + " not found in the source"]);
-  return { title: name, rows };
+  if (n.key === "verify") {
+    const answer = lastAnswer(s);
+    if (s.context?.dropped) rows.push(["Dropped", plural(s.context.dropped, "quote") + " not found in the source"]);
+    if (graph.escalated) rows.push(["Backup", "the fast answer did not pass every check, so the question went back to the orchestrator and out to the researchers"]);
+    if (!s.asking && answer?.confidence) rows.push(["Confidence", `${answer.confidence.level}: ${answer.confidence.passed} of ${answer.confidence.total} checks passed, run by ${answer.confidence.by}`]);
+  }
+  return { title: NODE_NAMES[n.key]?.name ?? n.key, rows };
 }
 
 const Board = memo(function Board({ graph, state, selected, onSelect }: { graph: Graph; state: FitState; selected: string | null; onSelect: (key: string | null) => void }) {
   const d = useNarrow() ? NARROW : WIDE;
   const W = d.W;
   const boxes = layout(graph, d);
+  const rows = ROWS[graph.kind];
   const pct = (b: Box) => ({ left: `${(b.x / W) * 100}%`, top: `${(b.y / H) * 100}%`, width: `${(b.w / W) * 100}%`, height: `${(b.h / H) * 100}%` });
   // The detail panel grows out of the node that was clicked and shrinks back into it,
   // so it stays mounted for the length of its exit.
@@ -224,6 +269,8 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
   const picked = graph.nodes.find((n) => n.key === (selected ?? shown));
   const info = picked ? detail(picked, graph, state) : null;
   const origin = picked && boxes[picked.key] ? `${((boxes[picked.key].x + boxes[picked.key].w / 2) / W) * 100}% 0` : "50% 0";
+  const cards = cardsOf(graph, state);
+  const head = graph.kind === "run" ? "orchestrator" : "lead";
   return (
     <>
       <div className="fit-board-scroll">
@@ -234,22 +281,23 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
             </defs>
             {edges(graph, boxes, d).map((e, i) => <path key={i} d={e.d} className={`fit-edge ${e.state}${e.loop ? " loop" : ""}`} markerEnd={e.loop ? "url(#fit-head)" : undefined} />)}
           </svg>
-          {graph.kind === "run" && !graph.nodes.some(isRetriever) && (
-            <span className="fit-node ghost" style={pct({ x: d.mid - 170, y: RETRIEVER_Y, w: 340, h: RETRIEVER_H })}>retrievers join once the plan is made</span>
+          {!graph.nodes.some(isWorker) && (
+            <span className="fit-node ghost" style={pct({ x: d.mid - 170, y: rows.workers, w: 340, h: WORKER_H })}>{graph.kind === "run" ? "retrievers join once the plan is made" : "one search, or researchers in parallel"}</span>
           )}
-          {graph.looped && <span className="fit-loop-label" style={{ left: `${((d.loopX + 12) / W) * 100}%`, top: `${((graph.kind === "run" ? 204 : 316) / H) * 100}%` }}>{graph.kind === "chat" ? "tool call: search" : graph.looping ? "searching again" : "second search done"}</span>}
+          {graph.looped && <span className="fit-loop-label" style={{ left: `${((d.loopX + 12) / W) * 100}%`, top: `${((rows[head] + 68) / H) * 100}%` }}>{graph.kind === "chat" ? (graph.looping ? "back to the orchestrator" : "orchestrator asked again") : graph.looping ? "searching again" : "second search done"}</span>}
+          {graph.escalated && <span className="fit-loop-label right" style={{ right: `${((d.loopX + 12) / W) * 100}%`, top: `${((rows.lead + 68) / H) * 100}%` }}>check failed: escalated</span>}
           {graph.nodes.map((n, i) => {
-            const card = state.cards.find((c) => c.id === n.key);
+            const card = cards.find((c) => c.id === n.key);
             return (
               <button
                 key={n.key}
                 type="button"
-                className={`fit-node ${n.state}${card ? " small" : ""}${card?.verdict ? ` v-${card.verdict}` : ""}${selected === n.key ? " picked" : ""}`}
+                className={`fit-node ${n.state}${card ? " small" : ""}${card?.verdict ? ` v-${card.verdict}` : ""}${selected === n.key ? " picked" : ""}${n.waitMs ? " backoff" : ""}`}
                 style={{ ...pct(boxes[n.key]), animationDelay: `${i * 30}ms` }}
                 aria-pressed={selected === n.key}
                 onClick={() => onSelect(selected === n.key ? null : n.key)}
               >
-                <b>{card ? n.key : NODE_NAMES[n.key]?.name}{n.state === "running" && <i className="fit-spin" aria-hidden="true" />}</b>
+                <b>{card ? n.key : NODE_NAMES[n.key]?.name}{n.state === "running" ? <i className="fit-spin" aria-hidden="true" /> : !card && <em className="fit-by">{NODE_NAMES[n.key]?.by}</em>}</b>
                 <span>{status(n, graph, state)}</span>
               </button>
             );
@@ -263,18 +311,20 @@ const Board = memo(function Board({ graph, state, selected, onSelect }: { graph:
           <span className="fit-usage">{picked.calls ? `${plural(picked.calls, "call")} · ${seconds(picked.ms)} · ${count(picked.tokens)} tokens · est. ${cost(picked.costMicro)}` : picked.state === "waiting" ? "not started" : "done in code, no model call"}</span>
         </div>
       ) : (
-        <p className="fit-muted fit-hint">Click any node to see what it was asked, what it returned, and its time, tokens and cost.</p>
+        <p className="fit-muted fit-hint">Click any node to see what it was asked, what it returned, and its time, tokens and cost. Each stage is tagged with who does it: a model, code, or code around one model call.</p>
       )}
     </>
   );
 });
 
+// One state for a row of workers: running if any is, done once all have reported.
+const together = (workers: GraphNode[]): GraphNode["state"] => (workers.some((n) => n.state === "running") ? "running" : workers.length && workers.every((n) => n.state === "done" || n.state === "failed") ? "done" : "waiting");
+
 // The folded graph: one dot per stage, still live. Clicking it opens the graph.
 function Rail({ graph, onOpen }: { graph: Graph; onOpen: () => void }) {
-  const retrievers = graph.nodes.filter(isRetriever);
-  const stages = graph.kind === "chat" ? graph.nodes : graph.nodes.filter((n) => !isRetriever(n));
-  const group: GraphNode["state"] = retrievers.some((n) => n.state === "running") ? "running" : retrievers.length && retrievers.every((n) => n.state === "done" || n.state === "failed") ? "done" : "waiting";
-  const dots = graph.kind === "chat" ? stages.map((n) => ({ key: n.key, state: n.state })) : stages.flatMap((n) => (n.key === "verifier" ? [{ key: "retriever", state: group }, { key: n.key, state: n.state }] : [{ key: n.key, state: n.state }]));
+  const workers = graph.nodes.filter(isWorker);
+  const group = { key: graph.kind === "run" ? "retriever" : workers[0]?.key === "search" ? "search" : "researcher", state: together(workers) };
+  const dots = graph.nodes.filter((n) => !isWorker(n)).flatMap((n) => (n.key === "verifier" ? [group, { key: n.key, state: n.state }] : [{ key: n.key, state: n.state }]));
   return (
     <button type="button" className="fit-rail" onClick={onOpen} aria-label="Open the agent graph">
       <span className="fit-rail-open" aria-hidden="true">›</span>
@@ -282,9 +332,17 @@ function Rail({ graph, onOpen }: { graph: Graph; onOpen: () => void }) {
       {dots.map((d) => (
         <span key={d.key} className={`fit-dot ${d.state}`}><i aria-hidden="true" />{NODE_NAMES[d.key]?.name.toLowerCase()}</span>
       ))}
-      {graph.looped && <span className="fit-rail-loop">↺ looped</span>}
+      {(graph.looped || graph.escalated) && <span className="fit-rail-loop">↺ looped</span>}
     </button>
   );
+}
+
+// A question's route, in a few words, for the graph's heading.
+function route(graph: Graph): string {
+  if (graph.moves.some((m) => m.action === "decline")) return "declined";
+  if (graph.escalated) return "fast path failed its check · escalated to researchers";
+  if (graph.moves.some((m) => m.action === "dispatch")) return "researchers in parallel";
+  return graph.moves.some((m) => m.action === "direct") ? "fast path" : "choosing a route";
 }
 
 function GraphPane({ state, open, onToggle }: { state: FitState; open: boolean; onToggle: () => void }) {
@@ -295,12 +353,13 @@ function GraphPane({ state, open, onToggle }: { state: FitState; open: boolean; 
   useEffect(() => { if (state.phase === "running") setWhich("run"); }, [state.phase]);
   const graph = which === "chat" && state.question ? state.question : state.run;
   const latest = state.question ?? state.run;
+  const heading = graph.kind === "chat" ? `Turn ${Math.max(1, graph.round)} of ${MAX_TURNS} · ${route(graph)}` : graph.looped ? `Looped back · round ${graph.round} of 2` : "Round 1";
   return (
     <aside className={"fit-pane fit-graph" + (open ? " open" : "")} aria-label="Agent graph">
       {open ? (
         <div className="fit-graph-full">
           <header>
-            <div><span className="eyebrow">Agent graph · {graph.kind === "chat" ? "last question" : "report run"}</span><b>{graph.looped ? `Looped back · round ${graph.round} of 2` : "Round 1"}</b></div>
+            <div><span className="eyebrow">Agent graph · {graph.kind === "chat" ? "last question" : "report run"}</span><b>{heading}</b></div>
             <div className="fit-row">
               {state.question && (
                 <Seg options={["Report", "Question"] as const} value={graph.kind === "chat" ? "Question" : "Report"} label="Which loop" onChange={(v) => { setWhich(v === "Question" ? "chat" : "run"); setSelected(null); }} />
@@ -328,7 +387,7 @@ function ReportCard({ card, index, checking }: { card: Card; index: number; chec
   return (
     <article className={"fit-card " + (card.verdict ?? "pending") + (searching ? " retrying" : "")} style={{ animationDelay: `${index * 30}ms` }}>
       <div className="fit-card-head">
-        <h3>{card.text}</h3>
+        <div><span className="fit-from jd">The job description asks for</span><h3>{card.text}</h3></div>
         {searching ? (
           <span className="fit-badge live">second search</span>
         ) : card.verdict ? (
@@ -338,6 +397,7 @@ function ReportCard({ card, index, checking }: { card: Card; index: number; chec
         )}
       </div>
       {!card.verdict && <><div className="fit-skel" /><div className="fit-skel short" /></>}
+      {card.evidence.length > 0 && <span className="fit-from mine">What my résumé and case studies say, word for word</span>}
       {card.evidence.map((e, i) => <Quote key={e.chunkId + e.quote} evidence={e} delay={i * 30} />)}
       {card.verdict === "gap" && !searching && <p className="fit-muted">Nothing in my case studies or CV shows this.</p>}
       {(card.dropped > 0 || card.lowered || card.retry?.improved !== undefined) && (
@@ -363,6 +423,7 @@ const Report = memo(function Report({ state, onReset }: { state: FitState; onRes
         <h1>{state.role || "Reading the role…"}</h1>
         {state.phase === "running" && last && <p className="fit-now" aria-live="polite" key={last.text}><i className="fit-spin" aria-hidden="true" />{last.text}</p>}
         {state.summary && <p className="fit-summary">{state.summary}</p>}
+        {state.cards.length > 0 && <p className="fit-legend"><span className="fit-from jd">Job description</span> each heading below is a requirement the orchestrator took from the advert you pasted. <span className="fit-from mine">My words</span> each quote under it is copied exactly from my résumé or a case study, and links to where it sits.</p>}
       </div>
       {state.phase === "done" && (
         <div className="fit-tally">
@@ -389,12 +450,20 @@ function Bubble({ item }: { item: ChatItem }) {
   return (
     <div className={"fit-bubble agent" + (item.answer && item.answer.kind !== "grounded" ? " plain" : "")}>
       <span>{item.text}{item.streaming && <i className="fit-caret" aria-hidden="true" />}</span>
+      {item.answer?.caution && <p className="fit-caution" role="note">▲ {item.answer.caution}</p>}
       {item.answer?.evidence.map((e) => <Quote key={e.chunkId + e.quote} evidence={e} small />)}
+      {item.answer?.confidence && (
+        <small className={"fit-conf " + item.answer.confidence.level} title={`Checks run by ${item.answer.confidence.by}: each quote against its page, the wording, and each researcher's finding`}>
+          confidence {item.answer.confidence.level} · {item.answer.confidence.passed} of {item.answer.confidence.total} checks passed · {item.answer.path === "team" ? "researchers and verifier" : "fast path, checked in code"}
+        </small>
+      )}
       {item.note && item.answer && <small>{item.note}</small>}
       {item.answer && item.answer.actions.length > 0 && <div className="fit-chips">{item.answer.actions.map((a) => <ActionChip key={a} action={a} />)}</div>}
     </div>
   );
 }
+
+const stageName = (key: string) => NODE_NAMES[/^q\d+$/.test(key) ? "researcher" : key];
 
 const Chat = memo(function Chat({ state, onAsk }: { state: FitState; onAsk: (q: string) => void }) {
   const [question, setQuestion] = useState("");
@@ -425,7 +494,7 @@ const Chat = memo(function Chat({ state, onAsk }: { state: FitState; onAsk: (q: 
       <div className="fit-log" aria-live="polite" ref={log}>
         {turns.length === 0 && <p className="fit-muted">{state.replay ? "This is a recorded run. Paste a job description of your own to ask questions." : "Ask how something was built, what a project involved, or where a gap comes from. Every answer cites my own pages."}</p>}
         {turns.map((item, i) => <Bubble key={i} item={item} />)}
-        {thinking && <p className="fit-now"><i className="fit-spin" aria-hidden="true" />{stage ? `${NODE_NAMES[stage.key]?.name}: ${NODE_NAMES[stage.key]?.does}` : "Thinking"}</p>}
+        {thinking && <p className="fit-now"><i className="fit-spin" aria-hidden="true" />{stage ? `${stageName(stage.key)?.name}: ${stageName(stage.key)?.does}` : "Thinking"}</p>}
         {state.phase === "done" && !state.asking && (state.suggestions.length > 0 || state.actions.length > 0) && (
           <div className="fit-chips">
             {canAsk && state.suggestions.map((s) => <button key={s} type="button" className="chip" onClick={() => send(s)}>{s}</button>)}
@@ -488,8 +557,9 @@ const REFUSALS: Record<Refusal, [string, string]> = {
 };
 
 const PREVIEW = ["gate", "orchestrator", "retriever", "verifier", "writer"];
+const ASK_CALLS = 9;
 
-function Start({ state, live, replays, jd, setJd, onRun, onReplay }: { state: FitState; live: boolean; replays: Replay[]; jd: string; setJd: (jd: string) => void; onRun: (jd: string) => void; onReplay: (r: Replay) => void }) {
+function Start({ state, live, checking, widget, replays, jd, setJd, onRun, onReplay }: { state: FitState; live: boolean; checking: boolean; widget: React.RefObject<HTMLDivElement | null>; replays: Replay[]; jd: string; setJd: (jd: string) => void; onRun: (jd: string) => void; onReplay: (r: Replay) => void }) {
   const [wait, setWait] = useState(0);
   useEffect(() => setWait(state.retryAfterSec > 60 ? 0 : state.retryAfterSec), [state.retryAfterSec, state.refusal]);
   useEffect(() => {
@@ -498,7 +568,7 @@ function Start({ state, live, replays, jd, setJd, onRun, onReplay }: { state: Fi
     return () => window.clearTimeout(timer);
   }, [wait]);
   const length = jd.trim().length;
-  const ready = live && length >= MIN_JD && length <= MAX_JD && wait === 0;
+  const ready = live && !checking && length >= MIN_JD && length <= MAX_JD && wait === 0;
   const refusal = state.phase === "refused" && state.refusal ? REFUSALS[state.refusal] : null;
   return (
     <div className="fit-start">
@@ -518,8 +588,11 @@ function Start({ state, live, replays, jd, setJd, onRun, onReplay }: { state: Fi
           <textarea id="fit-jd" rows={9} maxLength={MAX_JD} value={jd} onChange={(e) => setJd(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && ready) onRun(jd.trim()); }} placeholder="Paste the full advert here: responsibilities and requirements work best." />
           <div className="fit-row">
             <span className="mono">{count(length)} of {count(MAX_JD)} characters · minimum {MIN_JD}{state.runsLeft !== null ? ` · ${state.runsLeft} of ${RUNS_PER_DAY} runs left today` : ""}</span>
-            <button className="btn primary" type="submit" disabled={!ready}>{wait > 0 ? `Retry in ${wait}s` : live ? "Check the fit" : "Live runs are off"}</button>
+            <button className="btn primary" type="submit" disabled={!ready}>{checking ? <><i className="fit-spin" aria-hidden="true" />Checking you&rsquo;re human…</> : wait > 0 ? `Retry in ${wait}s` : live ? "Check the fit" : "Live runs are off"}</button>
           </div>
+          {/* The human check sits with the button it belongs to. It stays invisible unless Cloudflare needs a click. */}
+          <div ref={widget} className="fit-turnstile" />
+          {checking && <p className="fit-muted" role="status">A quick automatic check that you are a person. If a box appears above, tick it; the run starts by itself after that.</p>}
           <p className="fit-muted">This is an AI agent answering as me, from my published pages only. It can be wrong, and nothing it says is a commitment. Your text is sent to OpenAI to produce the report; the job description is not stored, and the report and your questions are kept for 24 hours so follow-ups work.</p>
         </form>
         {replays.length > 0 && (
@@ -539,10 +612,10 @@ function Start({ state, live, replays, jd, setJd, onRun, onReplay }: { state: Fi
           {PREVIEW.map((key, i) => (
             <li key={key} style={{ animationDelay: `${i * 30}ms` }}><b>{NODE_NAMES[key].name}</b><span className="fit-muted">{NODE_NAMES[key].does}</span></li>
           ))}
-          <li className="loop"><b>↺ Loop</b><span className="fit-muted">weak evidence goes back for one more search, once</span></li>
+          <li className="loop"><b>↺ Loop</b><span className="fit-muted">weak evidence goes back to the orchestrator, which may search once more</span></li>
         </ol>
-        <p className="fit-muted">Tool use: the orchestrator starts and redirects the retrievers with function calls, and in chat the model decides for itself when to call the search tool.{API && <> The same search is open to any MCP client at <code>{API}/mcp</code>.</>}</p>
-        <p className="fit-muted">At most {MAX_CALLS} model calls per run, {RUNS_PER_DAY} runs and {QUESTIONS_PER_DAY} questions a day per visitor, and a fixed monthly budget.</p>
+        <p className="fit-muted">Your questions go to a second orchestrator. Each turn it picks a move by function call: answer a narrow question on a fast path, or split a broad one across researchers working in parallel, read the verifier&rsquo;s findings and send one back. Code checks every quote, scores the confidence, and takes over if a model fails.{API && <> The same search is open to any MCP client at <code>{API}/mcp</code>.</>}</p>
+        <p className="fit-muted">At most {MAX_CALLS} model calls per run and {ASK_CALLS} per question, {RUNS_PER_DAY} runs and {QUESTIONS_PER_DAY} questions a day per visitor, and a fixed monthly budget. A call the provider turns away is retried twice, waiting longer each time.</p>
       </aside>
     </div>
   );
@@ -553,7 +626,7 @@ function Start({ state, live, replays, jd, setJd, onRun, onReplay }: { state: Fi
 const TABS = ["Graph", "Report", "Chat"] as const;
 
 export default function FitPage() {
-  const { state, start, replay, ask, reset, widget } = useFit();
+  const { state, start, replay, ask, reset, widget, checking } = useFit();
   const [live, setLive] = useState(false);
   const [replays, setReplays] = useState<Replay[]>([]);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Graph");
@@ -582,6 +655,7 @@ export default function FitPage() {
   const done = state.phase === "done";
   return (
     <div data-page="fit" className="fit">
+      <CvProvider>
       <section className="page enter">
         <div className="wrap fit-wrap">
           {working ? (
@@ -600,11 +674,11 @@ export default function FitPage() {
               </div>
             </>
           ) : (
-            <Start state={state} live={live} replays={replays} jd={jd} setJd={setJd} onRun={start} onReplay={replay} />
+            <Start state={state} live={live} checking={checking} widget={widget} replays={replays} jd={jd} setJd={setJd} onRun={start} onReplay={replay} />
           )}
-          <div ref={widget} className="fit-turnstile" />
         </div>
       </section>
+      </CvProvider>
     </div>
   );
 }

@@ -45,7 +45,7 @@ if (!key) {
 }
 
 const CAP_USD = Number(process.env.EVAL_CAP_USD ?? "0.50");
-const price: Price = { inputPerM: Number(setting("PRICE_INPUT_PER_M")), cachedPerM: Number(setting("PRICE_CACHED_PER_M")), outputPerM: Number(setting("PRICE_OUTPUT_PER_M")) };
+const price: Price = { inputPerM: Number(setting("PRICE_INPUT_PER_M")), cachedPerM: Number(setting("PRICE_CACHED_PER_M")), writePerM: Number(setting("PRICE_CACHE_WRITE_PER_M")), outputPerM: Number(setting("PRICE_OUTPUT_PER_M")) };
 const model = new OpenAIModel(key, setting("OPENAI_MODEL"), setting("OPENAI_REASONING_EFFORT") || undefined);
 // The same budget code the Worker uses, capped for this run.
 const budget = emptyBudget(Date.now());
@@ -69,6 +69,7 @@ interface QuestionCase {
   id: string;
   q: string;
   expect: string;
+  route?: "direct" | "team"; // which route the lead should take
   must?: string; // a pattern the answer has to contain
   mustNot?: string; // a pattern the answer may never contain
 }
@@ -182,7 +183,9 @@ if (firstReport && questions.length) {
   for (const c of questions) {
     let costMicro = 0;
     let read = { input: 0, cached: 0 };
-    const tools: string[] = [];
+    const moves: string[] = [];
+    let calls = 0;
+    const began = Date.now();
     const outcome = await runAsk(c.q, firstReport, memory, {
       model,
       index,
@@ -191,8 +194,10 @@ if (firstReport && questions.length) {
       meter,
       onError,
       emit: (e) => {
-        if (e.type === "usage") (costMicro = e.costMicro), (read = { input: e.input, cached: e.cached });
-        if (e.type === "retry") tools.push(e.search);
+        if (e.type === "usage") (costMicro = e.costMicro), (read = { input: e.input, cached: e.cached }), (calls = e.calls);
+        if (e.type === "move") moves.push(`${e.action}${e.forced ? " (forced)" : ""}`);
+        if (e.type === "task") moves.push(`${e.id}${e.again ? " again" : ""}: ${e.focus} [${e.search}]`);
+        if (e.type === "step" && e.state === "retrying") moves.push(`retry ${e.step} after ${e.waitMs} ms`);
       },
     });
     if (outcome.status !== "answered") {
@@ -204,10 +209,12 @@ if (firstReport && questions.length) {
     }
     memory = outcome.memory;
     const fails = checkAnswer(c, outcome.answer);
+    if (c.route && outcome.answer.path !== c.route) fails.push(`expected the ${c.route} route, took ${outcome.answer.path ?? "none"}`);
     failed += Number(fails.length > 0);
-    console.log(`${fails.length ? "FAIL" : "ok  "} ${c.id.padEnd(20)} ${outcome.answer.kind} · ${outcome.answer.evidence.length} quotes · ${usd(costMicro)} · ${read.input ? Math.round((read.cached / read.input) * 100) : 0}% of input cached · memory ${memory.turns.length} kept, ${memory.compacted} summarised${tools.length ? ` · tool search_portfolio("${tools[0]}")` : ""}\n       ${outcome.answer.text}`);
+    const conf = outcome.answer.confidence;
+    console.log(`${fails.length ? "FAIL" : "ok  "} ${c.id.padEnd(20)} ${outcome.answer.kind} · ${outcome.answer.evidence.length} quotes · ${usd(costMicro)} · ${read.input ? Math.round((read.cached / read.input) * 100) : 0}% of input cached · memory ${memory.turns.length} kept, ${memory.compacted} summarised · ${calls} calls · ${((Date.now() - began) / 1000).toFixed(1)}s${conf ? ` · confidence ${conf.level} ${conf.passed}/${conf.total}` : ""}\n       moves: ${moves.join(" → ") || "none (refused in code)"}\n       ${outcome.answer.text}`);
     for (const f of fails) console.log(`       ${f}`);
-    results.push({ id: c.id, q: c.q, answer: outcome.answer, tools, fails });
+    results.push({ id: c.id, q: c.q, answer: outcome.answer, moves, calls, fails });
   }
   console.log(`\nmemory at the end: ${memory.turns.length} turns word for word, ${memory.compacted} summarised as:\n       ${memory.summary}`);
 }

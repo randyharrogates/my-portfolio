@@ -1,4 +1,4 @@
-import { ScriptedModel } from "./model.ts";
+import { ScriptedModel, ScriptedToolCall } from "./model.ts";
 import type { ModelRequest } from "./model.ts";
 
 // Local development only (ENVIRONMENT=dev and no API key): a rule-based stand-in
@@ -24,6 +24,7 @@ export function devModel(): ScriptedModel {
     },
     verifier: () => ({ items: [] }),
     replan: () => ({ items: [] }),
+    lead: () => new ScriptedToolCall({ search: "" }, "answer_directly"),
     memory: () => ({ summary: "Development stand-in summary of the earlier turns." }),
     answer: (r) => {
       const q = /<question>\n([\s\S]*)\n<\/question>/.exec(r.user)?.[1] ?? "";
