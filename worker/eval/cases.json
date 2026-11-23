@@ -108,6 +108,26 @@
     "minStrong": 1,
     "cleanText": true
    }
+  },
+  {
+   "id": "applied-ml-docs",
+   "title": "Applied ML Engineer, Document AI",
+   "replay": false,
+   "expect": {
+    "status": "done",
+    "minStrong": 2
+   },
+   "jd": "Applied ML Engineer, Document AI. You will fine-tune open vision-language models with LoRA to extract structured data from scanned bank statements and invoices. You will build synthetic training data and held-out test sets, and report accuracy honestly on real-world photos. You will compare a small fine-tuned model against a larger zero-shot model on accuracy, speed and cost per 1,000 pages. You will deploy models on serverless GPUs that scale to zero. You will check model output with deterministic code before it reaches users."
+  },
+  {
+   "id": "realtime-product",
+   "title": "Full-Stack Engineer, Real-Time Products",
+   "replay": false,
+   "expect": {
+    "status": "done",
+    "minStrong": 2
+   },
+   "jd": "Full-Stack Engineer, Real-Time Products. You will build multiplayer browser experiences where phones connect to a shared screen with low latency, using WebRTC and WebSockets. You will run backends on Cloudflare Workers and Durable Objects and keep hosting costs low. You will design server-authoritative game logic that never leaks hidden information to clients. You will build privacy-first static web apps with no backend. You will work directly with clients, scope what they need, and recommend buying an existing SaaS product when that serves them better than a custom build."
   }
  ],
  "questions": [

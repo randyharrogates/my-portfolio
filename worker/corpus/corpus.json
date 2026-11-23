@@ -1,5 +1,5 @@
 {
- "hash": "905fc0223a8738d6a767aaffc8214bdef0253a74bc42da4d8c8f2298b7f72a81",
+ "hash": "8a99959a4dea6c843bf19e9322d1f9f0dc81acc86580f5e457b2fe7166e92154",
  "chunks": [
   {
    "id": "project:credit-memo:overview",
@@ -13,7 +13,7 @@
    "source": "project",
    "title": "Credit memos in minutes · My role",
    "url": "#/work/credit-memo",
-   "text": "Designed and built most of the product across the stack, from requirements and customer proofs of concept to production, and was on call for it. The problem: Analysts spent most of a day assembling a credit memo from financial statements, filings and web research, then checking it by hand. The answer had to be faster without becoming less trustworthy."
+   "text": "Took over a non-working prototype and rebuilt the credit-memo pipeline from scratch into the production product. Built most of it across the stack, from requirements and customer proofs of concept to production, built the KYB risk engine on my own, and was on call for it. The problem: Analysts took 6 to 24 hours to assemble a credit memo from financial statements, filings and web research, then checked it by hand."
   },
   {
    "id": "project:credit-memo:how",
@@ -27,21 +27,21 @@
    "source": "project",
    "title": "Credit memos in minutes · What I built",
    "url": "#/work/credit-memo",
-   "text": "8 specialist research agents orchestrated in LangGraph, with tool calling. Hybrid retrieval with reciprocal rank fusion and reranking over FAISS. A judge model, different from the writer, checks each section against its sources. Evaluation before release: golden test sets re-run on prompt and model changes, RAGAS for retrieval, LangFuse evaluations. Event-driven backend on Azure Service Bus with a LangChain multi-provider LLM layer and an Amazon Bedrock fallback."
+   "text": "8 specialist research agents orchestrated in LangGraph, with tool calling. Hybrid retrieval with reciprocal rank fusion and reranking over FAISS. A judge model, different from the writer, checks each section against its sources. Evaluation before release: golden test sets re-run on prompt and model changes, RAGAS for retrieval, LangFuse evaluations. Event-driven backend on Azure Service Bus with a LangChain multi-provider LLM layer and an Amazon Bedrock fallback. KYB risk engine: the model extracts into Pydantic schemas, and code rules roll the result up to Approved, Review Required or Declined. Currency conversion is calculated in code, not by the model. Rate-limit handling, idempotent retries, and token and cost tracking per run. An audit trail of who approved what, and which sources and model produced each output. Observability with CloudWatch, Sentry and LangFuse; I was the escalation point for user-reported issues. Infrastructure with Terraform, Azure Container Apps and GitHub Actions."
   },
   {
    "id": "project:credit-memo:decisions",
    "source": "project",
    "title": "Credit memos in minutes · Key decisions",
    "url": "#/work/credit-memo",
-   "text": "Moved vector search from MongoDB to in-memory FAISS when parallel load hit I/O limits and a bigger tier cost too much. Separate judge and writer models, so a model never grades its own work. Per-step timing and error fields in the run state, so failures are visible to users and to on-call. Human approval only where the risk is high, so analysts review decisions, not typing."
+   "text": "Moved vector search from MongoDB to in-memory FAISS when parallel load hit I/O limits and a bigger tier cost too much. Separate judge and writer models, so a model never grades its own work. Per-step timing and error fields in the run state, so failures are visible to users and to on-call. Human approval only where the risk is high. Errors found after delivery are added to the golden test set; a section below the judge's threshold is flagged to the user. Worked directly with financial-institution customers: proofs of concept for the memo, the chatbot and KYB, and ongoing requirements gathering."
   },
   {
    "id": "project:credit-memo:results",
    "source": "project",
    "title": "Credit memos in minutes · Results",
    "url": "#/work/credit-memo",
-   "text": "5–60 min per memo, down from 6–24 hours. ~85% faster retrieval (700–1,400 ms to 100–250 ms). ~4 → ~20 releases a month after the move to Claude Code."
+   "text": "5–60 min per memo, down from 6–24 hours. ~85% faster retrieval (700–1,400 ms to 100–250 ms)."
   },
   {
    "id": "project:kestrel:overview",
@@ -69,14 +69,14 @@
    "source": "project",
    "title": "Kestrel · What I built",
    "url": "#/work/kestrel",
-   "text": "OCR, then four field-group agents on the open-source claw-code agent runtime. Per-field confidence and citations back to the page. Batched clarification questions instead of guesses. Deterministic compliance gates, a required human confirmation and an immutable audit trail. Run progress streamed to a React front end over Server-Sent Events."
+   "text": "OCR (Azure Document Intelligence), then four field-group agents on a custom Python asyncio agent runtime modelled on claw-code's design. Hybrid retrieval: chunk and embed the document, cosine search, then FlashRank reranking. Per-field confidence and citations back to the page. Batched clarification questions instead of guesses. Deterministic compliance gates, a required human confirmation and an immutable audit trail. Run progress streamed to a React front end over Server-Sent Events. USD budget caps per call and per phase, with a cost ledger. Sign-in with signed session cookies, company, team and role-based access, and login throttling. Postgres (Supabase) with Alembic migrations; 35 unit and 12 integration test files."
   },
   {
    "id": "project:kestrel:decisions",
    "source": "project",
    "title": "Kestrel · Key decisions",
    "url": "#/work/kestrel",
-   "text": "Known cases are handled by rules, so the LLM only handles the edge cases. Per-insurer memory playbooks grow through versioned updates with rollback. Descriptive only: it never gives advice."
+   "text": "Classification is LLM-first, and memory skips the model for insurers it already knows. Deterministic checks block invented values and any advice. Per-insurer memory playbooks grow through versioned updates with rollback. Descriptive only: it never gives advice."
   },
   {
    "id": "project:kestrel:results",
@@ -90,14 +90,14 @@
    "source": "project",
    "title": "LeeTee · Overview",
    "url": "#/work/leetee",
-   "text": "LeeTee, a cited stock-research agent. Research skills and multi-agent workflows that study a growth company against ten criteria and write a cited verdict, published to a private multi-tenant catalogue. Research only; it never trades. Claude skills and multi-agent workflows that research a growth stock and write a cited verdict. Organisation: Personal. Year: 2026. Status: Private. Theme: Multi-agent systems. Stack: Claude skills, Multi-agent, Python, Next.js, Supabase."
+   "text": "LeeTee, a cited stock-research agent. Research skills and multi-agent workflows that study a growth company against ten criteria and write a cited verdict, published to a private multi-tenant catalogue. Research only; it never trades. Claude skills and multi-agent workflows that research a growth stock and write a cited verdict. Organisation: Personal. Year: 2026. Status: Live · sign-in only. Theme: Multi-agent systems. Stack: Claude skills, Multi-agent, Python, Next.js, Supabase."
   },
   {
    "id": "project:leetee:role",
    "source": "project",
    "title": "LeeTee · My role",
    "url": "#/work/leetee",
-   "text": "Solo. The problem: Stock research is slow, and most summaries skip the hard history and the sources."
+   "text": "Solo. The problem: Stock research is slow, and most summaries leave out the company's history and their sources."
   },
   {
    "id": "project:leetee:how",
@@ -111,7 +111,7 @@
    "source": "project",
    "title": "LeeTee · What I built",
    "url": "#/work/leetee",
-   "text": "A scout pass finds the story beats, then one research agent runs per beat. A ten-criteria pipeline with gating rules and a cited report. A private multi-tenant catalogue on Next.js and Supabase."
+   "text": "A scout pass finds the story beats, then one research agent runs per beat. A ten-criteria pipeline with gating rules and a cited report. A private multi-tenant catalogue on Next.js and Supabase, deployed to Cloudflare, used by readers besides me. Supabase row-level security, deny by default, across 15 SQL migrations. One login shared with Leeseidon, with a subscription entitlement check. SEC filings first for financial data, and an adversarial pass that challenges the bull case. 7 multi-agent workflow scripts and a read-only Interactive Brokers skill bundle."
   },
   {
    "id": "project:leetee:decisions",
@@ -132,14 +132,14 @@
    "source": "project",
    "title": "A multi-agent RAG planner · Overview",
    "url": "#/work/agent-pilot",
-   "text": "A multi-agent RAG planner. A research pilot at AI Singapore: specialist LangGraph agents discover venues, recommend activities and optimise an itinerary over a retrieval layer. Three LangGraph agents plan an outing together. A research pilot, not a production system. Organisation: AI Singapore. Year: 2024. Status: Research pilot. Theme: Multi-agent systems. Stack: LangGraph, RAG, Pinecone, FastAPI, AWS."
+   "text": "A multi-agent RAG planner. A side project: specialist LangGraph agents discover venues, recommend activities and optimise an itinerary over a retrieval layer. Three LangGraph agents plan an outing together. A side project with two friends. Organisation: Personal. Year: 2024–25. Status: Side project. Theme: Multi-agent systems. Stack: LangGraph, RAG, Pinecone, FastAPI, AWS."
   },
   {
    "id": "project:agent-pilot:role",
    "source": "project",
    "title": "A multi-agent RAG planner · My role",
    "url": "#/work/agent-pilot",
-   "text": "Part of the team on a research pilot. The problem: Testing how specialist agents coordinate on a planning task with real retrieval."
+   "text": "Built with two friends. The problem: Testing how specialist agents coordinate on a planning task with real retrieval."
   },
   {
    "id": "project:agent-pilot:how",
@@ -160,21 +160,21 @@
    "source": "project",
    "title": "A multi-agent RAG planner · Key decisions",
    "url": "#/work/agent-pilot",
-   "text": "Kept as a research pilot; the clinical NLP work was the production system."
+   "text": "One agent per job (venues, activities, itinerary) instead of one prompt doing everything."
   },
   {
    "id": "project:agent-pilot:results",
    "source": "project",
    "title": "A multi-agent RAG planner · Results",
    "url": "#/work/agent-pilot",
-   "text": "3 specialist agents. AWS ECS and ECR. Pilot research, not production."
+   "text": "3 specialist agents. AWS ECS and ECR. 3 builders."
   },
   {
    "id": "project:role-fit:overview",
    "source": "project",
    "title": "A role-fit agent · Overview",
    "url": "#/work/role-fit",
-   "text": "A role-fit agent, running on this site. The multi-agent system built into this portfolio. A visitor pastes a job description; an orchestrator, up to six parallel retrievers, a verifier and a writer return a cited fit report with the gaps listed, then answer follow-up questions in my voice. Questions get their own team: a lead agent that answers narrow ones on a fast path and hands broad ones to parallel researchers, a verifier and a writer. Every answer carries a confidence score worked out in code. No login, a hard monthly spend cap, and the whole run streams to the page as a live graph. Paste a job description and my agents check it against my published work. Every claim is an exact quote, and you watch the agent graph run live. Organisation: Personal. Year: 2026. Status: Open source. Theme: Multi-agent systems. Stack: Cloudflare Workers, Durable Objects, OpenAI Responses API, Server-sent events, Function calling, MCP server, BM25, TypeScript, React."
+   "text": "A role-fit agent, running on this site. The multi-agent system built into this portfolio. A visitor pastes a job description; an orchestrator, up to six parallel retrievers, a verifier and a writer return a cited fit report with the gaps listed, then answer follow-up questions in the first person. Questions get their own team: a lead agent that answers narrow ones on a fast path and hands broad ones to parallel researchers, a verifier and a writer. Every answer carries a confidence score worked out in code. No login, a hard monthly spend cap, and the whole run streams to the page as a live graph. Paste a job description and my agents check it against my published work. Every claim is an exact quote, and you watch the agent graph run live. Organisation: Personal. Year: 2026. Status: Open source. Theme: Multi-agent systems. Stack: Cloudflare Workers, Durable Objects, OpenAI Responses API, Server-sent events, Function calling, MCP server, BM25, TypeScript, React."
   },
   {
    "id": "project:role-fit:role",
@@ -195,7 +195,7 @@
    "source": "project",
    "title": "A role-fit agent · What I built",
    "url": "#/work/role-fit",
-   "text": "An agent loop on a Cloudflare Worker: gate, orchestrator, up to six parallel retrievers, verifier, writer. When the verifier rejects evidence, the orchestrator chooses new search terms and up to three requirements go round once more. Code bounds the loop: two rounds and at most 15 model calls a run, each with a strict JSON schema and an output cap. A verdict can only be raised by new evidence that passes the same checks; the verifier itself can only lower one. Retrieval is BM25 over excerpts built from this site's case studies and my CV. Search runs in code; a model only judges what search found. Every quote must be an exact substring of the excerpt it cites, checked in code before it is shown. A claim with no surviving quote becomes a gap. Typed server-sent events stream each step with elapsed time, tokens and estimated cost. The page draws them as a live graph: nodes light up as they work, the loop back is drawn when it is taken, and clicking a node shows what it was asked and what it returned. Cached and recorded runs replay at the pace they really ran. A Durable Object ledger reserves the worst-case cost before every call and settles the real one afterwards, so the monthly cap is a hard limit and not an alert. No login: a signed anonymous token and a salted IP hash, a Turnstile check, 5 runs and 10 questions a day, and a 10-second gap between runs. Follow-up questions run a bounded agent loop. A lead agent must call one function a turn: decline, answer directly, send out up to three researchers in parallel, or hand the checked evidence to the writer. The verifier's findings go back to the lead, which can send one sub-question out again. Code bounds it: three turns and at most nine model calls a question. Model and code each do what they are good at, and the page labels which is which. Models choose the route, pick quotes and write prose. Code runs the search, checks every quote, enforces the bounds and computes the confidence: checks passed over checks made, across quote grounding, the prose screen and the verifier's verdict on each sub-question. A low score says so and asks the reader to check with me. Every model step has a fallback in code. If the lead fails, the fast path runs. A fast answer that scores under 0.8 is never shown: the question escalates to the researchers. If the writer fails, the verified quotes are shown alone. With no grounded quote there is no claim at all. A call rejected before any output (rate limit, server error, dropped connection) is retried twice with exponential backoff and jitter, inside one budget reservation. A call that hangs for 20 seconds is tried once more, and the abandoned attempt is charged to the budget at its worst case. The graph shows the wait. Memory is compacted, not cut: the last two turns stay word for word and older ones are folded into a running summary every other question, kept on the server so the visitor cannot rewrite it. Refused questions are never remembered. A CV quote opens the résumé itself in a side drawer with the passage highlighted. Word positions come from the same PDF at build time, so the highlight is drawn by lookup, not by a model. The answer step's fixed rules and CV excerpts travel in the instructions block, which the provider's prompt cache reuses: about half of each question's input is read from the cache, for every visitor. Tool use is real function calling. The report orchestrator's two moves are calls: one starts a retriever per requirement, one redirects them after the verifier. The chat lead chooses among four. The retrievers are sub-agents with their own instructions and context, and they report back through typed results, not free text. A read-only MCP server on the same Worker publishes the search and one excerpt lookup, so any MCP client can query my published work. It makes no model call, so it cannot spend the budget. There is deliberately no open agent-to-agent endpoint: an agent anyone could call would let anyone spend it."
+   "text": "An agent loop on a Cloudflare Worker: gate, orchestrator, up to six parallel retrievers, verifier, writer. When the verifier rejects evidence, the orchestrator chooses new search terms and up to three requirements go round once more. Code bounds the loop: two rounds and at most 15 model calls a run, each with a strict JSON schema and an output cap. A verdict can only be raised by new evidence that passes the same checks; the verifier itself can only lower one. Retrieval is BM25 over excerpts built from this site's case studies and my CV. Search runs in code; a model only judges what search found. Every quote must be an exact substring of the excerpt it cites, checked in code before it is shown. A claim with no surviving quote becomes a gap. Typed server-sent events stream each step with elapsed time, tokens and estimated cost. The page draws them as a live graph: nodes light up as they work, the loop back is drawn when it is taken, and clicking a node shows what it was asked and what it returned. Cached and recorded runs replay at the pace they really ran. A Durable Object ledger reserves the worst-case cost before every call and settles the real one afterwards, so the monthly cap is a hard limit and not an alert. No login: a signed anonymous token and a salted IP hash, a Turnstile check, 5 runs and 10 questions a day, and a 10-second gap between runs. Follow-up questions run a bounded agent loop. A lead agent must call one function a turn: decline, answer directly, send out up to three researchers in parallel, or hand the checked evidence to the writer. The verifier's findings go back to the lead, which can send one sub-question out again. Code bounds it: three turns and at most nine model calls a question. Model and code each do what they are good at, and the page labels which is which. Models choose the route, pick quotes and write prose. Code runs the search, checks every quote, enforces the bounds and computes the confidence: checks passed over checks made, across quote grounding, the prose screen and the verifier's verdict on each sub-question. A low score says so and asks the reader to check with me. Every model step has a fallback in code. If the lead fails, the fast path runs. A fast answer that scores under 0.8 is never shown: the question escalates to the researchers. If the writer fails, the verified quotes are shown alone. With no grounded quote there is no claim at all. A call rejected before any output (rate limit, server error, dropped connection) is retried twice with exponential backoff and jitter, inside one budget reservation. A call that hangs for 20 seconds is tried once more, and the abandoned attempt is charged to the budget at its worst case. The graph shows the wait. Memory is compacted, not cut: the last two turns stay word for word and older ones are folded into a running summary every other question, kept on the server so the visitor cannot rewrite it. Refused questions are never remembered. A CV quote opens the résumé itself in a side drawer with the passage highlighted. Word positions come from the same PDF at build time, so the highlight is drawn by lookup, not by a model. The answer step's fixed rules and CV excerpts travel in the instructions block, which the provider's prompt cache reuses: about half of each question's input is read from the cache, for every visitor. Tool use is real function calling. The report orchestrator's two moves are calls: one starts a retriever per requirement, one redirects them after the verifier. The chat lead chooses among four. The retrievers are sub-agents with their own instructions and context, and they report back through typed results, not free text. An offline eval runs the real pipeline against a real model under its own spend cap: 13 job descriptions and 27 questions, each with expectations such as a minimum of strong matches, named gaps and no invented experience. Abuse limits in layers: KV, a rate-limit binding and an in-memory burst limit. A read-only MCP server on the same Worker publishes the search and one excerpt lookup, so any MCP client can query my published work. It makes no model call, so it cannot spend the budget. There is deliberately no open agent-to-agent endpoint: an agent anyone could call would let anyone spend it."
   },
   {
    "id": "project:role-fit:decisions",
@@ -216,14 +216,14 @@
    "source": "project",
    "title": "Jarvis · Overview",
    "url": "#/work/jarvis",
-   "text": "Jarvis, the agent I run my day on. My own long-running agent, built on Claude Code and in daily use since early 2026. It wakes on timers and on new mail, calendar and chat events, briefs me, files what I tell it, and asks my phone before it sends anything. One long-lived Claude Code session that briefs me, keeps my notes, and asks before it sends anything. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: Claude Code, MCP, Python, SQLite + vectors, on-device speech."
+   "text": "Jarvis, a personal agent that runs in the background. My own long-running agent, built on Claude Code and in daily use since early 2026. It wakes on timers and on new mail, calendar and chat events, briefs me, files what I tell it, and asks my phone before it sends anything. One long-lived Claude Code session that briefs me, keeps my notes, and asks before it sends anything. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: Claude Code, MCP, Python, SQLite + vectors, on-device speech."
   },
   {
    "id": "project:jarvis:role",
    "source": "project",
    "title": "Jarvis · My role",
    "url": "#/work/jarvis",
-   "text": "Solo. I designed it, and built it by planning with Claude and implementing with Codex. The problem: Mail, calendar, notes, training and job search lived in separate apps. I wanted one assistant that remembers, works in the background, and never acts on my behalf without asking."
+   "text": "Solo: design and build. The problem: Mail, calendar, notes, training and job search lived in separate apps. I wanted one assistant that remembers, works in the background, and never acts on my behalf without asking."
   },
   {
    "id": "project:jarvis:how",
@@ -237,61 +237,61 @@
    "source": "project",
    "title": "Jarvis · What I built",
    "url": "#/work/jarvis",
-   "text": "One long-lived Claude Code session woken by launchd jobs and local watchers. An event queue with cursors and idempotent handling, so every pass is safe to repeat. A Markdown knowledge base as the source of truth, with a rebuildable SQLite and vector index. Voice notes over chat with on-device speech-to-text and text-to-speech. A pre-tool-use hook that gates outbound and destructive actions and relays approvals to my phone."
+   "text": "One long-lived Claude Code session woken by launchd jobs and local watchers. An event queue with cursors and idempotent handling, so every pass is safe to repeat. A Markdown knowledge base as the source of truth, with a rebuildable SQLite and vector index. Voice notes over chat with on-device speech-to-text and text-to-speech. A pre-tool-use hook that gates outbound and destructive actions and relays approvals to my phone. Hybrid recall on every prompt: a resident daemon combines semantic and keyword search in about 70 ms. Local embeddings with fastembed and sqlite-vec. Gmail and Calendar watchers over OAuth, a Strava MCP, and a custom MCP channel server for events. A bank-alert parser for 5 banks that backfilled 225 transactions. Voice replies in 1.5 s warm vs 4.5 s cold, with faster-whisper and Kokoro."
   },
   {
    "id": "project:jarvis:decisions",
    "source": "project",
    "title": "Jarvis · Key decisions",
    "url": "#/work/jarvis",
-   "text": "Explored OpenClaw and ClaudeClaw early in 2026, then built my own. Every email and web page is untrusted data, never instructions. Timing lives in the operating system's scheduler, not in the agent."
+   "text": "Explored OpenClaw and ClaudeClaw early in 2026, then built my own. Every email and web page is untrusted data, never instructions, with the prompt-injection defence written down. Timing lives in the operating system's scheduler, not in the agent."
   },
   {
    "id": "project:jarvis:results",
    "source": "project",
    "title": "Jarvis · Results",
    "url": "#/work/jarvis",
-   "text": "27 custom skills. 46 test files. 9 architecture decision records."
+   "text": "27 custom skills. 51 test files. 9 architecture decision records."
   },
   {
    "id": "project:mcp-pack:overview",
    "source": "project",
-   "title": "An MCP server and skill pack generated from the API · Overview",
+   "title": "An MCP server · Overview",
    "url": "#/work/mcp-pack",
-   "text": "An MCP server and skill pack generated from the API. A tool surface for AI assistants: an MCP server where every call runs as the signed-in user, and a Claude Code skill pack generated from the OpenAPI spec so new endpoints become agent tools automatically. Assistants drive the product as the signed-in user, and the skill pack regenerates from the OpenAPI spec. Organisation: TrustPlus AI. Year: 2025–26. Status: Employer. Theme: AI-driven workflows. Stack: MCP, Claude Code skills, OpenAPI, OAuth, JWT."
+   "text": "An MCP server, and a skill pack generated from the API. A tool surface for AI assistants: an MCP server where every call runs as the signed-in user, and a Claude Code skill pack generated from the OpenAPI spec so new endpoints become agent tools automatically. Assistants drive the product as the signed-in user, and the skill pack regenerates from the OpenAPI spec. Organisation: TrustPlus AI. Year: 2025–26. Status: Employer. Theme: AI-driven workflows. Stack: MCP, Claude Code skills, OpenAPI, OAuth, JWT."
   },
   {
    "id": "project:mcp-pack:role",
    "source": "project",
-   "title": "An MCP server and skill pack generated from the API · My role",
+   "title": "An MCP server · My role",
    "url": "#/work/mcp-pack",
    "text": "Built the MCP server and the generator for the skill pack. The problem: Assistants, skills and tests each needed their own way into the product, with their own authentication, and every new endpoint meant hand-writing another tool."
   },
   {
    "id": "project:mcp-pack:how",
    "source": "project",
-   "title": "An MCP server and skill pack generated from the API · How it works",
+   "title": "An MCP server · How it works",
    "url": "#/work/mcp-pack",
-   "text": "Spec: The product's OpenAPI spec. Generate: 14 Claude Code skills, one per router. Serve: An MCP server with 8 tools. Sign in: OAuth and JWT as the acting user. Audit: Every call logged under that user."
+   "text": "Spec: The product's OpenAPI spec. Generate: 14 Claude Code skills, one per router. Serve: A hand-built MCP server with 8 tools. Sign in: OAuth and JWT as the acting user. Scope: Every call runs with that user's permissions."
   },
   {
    "id": "project:mcp-pack:built",
    "source": "project",
-   "title": "An MCP server and skill pack generated from the API · What I built",
+   "title": "An MCP server · What I built",
    "url": "#/work/mcp-pack",
-   "text": "An MCP server over the product API with OAuth and JWT sign-in as the acting user. Transparent re-authentication when a session expires. A Claude Code skill pack and CLI shim generated from the OpenAPI spec, one skill per router."
+   "text": "An MCP server over the product API with OAuth and JWT sign-in as the acting user. Transparent re-authentication when a session expires. A Claude Code skill pack and CLI shim generated from the OpenAPI spec, one skill per router. End-to-end tests in Playwright where an LLM drives the product as a user, through the skills. Team skills for code review, change planning, test review and changelogs."
   },
   {
    "id": "project:mcp-pack:decisions",
    "source": "project",
-   "title": "An MCP server and skill pack generated from the API · Key decisions",
+   "title": "An MCP server · Key decisions",
    "url": "#/work/mcp-pack",
    "text": "Generate the tool surface from the API contract instead of hand-writing it. Scopes inherit the acting user, so permissions and the audit trail stay correct."
   },
   {
    "id": "project:mcp-pack:results",
    "source": "project",
-   "title": "An MCP server and skill pack generated from the API · Results",
+   "title": "An MCP server · Results",
    "url": "#/work/mcp-pack",
    "text": "8 MCP tools. 14 skills generated from the spec. 1 auth flow shared by every client."
   },
@@ -300,14 +300,14 @@
    "source": "project",
    "title": "Kestrel MCP · Overview",
    "url": "#/work/kestrel-mcp",
-   "text": "Kestrel MCP, policy review inside an assistant. An MCP-native version of Kestrel. Instead of another app, an adviser's AI assistant reviews old insurance policies through MCP tools served from a single Cloudflare Worker. The MCP-native sibling of Kestrel: an AI assistant reviews policies through tools on one Cloudflare Worker. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: MCP, Cloudflare Workers, TypeScript."
+   "text": "Kestrel MCP, policy review inside an assistant. An MCP-native version of Kestrel. The adviser's own AI assistant reviews old insurance policies through MCP tools on one Cloudflare Worker. The server has no model of its own: it validates and stores what the assistant maps. The MCP-native sibling of Kestrel: an AI assistant reviews policies through tools on one Cloudflare Worker. Organisation: Personal. Year: 2026. Status: Live · private repo. Theme: AI-driven workflows. Stack: MCP, OAuth 2.1, Cloudflare Workers, D1, TypeScript."
   },
   {
    "id": "project:kestrel-mcp:role",
    "source": "project",
    "title": "Kestrel MCP · My role",
    "url": "#/work/kestrel-mcp",
-   "text": "Solo. The problem: Advisers already work inside an AI assistant; they needed policy review there, with the same validation as the full app."
+   "text": "Solo. The problem: Bring policy review into the assistant an adviser already uses, with the same validation as the full app and no model bill on the server."
   },
   {
    "id": "project:kestrel-mcp:how",
@@ -321,14 +321,14 @@
    "source": "project",
    "title": "Kestrel MCP · What I built",
    "url": "#/work/kestrel-mcp",
-   "text": "An MCP server on one Cloudflare Worker. Document upload, field mapping with confidence and citations, gap flags. Validated saves of records, summaries and customer reports."
+   "text": "An MCP server on one Cloudflare Worker: D1 with Drizzle, R2, KV and a Durable Object for MCP sessions. The assistant maps fields with confidence and citations; the server validates every save. OAuth 2.1 for MCP with Google as the identity provider; Google sign-in with CSRF protection for the web UI. An append-only audit table enforced by database triggers. Ported from a Python FastAPI version to TypeScript; 19 test files; CI deploys and migrates."
   },
   {
    "id": "project:kestrel-mcp:decisions",
    "source": "project",
    "title": "Kestrel MCP · Key decisions",
    "url": "#/work/kestrel-mcp",
-   "text": "Ship the product as tools for an assistant, not a separate UI. Validation happens on the server for every save, whatever the assistant sends."
+   "text": "Ship the product as tools for an assistant, not a separate UI. Validation happens on the server for every save, whatever the assistant sends. Least privilege: the assistant has no confirm or delete tool. Users bring their own assistant, so the server spends almost nothing on inference."
   },
   {
    "id": "project:kestrel-mcp:results",
@@ -342,14 +342,14 @@
    "source": "project",
    "title": "A WhatsApp concierge with an approval gate · Overview",
    "url": "#/work/lee-rooms",
-   "text": "A WhatsApp concierge with an approval gate. A WhatsApp concierge agent for a co-living rental brand. It answers enquiries from listing data and saves a booking only after the owner approves it on Telegram. An agent that answers rental enquiries on WhatsApp and books only with the owner's approval. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: Claude Code, WhatsApp, Telegram, TypeScript."
+   "text": "A WhatsApp concierge with an approval gate. A WhatsApp concierge agent. It answers enquiries from listing data and saves a booking only after the owner approves it on Telegram. An agent that answers enquiries on WhatsApp and books only with the owner's approval. Organisation: Personal. Year: 2026. Status: Private. Theme: AI-driven workflows. Stack: Claude Code, WhatsApp, Telegram, TypeScript."
   },
   {
    "id": "project:lee-rooms:role",
    "source": "project",
    "title": "A WhatsApp concierge with an approval gate · My role",
    "url": "#/work/lee-rooms",
-   "text": "Solo. The problem: Rental enquiries arrive at all hours, and most are the same questions about rooms, prices and location."
+   "text": "Solo. The problem: Enquiries arrive at all hours, and most repeat the same questions about price, availability and location."
   },
   {
    "id": "project:lee-rooms:how",
@@ -363,7 +363,7 @@
    "source": "project",
    "title": "A WhatsApp concierge with an approval gate · What I built",
    "url": "#/work/lee-rooms",
-   "text": "A long-lived agent session wired to WhatsApp. Answers grounded in the listings, with completeness checks. A Telegram approval gate for bookings, or for every reply. A local dashboard for the owner."
+   "text": "A long-lived agent session wired to WhatsApp. Answers grounded in the listings; the listings feed has a completeness check. A Telegram approval gate for bookings, or for every reply. A local dashboard for the owner. A pre-tool-use guardrail hook on every agent action. Runs on a Claude subscription and refuses to start if an API key is set, so there is no metered bill. 31 test files."
   },
   {
    "id": "project:lee-rooms:decisions",
@@ -377,7 +377,7 @@
    "source": "project",
    "title": "A WhatsApp concierge with an approval gate · Results",
    "url": "#/work/lee-rooms",
-   "text": "1 long-lived agent session. 2 approval modes. 0 unsolicited messages."
+   "text": "1 long-lived agent session. 2 approval modes. 31 test files."
   },
   {
    "id": "project:twc:overview",
@@ -405,7 +405,7 @@
    "source": "project",
    "title": "TWC · What I built",
    "url": "#/work/twc",
-   "text": "An agent loop of up to 32 iterations with streamed phase labels and permission-gated tool dispatch. Receipt vision with structured outputs validated by Zod. One client interface over Anthropic, OpenAI and local OpenAI-compatible servers, each a hand-written fetch call. API keys stay in a passphrase-encrypted vault in the browser, with spend caps."
+   "text": "An agent loop of up to 32 iterations with streamed phase labels and permission-gated tool dispatch. Receipt vision with structured outputs validated by Zod. A token-bucket rate limiter (10 a minute, 100 an hour), a preflight that rejects oversized images or context before spending tokens, and retries that honour Retry-After. A data-consent dialog per model provider; 43 test files; CI lints, tests, builds and deploys. One client interface over Anthropic, OpenAI and local OpenAI-compatible servers, each a hand-written fetch call. API keys stay in a passphrase-encrypted vault in the browser, with spend caps."
   },
   {
    "id": "project:twc:decisions",
@@ -419,14 +419,14 @@
    "source": "project",
    "title": "TWC · Results",
    "url": "#/work/twc",
-   "text": "32 max iterations per agent run. 0 servers or databases. 5 idempotent tools."
+   "text": "32 max iterations per agent run. 0 servers or databases. 43 test files."
   },
   {
    "id": "project:leeseidon:overview",
    "source": "project",
    "title": "Leeseidon · Overview",
    "url": "#/work/leeseidon",
-   "text": "Leeseidon, investment tracking with an encryption-blind server. A privacy-first investment tracker. Agents turn statements, PDFs and screenshots into trades, and the sync server only ever sees ciphertext. Agents read your statements; the sync server only ever stores ciphertext. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: React, TypeScript, Cloudflare Workers, AES-GCM."
+   "text": "Leeseidon, investment tracking with an encryption-blind server. A privacy-first investment tracker. Agents turn statements, PDFs and screenshots into trades, and the sync server only ever sees ciphertext. Agents read your statements; the sync server only ever stores ciphertext. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: React, TypeScript, Cloudflare Workers, AES-GCM, OAuth."
   },
   {
    "id": "project:leeseidon:role",
@@ -447,7 +447,7 @@
    "source": "project",
    "title": "Leeseidon · What I built",
    "url": "#/work/leeseidon",
-   "text": "Multi-turn agents extract trades from CSV, PDF and images through schematized tools. A model-agnostic tool executor with streaming, retries and rate-limit handling. One isomorphic TypeScript core powers the web app and a CLI that ships Claude Code skills. Heavy simulations run in Web Workers."
+   "text": "Multi-turn agents extract trades from CSV, PDF and images through schematized tools. A model-agnostic tool executor with streaming, retries and rate-limit handling. One isomorphic TypeScript core powers the web app and a CLI that ships Claude Code skills. A Monte Carlo retirement planner runs in a Web Worker. Auth: PBKDF2-SHA512 passwords, Google OAuth with single-use state, hashed session tokens, per-email lockout, and responses that never reveal whether an account exists. Index columns are HMAC-blinded, not just encrypted. Single sign-on across six apps on subdomains, with server-side revocation. A billing webhook (Polar) with HMAC signature checks and entitlements. Strict CSP, HSTS and COOP headers at the edge; a PKCE flow for the CLI. 757 test files; CI runs app, worker and CLI tests plus a data-contract check."
   },
   {
    "id": "project:leeseidon:decisions",
@@ -461,14 +461,14 @@
    "source": "project",
    "title": "Leeseidon · Results",
    "url": "#/work/leeseidon",
-   "text": "E2E encrypted sync. 1 TypeScript core for web and CLI. Live at leeseidon.com."
+   "text": "E2E encrypted sync. 1 TypeScript core for web and CLI. 6 apps on one sign-in. 757 test files."
   },
   {
    "id": "project:tide-tally:overview",
    "source": "project",
    "title": "Tide Tally · Overview",
    "url": "#/work/tide-tally",
-   "text": "Tide Tally, an offline-first expense tracker with an agent. A mobile-first expense tracker built around one number and one gesture: how much is left, and three taps to log what you just spent. It works offline, and an agent turns receipts and statements into draft expenses you review before anything is saved. Three taps to log a spend, even with no signal; hand the agent a receipt or statement and review what it drafts. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: React, TypeScript, IndexedDB, Cloudflare D1, WebGL, Capacitor, OAuth."
+   "text": "Tide Tally, an offline-first expense tracker with an agent. A mobile-first expense tracker. The home screen shows how much is left, and logging a spend takes three taps. It works offline, and an agent turns receipts and statements into draft expenses you review before anything is saved. Three taps to log a spend, even with no signal; hand the agent a receipt or statement and review what it drafts. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: React, TypeScript, IndexedDB, Cloudflare D1, WebGL, Capacitor, OAuth."
   },
   {
    "id": "project:tide-tally:role",
@@ -489,7 +489,7 @@
    "source": "project",
    "title": "Tide Tally · What I built",
    "url": "#/work/tide-tally",
-   "text": "React 19, TypeScript and Tailwind on Vite, with a hand-written WebGL shader for the water. Offline-first storage in IndexedDB (Dexie) with background sync to a Cloudflare Pages Function and D1, on one origin. An agent that turns an uploaded receipt or statement into draft expenses on the same review screen as manual entry. An OAuth device flow with three scopes, so a coding agent or a script can log an expense, with an OpenAPI spec generated from the route table and a skill package published by CI. Android and iOS builds with Capacitor; Vitest, Playwright (including an offline-capture suite) and invariant checks in CI."
+   "text": "React 19, TypeScript and Tailwind on Vite, with a hand-written WebGL shader for the water. Offline-first storage in IndexedDB (Dexie) with background sync to a Cloudflare Pages Function and D1, on one origin. An agent that turns an uploaded receipt or statement into draft expenses on the same review screen as manual entry. An OAuth device flow with three scopes, so a coding agent or a script can log an expense, with an OpenAPI spec generated from the route table and a skill package published by CI. Android and iOS builds with Capacitor; Vitest, Playwright (including an offline-capture suite) and invariant checks in CI. An eval harness scores the receipt agent's per-field precision and recall against labelled receipts. A hard AI cost cap: the worst case is reserved in SQL before every call, then settled. A tenant-isolation suite drives the real router with two sessions; 308 test files. Sign in with Apple and Google, checked server-side; family sharing. Subscription billing built for Paddle, the App Store and Google Play, with signed notifications verified. Moved the agent from Chat Completions to the OpenAI Responses API."
   },
   {
    "id": "project:tide-tally:decisions",
@@ -510,7 +510,7 @@
    "source": "project",
    "title": "Verona · Overview",
    "url": "#/work/verona",
-   "text": "Verona, a wedding app an agent can drive. A mobile-first wedding app, from guest list to the dance floor. An OpenAPI contract keeps the API in step with the UI, so an agent can do anything a guest or couple can. Guest list to dance floor: RSVPs, seating and a live photo wall, with an API an agent can use. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: Next.js, Supabase, row-level security, PWA."
+   "text": "Verona, a wedding app an agent can drive. A mobile-first wedding app for guests and couples: RSVPs, seating and a live photo wall. Every feature is in an OpenAPI contract, so an agent can use the app too. RSVPs, seating and a live photo wall, with an API an agent can use. Organisation: Personal. Year: 2026. Status: Live. Theme: AI-native products. Stack: Next.js, Supabase, row-level security, PWA."
   },
   {
    "id": "project:verona:role",
@@ -531,7 +531,7 @@
    "source": "project",
    "title": "Verona · What I built",
    "url": "#/work/verona",
-   "text": "Next.js (App Router) PWA on Cloudflare Workers. Supabase Postgres with row-level security, Google sign-in and realtime updates. Photo uploads to object storage and a moderated live photo wall. Playwright tests and CI auto-deploy; English, Chinese and Malay."
+   "text": "Next.js (App Router) PWA on Cloudflare Workers. Supabase Postgres with row-level security, Google sign-in and realtime updates. Photo uploads to object storage and a moderated live photo wall. Vitest in CI with auto-deploy; English, Chinese and Malay. CI checks the OpenAPI contract against the generated agent skills. Claude Code skills generated from the OpenAPI spec, and scoped tokens for agents. Row-level security keyed on each wedding, so couples never see each other's data. A realtime load test against the free tier's limit of about 200 connections. Web Push notifications, consent records and an admin view of usage and cost; 107 test files."
   },
   {
    "id": "project:verona:decisions",
@@ -559,21 +559,21 @@
    "source": "project",
    "title": "Résumé Builder · My role",
    "url": "#/work/resume-builder",
-   "text": "Solo. I directed Claude Code, which wrote most of the code. The problem: Every application meant rewriting a CV from a blank page, and claims drifted from what actually happened."
+   "text": "Built with one collaborator, who reworked the UI and structure. I directed Claude Code, which wrote most of my part. The problem: Every application meant rewriting a CV from a blank page, and claims drifted from what actually happened."
   },
   {
    "id": "project:resume-builder:how",
    "source": "project",
    "title": "Résumé Builder · How it works",
    "url": "#/work/resume-builder",
-   "text": "Notes: One source of truth for career facts. Tailor: A skill maps a job description to evidence. Build: MCP tools compile the PDF. Check: An ATS check on every build."
+   "text": "Notes: One source of truth for career facts. Tailor: A skill maps a job description to evidence. Build: MCP tools compile the PDF. Check: An ATS check for ATS templates."
   },
   {
    "id": "project:resume-builder:built",
    "source": "project",
    "title": "Résumé Builder · What I built",
    "url": "#/work/resume-builder",
-   "text": "Skills for building the career notes, tailoring a résumé and writing a cover letter. An MCP server that exposes the deterministic build steps (compile, checks) as tools. A local companion app alongside the plugin."
+   "text": "Skills for building the career notes, tailoring a résumé and writing a cover letter. An MCP server that exposes the deterministic build steps (compile, checks) as tools. A local companion app alongside the plugin. PDF and .docx output; compiles time out safely and writes are atomic. CI runs pytest, a front-end build and manifest validation."
   },
   {
    "id": "project:resume-builder:decisions",
@@ -587,14 +587,14 @@
    "source": "project",
    "title": "Résumé Builder · Results",
    "url": "#/work/resume-builder",
-   "text": "3 skills. 15 MCP tools. ATS check on every build."
+   "text": "3 skills. 15 MCP tools. PDF + .docx output."
   },
   {
    "id": "project:eval-code:overview",
    "source": "project",
    "title": "eval-code · Overview",
    "url": "#/work/eval-code",
-   "text": "eval-code, an agent-first eval workbench. A workbench that replaces notebooks for LLM, RAG and multi-agent projects: ingest and clean data, define an eval target, run evals under a hard spend cap and compare runs. A workspace for LLM, RAG and agent projects: data in, evals run under a hard spend cap, failures compared. Organisation: Personal. Year: 2026. Status: Early. Theme: Tooling for AI work. Stack: Python, LLM evals, RAG, agents."
+   "text": "eval-code, an agent-first eval workbench. A workbench for LLM, RAG and multi-agent projects: ingest and clean data, define an eval target, run evals under a hard spend cap and compare runs. A workspace for LLM, RAG and agent projects: data in, evals run under a hard spend cap, failures compared. Organisation: Personal. Year: 2026. Status: Early. Theme: Tooling for AI work. Stack: Python, LLM evals, RAG, Langfuse, DuckDB, Next.js."
   },
   {
    "id": "project:eval-code:role",
@@ -615,7 +615,7 @@
    "source": "project",
    "title": "eval-code · What I built",
    "url": "#/work/eval-code",
-   "text": "Dataset ingest, cleaning and chart-based exploration. Eval targets for RAG and agent systems. A spend tracker that stops runs at a cap."
+   "text": "Dataset ingest, cleaning and chart-based exploration. Eval targets for RAG and agent systems. A spend tracker that stops runs at a cap; the CLI requires a maximum spend. LLM-as-judge adapters and RAG metrics: retrieval hit rate and citation precision. Langfuse tracing and permission modes (read-only, workspace write). Polars and DuckDB for data; FastAPI with server-sent events and a Next.js UI. 82 pytest files and 11 Playwright specs."
   },
   {
    "id": "project:eval-code:decisions",
@@ -629,7 +629,7 @@
    "source": "project",
    "title": "eval-code · Results",
    "url": "#/work/eval-code",
-   "text": "Hard spend cap on every run. 1 workspace from raw data to compared runs. May 2026 start."
+   "text": "Hard spend cap on every run. 82 pytest files. 11 Playwright specs."
   },
   {
    "id": "project:clinical-nlp:overview",
@@ -657,7 +657,7 @@
    "source": "project",
    "title": "Clinical NLP in production · What I built",
    "url": "#/work/clinical-nlp",
-   "text": "Data cleaning and exploration of unstructured clinical notes. BioClinicalBERT fine-tuned in PyTorch for named-entity recognition, with other BERT models as baselines. Extracted entities feed a downstream intervention classifier. Evaluated on held-out data (precision, recall, F1); Kedro pipelines and MLflow tracking. Served with FastAPI and Docker, and handed over with documentation."
+   "text": "Data cleaning and exploration of unstructured clinical notes. BioClinicalBERT fine-tuned in PyTorch for named-entity recognition, with other BERT models as baselines. Extracted entities feed a downstream intervention classifier. Evaluated on held-out data (precision, recall, F1); Kedro pipelines and MLflow tracking. Served with FastAPI and Docker, and handed over with documentation. RAG over clinical literature to disambiguate extracted entities. Worked with clinical domain experts, with patient-data privacy as a constraint throughout."
   },
   {
    "id": "project:clinical-nlp:decisions",
@@ -671,7 +671,7 @@
    "source": "project",
    "title": "Clinical NLP in production · Results",
    "url": "#/work/clinical-nlp",
-   "text": "5 models in the pipeline. 12 apprentices mentored. EBM explanations for clinicians."
+   "text": "NER feeding an intervention classifier. 12 apprentices mentored. EBM explanations for clinicians."
   },
   {
    "id": "project:defence-rag:overview",
@@ -706,56 +706,266 @@
    "source": "project",
    "title": "An on-premise RAG assistant for a defence-sector client · Key decisions",
    "url": "#/work/defence-rag",
-   "text": "A fully on-premise stack instead of a cloud model API. Hand complex intents to a person rather than guess."
+   "text": "Hand complex intents to a person rather than guess."
   },
   {
    "id": "project:defence-rag:results",
    "source": "project",
    "title": "An on-premise RAG assistant for a defence-sector client · Results",
    "url": "#/work/defence-rag",
-   "text": "On-prem the data never left. 3 environments: dev, staging, production. HITL hand-off to a person."
+   "text": "On-prem the whole stack ran inside the client's environment. 3 environments: dev, staging, production. HITL hand-off to a person."
   },
   {
-   "id": "project:speech:overview",
+   "id": "project:ledgerlens:overview",
    "source": "project",
-   "title": "Speech-to-text with Whisper · Overview",
-   "url": "#/work/speech",
-   "text": "Speech-to-text with Whisper. An end-to-end model-serving app: Whisper transcription behind FastAPI, a SQLite history and a React front end, all in Docker. Whisper transcription served with FastAPI, with history and a React front end. Organisation: Personal. Year: 2024. Status: Open source. Theme: Applied ML and RAG. Stack: Whisper, FastAPI, React, Docker."
+   "title": "LedgerLens · Overview",
+   "url": "#/work/ledgerlens",
+   "text": "LedgerLens, a fine-tuned model that reads bank statements. Phone photos of small-business bank statements and invoices go in. Checked transaction rows, a cash-flow analysis, cited red flags and a credit memo come out. A 4B vision model fine-tuned with LoRA reads statements better than an 8B model, at half the cost per page. Organisation: Personal. Year: 2026. Status: Experiment. Theme: Applied ML and RAG. Stack: LoRA, Qwen3-VL, Runpod, FastAPI, React."
   },
   {
-   "id": "project:speech:role",
+   "id": "project:ledgerlens:role",
    "source": "project",
-   "title": "Speech-to-text with Whisper · My role",
-   "url": "#/work/speech",
-   "text": "Solo; open source. The problem: A simple, private way to transcribe recordings and keep them searchable."
+   "title": "LedgerLens · My role",
+   "url": "#/work/ledgerlens",
+   "text": "Solo. I framed the question, designed the data, ran the training and checked the results. The problem: Can a small model, fine-tuned on synthetic documents, match a model twice its size on accuracy, speed and cost per page?"
   },
   {
-   "id": "project:speech:how",
+   "id": "project:ledgerlens:how",
    "source": "project",
-   "title": "Speech-to-text with Whisper · How it works",
-   "url": "#/work/speech",
-   "text": "Upload: An audio file. Transcribe: Whisper behind FastAPI. Store: SQLite history. Search: A React front end."
+   "title": "LedgerLens · How it works",
+   "url": "#/work/ledgerlens",
+   "text": "Read: A page image goes to a serverless GPU endpoint and comes back as strict JSON. Check: Code checks every row against the printed running balance. Analyse: Code computes cash flow, balances and red flags, each citing its page and row. Write: The model writes the memo only from the computed figures."
   },
   {
-   "id": "project:speech:built",
+   "id": "project:ledgerlens:built",
    "source": "project",
-   "title": "Speech-to-text with Whisper · What I built",
-   "url": "#/work/speech",
-   "text": "Whisper inference behind a FastAPI gateway. SQLite for transcript history. A React front end, all containerised."
+   "title": "LedgerLens · What I built",
+   "url": "#/work/ledgerlens",
+   "text": "Qwen3-VL 4B fine-tuned with LoRA (Unsloth, one epoch, rank 16) on synthetic statements. Test sets built from statement layouts held back from training. Served on Runpod Serverless with structured output, validated with Pydantic. FastAPI and React app: upload, review table, analysis, memo."
   },
   {
-   "id": "project:speech:decisions",
+   "id": "project:ledgerlens:decisions",
    "source": "project",
-   "title": "Speech-to-text with Whisper · Key decisions",
-   "url": "#/work/speech",
-   "text": "A small split of gateway, inference and storage that can scale out later."
+   "title": "LedgerLens · Key decisions",
+   "url": "#/work/ledgerlens",
+   "text": "Score on layouts the model never saw, so the result is not memorisation. Report the weak result too: real phone photos of printed pages drop to 67%. Endpoints scale to zero when idle, so an unused demo costs nothing."
   },
   {
-   "id": "project:speech:results",
+   "id": "project:ledgerlens:results",
    "source": "project",
-   "title": "Speech-to-text with Whisper · Results",
-   "url": "#/work/speech",
-   "text": "Whisper served with FastAPI. Docker end to end. Multi language and format support."
+   "title": "LedgerLens · Results",
+   "url": "#/work/ledgerlens",
+   "text": "96.5% of lines right on 1,499 unseen-layout pages, vs 57.8% for the 8B. 1.28 s per page vs 2.58 s, on the same GPU. $0.26 per 1,000 pages vs $0.52."
+  },
+  {
+   "id": "project:agentic-memo:overview",
+   "source": "project",
+   "title": "An agentic rebuild of a credit-memo pipeline · Overview",
+   "url": "#/work/agentic-memo",
+   "text": "An agentic rebuild of a credit-memo pipeline. I had built a deterministic pipeline that turns financial statements into a credit memo. This rebuilds it with an orchestrator and specialist agents, on a different stack, so the two can be compared output for output. An orchestrator and parallel specialist agents redo a credit-memo pipeline I had built deterministically. Organisation: Personal. Year: 2026. Status: Experiment. Theme: Multi-agent systems. Stack: Claude, Amazon Bedrock, Python, Multi-agent, PyMuPDF."
+  },
+  {
+   "id": "project:agentic-memo:role",
+   "source": "project",
+   "title": "An agentic rebuild of a credit-memo pipeline · My role",
+   "url": "#/work/agentic-memo",
+   "text": "Solo: design and build. The problem: How does a design where agents plan their own steps compare with a fixed pipeline, on the same statements?"
+  },
+  {
+   "id": "project:agentic-memo:how",
+   "source": "project",
+   "title": "An agentic rebuild of a credit-memo pipeline · How it works",
+   "url": "#/work/agentic-memo",
+   "text": "Spread: An orchestrator sends the PDF to three specialists: P&L, balance sheet, cash flow. Review: An analyst checks and edits the extracted table before anything else runs. Analyse: Three section specialists write the memo's financial section in parallel. Compare: Output keeps the old pipeline's format, so the two can be diffed."
+  },
+  {
+   "id": "project:agentic-memo:built",
+   "source": "project",
+   "title": "An agentic rebuild of a credit-memo pipeline · What I built",
+   "url": "#/work/agentic-memo",
+   "text": "Claude Sonnet 4.6 orchestrator and specialists, Haiku 4.5 for small tasks, on Amazon Bedrock. PyMuPDF and Azure Document Intelligence to read the PDF. Specialist tools: retrieve evidence, compute ratios, write a section draft. Specialists run concurrently; each section gets at most one retry. Handles statements in other languages, such as Korean."
+  },
+  {
+   "id": "project:agentic-memo:decisions",
+   "source": "project",
+   "title": "An agentic rebuild of a credit-memo pipeline · Key decisions",
+   "url": "#/work/agentic-memo",
+   "text": "A person confirms the extracted figures before the analysis runs. Same input and output format as the deterministic pipeline, so results compare directly. Retries with backoff on model timeouts, capped per section."
+  },
+  {
+   "id": "project:agentic-memo:results",
+   "source": "project",
+   "title": "An agentic rebuild of a credit-memo pipeline · Results",
+   "url": "#/work/agentic-memo",
+   "text": "335 recorded runs. 3 specialists running in parallel per phase. 2 phases: extract, then analyse."
+  },
+  {
+   "id": "project:lee-scheduling:overview",
+   "source": "project",
+   "title": "A WhatsApp seminar funnel for financial advisers · Overview",
+   "url": "#/work/lee-scheduling",
+   "text": "A WhatsApp seminar funnel for financial advisers. A team of financial advisers runs seminars. This takes each sign-up from registration to confirmation, Zoom link, seminar and 1-1 follow-up over WhatsApp, with their Google Sheet as the record. Runs a seminar funnel over WhatsApp from the client's own Google Sheet. I then advised the client to use a SaaS product instead. Organisation: Personal. Year: 2026. Status: Client project. Theme: AI-driven workflows. Stack: WhatsApp, MCP, Claude Cowork, Google Sheets, TypeScript."
+  },
+  {
+   "id": "project:lee-scheduling:role",
+   "source": "project",
+   "title": "A WhatsApp seminar funnel for financial advisers · My role",
+   "url": "#/work/lee-scheduling",
+   "text": "Solo: design and build for a client, and the recommendation to replace it. The problem: Seminar reminders had to go out on time and never twice, because double messages to strangers get a WhatsApp number banned."
+  },
+  {
+   "id": "project:lee-scheduling:how",
+   "source": "project",
+   "title": "A WhatsApp seminar funnel for financial advisers · How it works",
+   "url": "#/work/lee-scheduling",
+   "text": "Sync: Read sign-ups from the client's Google Sheet every hour. Plan: Code decides who is due for which message, not a prompt. Approve: Advisers check and approve in Claude Cowork over MCP. Send: One WhatsApp process sends, and handles STOP on arrival."
+  },
+  {
+   "id": "project:lee-scheduling:built",
+   "source": "project",
+   "title": "A WhatsApp seminar funnel for financial advisers · What I built",
+   "url": "#/work/lee-scheduling",
+   "text": "Hourly scheduler: sync, plan, consent check, render, reserve in a ledger. One always-on WhatsApp process is the only sender; the ledger is its queue. MCP tools so advisers read replies and approve messages in Claude Cowork. Landing page, admin console and a Google Apps Script backend for sign-ups."
+  },
+  {
+   "id": "project:lee-scheduling:decisions",
+   "source": "project",
+   "title": "A WhatsApp seminar funnel for financial advisers · Key decisions",
+   "url": "#/work/lee-scheduling",
+   "text": "Scheduling is a tested function with an injected clock, so it can't double-send. The system makes no model calls; the client's only AI cost is the Cowork seat they already had. Messages are timed from the seminar date, so late sign-ups still get the Zoom link before the seminar. Advised the client to move to a SaaS product: their team could run it, it removed the WhatsApp ban risk, it cost less at their volume and it had features they needed."
+  },
+  {
+   "id": "project:lee-scheduling:results",
+   "source": "project",
+   "title": "A WhatsApp seminar funnel for financial advisers · Results",
+   "url": "#/work/lee-scheduling",
+   "text": "Live landing page took real seminar sign-ups. 0 model calls made by the system itself. SaaS recommended over my own build."
+  },
+  {
+   "id": "project:kaki-arcade:overview",
+   "source": "project",
+   "title": "Kaki Arcade · Overview",
+   "url": "#/work/kaki-arcade",
+   "text": "Kaki Arcade, party games on the TV with phones as controllers. A browser games platform for a room of people. The TV runs the game; each player's phone becomes the controller after a QR scan. It ships with three original games. One TV shows the game. Up to 8 players scan a QR code and their phones become controllers. Nothing to install. Organisation: Personal. Year: 2026. Status: In development (Nov 2026). Theme: Games and everyday apps. Stack: WebRTC, Cloudflare Durable Objects, PixiJS, TypeScript, Playwright."
+  },
+  {
+   "id": "project:kaki-arcade:role",
+   "source": "project",
+   "title": "Kaki Arcade · My role",
+   "url": "#/work/kaki-arcade",
+   "text": "Claude Code wrote all of the code. I set the requirements, acceptance criteria and stack, and did the testing. The problem: I wanted games friends and family could play together at home on the TV, without consoles, accounts or app installs."
+  },
+  {
+   "id": "project:kaki-arcade:how",
+   "source": "project",
+   "title": "Kaki Arcade · How it works",
+   "url": "#/work/kaki-arcade",
+   "text": "Host: The TV opens a room and shows a QR code. Join: Phones scan it; a small server only pairs the devices. Play: Phones send input straight to the TV, which runs the game. Fallback: A relay is used only if a direct link fails."
+  },
+  {
+   "id": "project:kaki-arcade:built",
+   "source": "project",
+   "title": "Kaki Arcade · What I built",
+   "url": "#/work/kaki-arcade",
+   "text": "TypeScript monorepo: one Vite web app for the TV and the phones. PixiJS (WebGL) renders the games on the TV. WebRTC data channels from each phone to the TV. Cloudflare Worker with one Durable Object per room for pairing; idle rooms cost nothing. Vitest for game rules; Playwright runs a TV plus several phones over real WebRTC."
+  },
+  {
+   "id": "project:kaki-arcade:decisions",
+   "source": "project",
+   "title": "Kaki Arcade · Key decisions",
+   "url": "#/work/kaki-arcade",
+   "text": "My call: phone input goes straight to the TV, not through a server, to cut lag and hosting cost. The TV is the only source of game state, with seeded, repeatable game logic. Tested at home with 6+ friends; the UI problems they hit were fixed in later builds."
+  },
+  {
+   "id": "project:kaki-arcade:results",
+   "source": "project",
+   "title": "Kaki Arcade · Results",
+   "url": "#/work/kaki-arcade",
+   "text": "32 ms input delay (p95) with 8 phones, against a 50 ms target, on emulated phones. 8 players per room. 3 original games."
+  },
+  {
+   "id": "project:equidistant:overview",
+   "source": "project",
+   "title": "Equidistant · Overview",
+   "url": "#/work/equidistant",
+   "text": "Equidistant, where a group should meet. Give it where each person is, and it names a place they can all reach within a time budget, with each person's travel time shown. Names a real place in Singapore that everyone in a group can reach fairly by travel time. Organisation: Personal. Year: 2026. Status: Live. Theme: Games and everyday apps. Stack: R5, Python, TypeScript, Static site."
+  },
+  {
+   "id": "project:equidistant:role",
+   "source": "project",
+   "title": "Equidistant · My role",
+   "url": "#/work/equidistant",
+   "text": "Solo. I made the product and design decisions. The problem: Groups meet wherever they went last time, which suits one person. Map distance is the wrong measure in a city with dense transit; travel time is what matters."
+  },
+  {
+   "id": "project:equidistant:how",
+   "source": "project",
+   "title": "Equidistant · How it works",
+   "url": "#/work/equidistant",
+   "text": "Pin: Each person drops a pin and picks how they travel. Load: The app fetches one small precomputed file per person. Combine: The browser works out when the last person would arrive. Name: It ranks real places and shows each person's time."
+  },
+  {
+   "id": "project:equidistant:built",
+   "source": "project",
+   "title": "Equidistant · What I built",
+   "url": "#/work/equidistant",
+   "text": "Travel times precomputed for all of Singapore with R5 (r5py), on a weekday departure window. Five modes: public transport, MRT and LRT only, bus only, cycling, driving. Static site with no backend; locations stay in the URL and in memory. About 30 KB fetched per pin."
+  },
+  {
+   "id": "project:equidistant:decisions",
+   "source": "project",
+   "title": "Equidistant · Key decisions",
+   "url": "#/work/equidistant",
+   "text": "Rank by travel time, not distance. Precompute everything, so no server ever sees anyone's location. Each person can use a different mode in the same search. When nothing fits the time budget, show the budget that would work."
+  },
+  {
+   "id": "project:equidistant:results",
+   "source": "project",
+   "title": "Equidistant · Results",
+   "url": "#/work/equidistant",
+   "text": "Live used by friends and family. 5 travel modes. 0 servers that see a location."
+  },
+  {
+   "id": "project:jadeborne-kingdoms:overview",
+   "source": "project",
+   "title": "Jadeborne Kingdoms · Overview",
+   "url": "#/work/jadeborne-kingdoms",
+   "text": "Jadeborne Kingdoms, an online card game. A free, web-first card game of hidden roles and city building. Friends play online from an invite link, and bots fill empty seats. A card game of hidden roles and city building, set in the Three Kingdoms and Journey to the West. Play with friends or bots. Organisation: Personal. Year: 2026. Status: Live alpha. Theme: Games and everyday apps. Stack: Cloudflare Durable Objects, React, react-three-fiber, TypeScript."
+  },
+  {
+   "id": "project:jadeborne-kingdoms:role",
+   "source": "project",
+   "title": "Jadeborne Kingdoms · My role",
+   "url": "#/work/jadeborne-kingdoms",
+   "text": "I designed the rules and the architecture; Claude Code wrote the code. The problem: A hidden-role game breaks if any player's browser can see other players' cards."
+  },
+  {
+   "id": "project:jadeborne-kingdoms:how",
+   "source": "project",
+   "title": "Jadeborne Kingdoms · How it works",
+   "url": "#/work/jadeborne-kingdoms",
+   "text": "Invite: A link brings friends into a match. Deal: The server deals roles and cards. Play: Live turns over WebSockets. Fill: Bots take empty seats."
+  },
+  {
+   "id": "project:jadeborne-kingdoms:built",
+   "source": "project",
+   "title": "Jadeborne Kingdoms · What I built",
+   "url": "#/work/jadeborne-kingdoms",
+   "text": "React and Vite with a 2.5D table in react-three-fiber; installable as a PWA. Cloudflare Workers, with one Durable Object per match running the game. D1 for accounts and progress, R2 for assets and replays."
+  },
+  {
+   "id": "project:jadeborne-kingdoms:decisions",
+   "source": "project",
+   "title": "Jadeborne Kingdoms · Key decisions",
+   "url": "#/work/jadeborne-kingdoms",
+   "text": "The server runs the game, and hidden cards are never sent to a player who shouldn't see them. I wrote the rules spec and the optional additions on top of the classic mode. I set the bot difficulty targets."
+  },
+  {
+   "id": "project:jadeborne-kingdoms:results",
+   "source": "project",
+   "title": "Jadeborne Kingdoms · Results",
+   "url": "#/work/jadeborne-kingdoms",
+   "text": "73.4% of 500 games won by the normal bot over the easy one (target 70%). 2.6 ms slowest bot move. Live alpha, played by friends and family."
   },
   {
    "id": "career:the-assembly-place:2026-now",
@@ -774,9 +984,9 @@
   {
    "id": "career:bgc-group:2024-25",
    "source": "career",
-   "title": "BGC Group · Senior Software Engineer (AI)",
+   "title": "BGC Group · Senior Software Engineer (AI Application Specialist), contract",
    "url": "#/about",
-   "text": "BGC Group, Senior Software Engineer (AI), 2024–25. An on-premise RAG assistant for a defence-sector client."
+   "text": "BGC Group, Senior Software Engineer (AI Application Specialist), contract, 2024–25. An on-premise RAG assistant for a defence-sector client."
   },
   {
    "id": "career:ai-singapore:2024",
@@ -865,9 +1075,9 @@
   {
    "id": "site:archive:storefront",
    "source": "site",
-   "title": "Earlier work · VietMala Eatery",
+   "title": "Earlier work · Food and beverage storefront",
    "url": "#/work",
-   "text": "VietMala Eatery. A responsive Vue storefront for a food and beverage shop."
+   "text": "Food and beverage storefront. A responsive Vue storefront for a food and beverage shop, built with a collaborator."
   },
   {
    "id": "site:archive:video",

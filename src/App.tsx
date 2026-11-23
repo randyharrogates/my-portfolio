@@ -197,7 +197,6 @@ const LEGACY: Record<string, string> = {
   twc: "twc",
   leeseidon: "leeseidon",
   verona: "verona",
-  "speech-to-text": "speech",
   "multi-agent-rag": "agent-pilot",
   "mcp-server": "mcp-pack",
   "resume-builder": "resume-builder",
